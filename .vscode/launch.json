@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "FYP (Chrome)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "chrome",
+            "args": [
+                "--no-web-resources-cdn"
+            ]
+        },
+        {
+            "name": "FYP (Edge)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "edge",
+            "args": [
+                "--no-web-resources-cdn"
+            ]
+        }
+    ]
+}
