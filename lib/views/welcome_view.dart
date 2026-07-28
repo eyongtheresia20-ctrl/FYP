@@ -1,6 +1,8 @@
 // lib/views/welcome_view.dart
 import 'package:flutter/material.dart';
 import '../core/localization.dart';
+import 'auth/activation_view.dart';
+import 'auth/login_view.dart';
 
 class WelcomeView extends StatefulWidget {
   const WelcomeView({super.key});
@@ -439,199 +441,265 @@ class _WelcomeViewState extends State<WelcomeView>
 
 
 
-  // ── Hi + Sign In area ───────────────────────────────────────────────────────
+  // ── Profile Icon & Auth Dropdown Menu ─────────────────────────────────────────
   Widget _buildSignInArea(BuildContext context, bool isEn) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          isEn ? 'Hi,' : 'Bonjour,',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13.5,
-            fontWeight: FontWeight.w500,
+    final Color green = const Color(0xFF006A4E);
+    final Color accent = const Color(0xFF34D399);
+
+    return PopupMenuButton<String>(
+      tooltip: isEn ? 'Account Menu' : 'Menu Compte',
+      offset: const Offset(0, 48),
+      elevation: 12,
+      shadowColor: Colors.black.withOpacity(0.4),
+      color: _isDarkMode ? const Color(0xFF0F172A) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: _isDarkMode ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
+      ),
+      onSelected: (value) {
+        if (value == 'login') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => LoginView(
+                isDarkMode: _isDarkMode,
+                isEn: isEn,
+              ),
+            ),
+          );
+        } else if (value == 'activate') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ActivationView(
+                isDarkMode: _isDarkMode,
+                isEn: isEn,
+              ),
+            ),
+          );
+        }
+      },
+      itemBuilder: (ctx) => [
+        // Option 1: Sign In
+        PopupMenuItem<String>(
+          value: 'login',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.login_rounded, color: accent, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isEn ? 'Sign In' : 'Connexion',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    isEn ? 'Already activated account' : 'Compte déjà activé',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: () => _showSignInSheet(context, isEn),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF006A4E), Color(0xFF009966)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF006A4E).withOpacity(0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+        const PopupMenuDivider(height: 1),
+        // Option 2: Activate Account
+        PopupMenuItem<String>(
+          value: 'activate',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ],
+                child: Icon(Icons.flash_on_rounded, color: accent, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isEn ? 'Activate Account' : 'Activer le Compte',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    isEn ? 'First-time setup with matricule' : 'Première fois avec matricule',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF006A4E), Color(0xFF009966)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF006A4E).withOpacity(0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-            child: Text(
-              isEn ? 'Sign In' : 'Connexion',
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.person_outline_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              isEn ? 'Account' : 'Compte',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
               ),
             ),
-          ),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  void _showSignInSheet(BuildContext context, bool isEn) {
-    final TextEditingController _idController = TextEditingController();
+  // ── Clean Minimal Sign In Dialog ───────────────────────────────────────────
+  void _showSignInDialog(BuildContext context, bool isEn) {
+    final TextEditingController idController = TextEditingController();
     final Color green = const Color(0xFF006A4E);
     final Color accent = const Color(0xFF34D399);
-    final Color sheetBg = _isDarkMode ? const Color(0xFF0F172A) : Colors.white;
+    final Color dialogBg = _isDarkMode ? const Color(0xFF0F172A) : Colors.white;
     final Color textColor = _isDarkMode ? Colors.white : const Color(0xFF0F172A);
-    final Color subColor = _isDarkMode ? Colors.white54 : const Color(0xFF475569);
-    final Color borderColor = _isDarkMode ? const Color(0x28FFFFFF) : const Color(0xFFE2E8F0);
+    final Color subColor = _isDarkMode ? Colors.white60 : const Color(0xFF475569);
+    final Color borderColor = _isDarkMode ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0);
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(28, 28, 28, 36),
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
           decoration: BoxDecoration(
-            color: sheetBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: borderColor),
+            color: dialogBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Title
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: green.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.lock_outline_rounded, color: accent, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isEn ? 'Sign In' : 'Connexion',
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        isEn ? 'Enter your ID to continue' : 'Entrez votre identifiant pour continuer',
-                        style: TextStyle(color: subColor, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              // Single ID field
-              Text(
-                isEn ? 'Matricule / Phone Number' : 'Matricule / Numéro de téléphone',
-                style: TextStyle(
-                  color: subColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+              // Close button top-right
+              Align(
+                alignment: Alignment.topRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Icon(Icons.close_rounded, color: subColor, size: 20),
                 ),
               ),
               const SizedBox(height: 8),
+
+              // Input field
               TextField(
-                controller: _idController,
-                style: TextStyle(color: textColor, fontSize: 15),
+                controller: idController,
+                style: TextStyle(color: textColor, fontSize: 14.5, fontWeight: FontWeight.w500),
                 keyboardType: TextInputType.text,
+                autofocus: true,
                 decoration: InputDecoration(
-                  hintText: isEn ? 'e.g. CM12345 or 6XXXXXXXX' : 'ex. CM12345 ou 6XXXXXXXX',
-                  hintStyle: TextStyle(color: subColor.withOpacity(0.6)),
+                  hintText: isEn ? 'Matricule or Phone Number' : 'Matricule ou Numéro de téléphone',
+                  hintStyle: TextStyle(color: subColor, fontSize: 13.5),
                   prefixIcon: Icon(Icons.badge_outlined, color: accent, size: 20),
                   filled: true,
                   fillColor: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: green, width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: accent, width: 1.8),
                   ),
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
 
               // Sign In button
               SizedBox(
-                width: double.infinity,
+                height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 2,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
                   ),
                   onPressed: () {
-                    final id = _idController.text.trim();
+                    final id = idController.text.trim();
                     if (id.isEmpty) return;
                     Navigator.pop(ctx);
-                    // TODO: connect to backend API
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          isEn
-                              ? 'Signing in as: $id'
-                              : 'Connexion en cours : $id',
-                        ),
+                        content: Text(isEn ? 'Signing in as: $id' : 'Connexion : $id'),
                         backgroundColor: green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         duration: const Duration(seconds: 2),
                       ),
                     );
                   },
                   child: Text(
-                    isEn ? 'Sign In' : 'Se Connecter',
+                    isEn ? 'Sign In' : 'Connexion',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
