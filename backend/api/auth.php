@@ -131,6 +131,8 @@ switch ($action) {
             ->execute([$passwordHash, $securityHash, $userId]);
         $pdo->prepare("UPDATE students SET password_hash = ?, security_code = ? WHERE user_id = ?")
             ->execute([$passwordHash, $securityHash, $userId]);
+        $pdo->prepare("UPDATE teachers SET password_hash = ?, security_code = ? WHERE user_id = ?")
+            ->execute([$passwordHash, $securityHash, $userId]);
 
         $stmt = $pdo->prepare("SELECT id, full_name, role, school_id, region, division FROM users WHERE id = ?");
         $stmt->execute([$userId]);
