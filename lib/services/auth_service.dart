@@ -1,10 +1,10 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost/minesec_api/api/auth.php';
+  static const String _baseUrl = 'http://localhost:8080/minesec_api/api/auth.php';
 
   static const String _keyToken    = 'auth_token';
   static const String _keyUserId   = 'user_id';

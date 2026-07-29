@@ -1,4 +1,4 @@
-﻿class UserModel {
+class UserModel {
   final int id;
   final String fullName;
   final String role;
@@ -38,6 +38,26 @@
     'division':  division,
     'token':     token,
   };
+
+  UserModel copyWith({
+    int? id,
+    String? fullName,
+    String? role,
+    int? schoolId,
+    String? region,
+    String? division,
+    String? token,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      role: role ?? this.role,
+      schoolId: schoolId ?? this.schoolId,
+      region: region ?? this.region,
+      division: division ?? this.division,
+      token: token ?? this.token,
+    );
+  }
 
   bool get isStudent            => role == 'student';
   bool get isTeacher            => role == 'teacher';

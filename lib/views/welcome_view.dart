@@ -81,21 +81,20 @@ class _WelcomeViewState extends State<WelcomeView>
         duration: const Duration(milliseconds: 300),
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
-          color: bgColor,
-          image: _isDarkMode
-              ? const DecorationImage(
-                  image: AssetImage('assets/images/edu_background.png'),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Color(0xF4050810),
-                    BlendMode.darken,
-                  ),
-                )
-              : null,
-        ),
+        color: bgColor,
         child: Stack(
           children: [
+            // Background image layer
+            if (_isDarkMode)
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/edu_background.png',
+                  fit: BoxFit.cover,
+                  color: const Color(0xF4050810),
+                  colorBlendMode: BlendMode.darken,
+                ),
+              ),
+
             // Ambient background glows
             if (_isDarkMode) ...[
               Positioned(
@@ -1863,13 +1862,12 @@ class _WelcomeViewState extends State<WelcomeView>
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(opacity),
-            blurRadius: size * 0.8,
-            spreadRadius: size * 0.4,
-          )
-        ],
+        gradient: RadialGradient(
+          colors: [
+            color.withOpacity(opacity),
+            color.withOpacity(0.0),
+          ],
+        ),
       ),
     );
   }

@@ -168,12 +168,10 @@ class _LoginViewState extends State<LoginView> {
                       )),
                   const SizedBox(height: 16),
 
-                  // Security PIN
-                  _label(_isEn ? 'SECURITY PIN' : 'CODE PIN DE SÉCURITÉ'),
+                  // Security Code
+                  _label(_isEn ? 'SECURITY CODE' : 'CODE DE SÉCURITÉ'),
                   const SizedBox(height: 8),
-                  _field(_pinCtrl, '1234', Icons.shield_outlined,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                  _field(_pinCtrl, 'e.g. SEC#2026', Icons.shield_outlined,
                       obscure: !_showPin,
                       suffix: IconButton(
                         icon: Icon(_showPin ? Icons.visibility_off : Icons.visibility, size: 18, color: _sub),

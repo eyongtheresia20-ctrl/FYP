@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 
 class AppLocalization extends ChangeNotifier {
+  static final AppLocalization _instance = AppLocalization._internal();
+  factory AppLocalization() => _instance;
+  AppLocalization._internal();
+
   static String currentLanguage = 'en'; // 'en' or 'fr'
 
   static final Map<String, Map<String, String>> _localizedValues = {
@@ -106,8 +110,10 @@ class AppLocalization extends ChangeNotifier {
   };
 
   void setLanguage(String lang) {
-    currentLanguage = lang;
-    notifyListeners();
+    if (currentLanguage != lang) {
+      currentLanguage = lang;
+      notifyListeners();
+    }
   }
 
   static String translate(String key) {
