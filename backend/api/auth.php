@@ -381,10 +381,12 @@ switch ($action) {
         $pdo = getDB();
         $stmt = $pdo->prepare("
             SELECT u.id, u.full_name, u.role, u.school_id, u.region, u.division,
-                   s.name as school_name, st.class_name, st.mat_number, st.birth_date, st.gender
+                   s.name as school_name, st.class_name, st.mat_number, st.birth_date, st.gender,
+                   t.staff_id, t.subject, t.class_name as teacher_class
             FROM users u
             LEFT JOIN schools s ON s.id = u.school_id
             LEFT JOIN students st ON st.user_id = u.id
+            LEFT JOIN teachers t ON t.user_id = u.id
             WHERE u.id = ?
         ");
         $stmt->execute([$userId]);
