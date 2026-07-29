@@ -1,33 +1,39 @@
-﻿<?php
+<?php
 // ============================================================
-//  MINESEC LST — Setup Regions, Divisions & Delegates Tables
+//  MINESEC LST — Setup Regions & Divisions Tables
 // ============================================================
 
 require_once __DIR__ . '/config/database.php';
 
 try {
     $pdo = getDB();
-    echo "--- CREATING REGIONS & DIVISIONS TABLES ---\n";
+    echo "--- SETTING UP 10 REGIONS OF CAMEROON & DIVISIONS ---\n";
+
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+    $pdo->exec("DROP TABLE IF EXISTS delegates;");
+    $pdo->exec("DROP TABLE IF EXISTS divisions;");
+    $pdo->exec("DROP TABLE IF EXISTS regions;");
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
     // 1. REGIONS TABLE
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS regions (
-            id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            code      VARCHAR(10)  NOT NULL UNIQUE,
-            name_en   VARCHAR(100) NOT NULL,
-            name_fr   VARCHAR(100) NOT NULL,
+        CREATE TABLE regions (
+            id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            code       VARCHAR(10)  NOT NULL UNIQUE,
+            name_en    VARCHAR(100) NOT NULL,
+            name_fr    VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
     // 2. DIVISIONS TABLE
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS divisions (
-            id        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            region_id INT UNSIGNED NOT NULL,
-            code      VARCHAR(20)  NOT NULL UNIQUE,
-            name_en   VARCHAR(100) NOT NULL,
-            name_fr   VARCHAR(100) NOT NULL,
+        CREATE TABLE divisions (
+            id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            region_id  INT UNSIGNED NOT NULL,
+            code       VARCHAR(20)  NOT NULL UNIQUE,
+            name_en    VARCHAR(100) NOT NULL,
+            name_fr    VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -35,7 +41,7 @@ try {
 
     // 3. DELEGATES TABLE
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS delegates (
+        CREATE TABLE delegates (
             id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id       INT UNSIGNED NOT NULL UNIQUE,
             delegate_type ENUM('regional', 'divisional') NOT NULL,
@@ -50,7 +56,7 @@ try {
 
     echo "Tables created successfully.\n";
 
-    // 4. SEED THE 10 REGIONS OF CAMEROON
+    // 4. SEED THE 10 OFFICIAL REGIONS OF CAMEROON
     $regionsData = [
         ['AD', 'Adamawa',     'Adamaoua'],
         ['CE', 'Center',      'Centre'],
@@ -64,15 +70,11 @@ try {
         ['SW', 'South-West',  'Sud-Ouest'],
     ];
 
-    $stmtRegion = $pdo->prepare("
-        INSERT INTO regions (code, name_en, name_fr) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE name_en=VALUES(name_en), name_fr=VALUES(name_fr)
-    ");
-
+    $stmtRegion = $pdo->prepare("INSERT INTO regions (code, name_en, name_fr) VALUES (?, ?, ?)");
     foreach ($regionsData as $r) {
         $stmtRegion->execute($r);
     }
-    echo "10 Regions seeded successfully.\n";
+    echo "10 Regions of Cameroon seeded successfully into 'regions' table.\n";
 
     // Helper to get region ID by code
     $getRegionId = function($code) use ($pdo) {
@@ -81,7 +83,7 @@ try {
         return $stmt->fetchColumn();
     };
 
-    // 5. SEED DIVISIONS (SAMPLE DEPARTEMENTS FOR ALL REGIONS)
+    // 5. SEED DIVISIONS FOR REGIONS
     $divisionsData = [
         // Adamawa (AD)
         [$getRegionId('AD'), 'DJEREM',      'Djerem',        'Djérem'],
@@ -108,11 +110,7 @@ try {
         [$getRegionId('SW'), 'MEME',        'Meme',          'Meme'],
     ];
 
-    $stmtDiv = $pdo->prepare("
-        INSERT INTO divisions (region_id, code, name_en, name_fr) VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE name_en=VALUES(name_en), name_fr=VALUES(name_fr)
-    ");
-
+    $stmtDiv = $pdo->prepare("INSERT INTO divisions (region_id, code, name_en, name_fr) VALUES (?, ?, ?, ?)");
     foreach ($divisionsData as $d) {
         if ($d[0]) {
             $stmtDiv->execute($d);
