@@ -34,6 +34,9 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Color get _sub    => widget.isDarkMode ? Colors.white60 : const Color(0xFF64748B);
   Color get _border => widget.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
 
+  String? _selectedClass;
+  String? _selectedSubject;
+
   @override
   void initState() {
     super.initState();
@@ -41,23 +44,31 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     _fetchClassData();
   }
 
-  Future<void> _fetchClassData() async {
+  Future<void> _fetchClassData([String? targetClass, String? targetSubject]) async {
     setState(() {
       _isLoading = true;
       _errorMsg = null;
+      if (targetClass != null) _selectedClass = targetClass;
+      if (targetSubject != null) _selectedSubject = targetSubject;
     });
 
     try {
       final resp = await http.post(
         Uri.parse('http://localhost:8080/minesec_api/api/dashboard.php?action=teacher_class'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': _currentUser.id}),
+        body: jsonEncode({
+          'user_id': _currentUser.id,
+          if (_selectedClass != null) 'class_name': _selectedClass,
+          if (_selectedSubject != null) 'subject': _selectedSubject,
+        }),
       );
 
       final data = jsonDecode(resp.body);
       if (data['success'] == true) {
         setState(() {
           _classData = data['data'];
+          _selectedClass = _classData?['class_name'];
+          _selectedSubject = _classData?['subject'];
           _isLoading = false;
         });
       } else {
@@ -443,7 +454,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         ? (_classData?['ai_recommendation_en'] ?? '')
         : (_classData?['ai_recommendation_fr'] ?? '');
 
-    final List students = _classData?['students'] as List? ?? [];
+    final List students    = _classData?['students'] as List? ?? [];
+    final List assignments = _classData?['assignments'] as List? ?? [];
 
     return Scaffold(
       backgroundColor: _bg,
@@ -592,6 +604,64 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                 ),
               ),
               const SizedBox(height: 14),
+
+              // Multi-Class & Multi-Subject Selector Dropdown Bar (Academic Year 2025-2026)
+              if (assignments.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _green.withOpacity(0.3), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.collections_bookmark_rounded, color: _green, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.isEn ? 'Select Active Assignment (2025-2026)' : 'Sélectionner l\'Affectation (2025-2026)',
+                              style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 2),
+                            DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isDense: true,
+                                isExpanded: true,
+                                value: '$className - $subject',
+                                icon: Icon(Icons.keyboard_arrow_down_rounded, color: _green),
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                items: assignments.map<DropdownMenuItem<String>>((asg) {
+                                  final cName = asg['class_name'] ?? '1ère TI';
+                                  final sName = asg['subject_name'] ?? 'Informatique';
+                                  final val = '$cName - $sName';
+                                  return DropdownMenuItem<String>(
+                                    value: val,
+                                    child: Text('$cName — $sName'),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    final parts = val.split(' - ');
+                                    _fetchClassData(parts[0], parts.length > 1 ? parts[1] : null);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
 
               // Class Access Control Notice
               Container(
