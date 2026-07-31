@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/app_sidebar.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final UserModel user;
@@ -22,32 +23,51 @@ class TeacherDashboard extends StatefulWidget {
 
 class _TeacherDashboardState extends State<TeacherDashboard> {
   late UserModel _currentUser;
+  late bool _isDarkMode;
+  late bool _isEn;
+
   bool _isLoading = true;
   Map<String, dynamic>? _classData;
-  String? _errorMsg;
-
-  Color get _green  => const Color(0xFF006A4E);
-  Color get _accent => const Color(0xFF34D399);
-  Color get _bg     => widget.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-  Color get _card   => widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white;
-  Color get _text   => widget.isDarkMode ? Colors.white : const Color(0xFF0F172A);
-  Color get _sub    => widget.isDarkMode ? Colors.white60 : const Color(0xFF64748B);
-  Color get _border => widget.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
 
   String? _selectedClass;
   String? _selectedSubject;
+  int _currentNavIndex = 0; // 0 = Dashboard Overview (Welcome Banner + Overview), 1 = Class View (Welcome banner removed)
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ScrollController _scrollController = ScrollController();
+
+  Color get _green  => const Color(0xFF006A4E);
+  Color get _bg     => _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  Color get _card   => _isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+  Color get _text   => _isDarkMode ? Colors.white : const Color(0xFF0F172A);
+  Color get _sub    => _isDarkMode ? Colors.white60 : const Color(0xFF64748B);
+  Color get _border => _isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+  int _parseInt(dynamic val) {
+    if (val is int) return val;
+    if (val is double) return val.toInt();
+    if (val is String) return double.tryParse(val)?.toInt() ?? 0;
+    return 0;
+  }
 
   @override
   void initState() {
     super.initState();
     _currentUser = widget.user;
+    _isDarkMode = widget.isDarkMode;
+    _isEn = widget.isEn;
     _fetchClassData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchClassData([String? targetClass, String? targetSubject]) async {
     setState(() {
       _isLoading = true;
-      _errorMsg = null;
       if (targetClass != null) _selectedClass = targetClass;
       if (targetSubject != null) _selectedSubject = targetSubject;
     });
@@ -86,67 +106,51 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         'class_name': '1ère TI',
         'subject': 'Informatique',
         'staff_id': 'T2026001',
+        'ticked_classes': ['1ère TI', 'Terminale TI'],
         'summary': {
-          'total_students': 15,
-          'assessed': 12,
-          'visual': 5,
-          'auditory': 4,
-          'kinesthetic': 2,
-          'read_write': 1,
+          'total_students': 2,
+          'assessed': 2,
+          'visual': 1,
+          'auditory': 1,
+          'kinesthetic': 0,
+          'read_write': 0,
         },
         'students': [
           {
             'full_name': 'Bello Oumarou',
             'mat_number': 'AD2026001',
             'class_name': '1ère TI',
-            'learning_style': 'Visual-Auditory',
+            'gender': 'Male',
+            'learning_style': 'Visual Learner (Score: 8/16)',
             'visual_score': 8,
-            'auditory_score': 7,
-            'kinesthetic_score': 4,
+            'auditory_score': 4,
+            'kinesthetic_score': 3,
+            'read_write_score': 1,
           },
           {
             'full_name': 'Amina Mohamadou',
             'mat_number': 'AD2026002',
-            'class_name': '1ère TI',
-            'learning_style': 'Auditory-Kinesthetic',
-            'visual_score': 5,
+            'class_name': 'Terminale TI',
+            'gender': 'Female',
+            'learning_style': 'Auditory Learner (Score: 9/16)',
+            'visual_score': 3,
             'auditory_score': 9,
-            'kinesthetic_score': 8,
-          },
-          {
-            'full_name': 'Ngo Mbock Marie',
-            'mat_number': 'CM2026002',
-            'class_name': '1ère TI',
-            'learning_style': 'Visual',
-            'visual_score': 10,
-            'auditory_score': 3,
             'kinesthetic_score': 2,
-          },
-          {
-            'full_name': 'Kamga Paul',
-            'mat_number': 'CM2026001',
-            'class_name': '1ère TI',
-            'learning_style': 'Kinesthetic',
-            'visual_score': 4,
-            'auditory_score': 4,
-            'kinesthetic_score': 9,
+            'read_write_score': 2,
           },
         ],
-        'ai_recommendation_en':
-            '• Primary Mode: Visual & Auditory Learners Dominant\n• Use high-contrast color coding, architectural mind maps, and live code flowcharts.\n• Conduct interactive Q&A sessions and verbal logic walkthroughs.\n• Provide structured hands-on lab exercises for practical reinforcement.',
-        'ai_recommendation_fr':
-            '• Mode Principal : Apprenants Visuels & Auditifs Dominants\n• Utilisez des organigrammes de code, cartes mentales visuelles et du surlignage couleur.\n• Organisez des échanges interactifs et des synthèses orales de logique informatique.\n• Proposez des ateliers de travaux pratiques guidés en laboratoire.',
+        'ai_recommendation_en': '• Incorporate visual mind maps, architectural diagrams, and flowcharts on the board.\n• Provide structured printed notes and code summaries for reading.\n• Use interactive lab exercises and hands-on coding demonstrations during class.',
+        'ai_recommendation_fr': '• Intégrez des cartes mentales, des schémas d\'architecture et des organigrammes au tableau.\n• Fournissez des fiches de cours structurées et des résumés de code rédigés.\n• Proposez des travaux pratiques guidés et des démonstrations de code interactives en classe.',
       };
     });
   }
 
-  void _showTeacherProfileDialog() {
-    final roleLabel = widget.isEn ? 'Teacher' : 'Enseignant(e)';
-
-    final passCtrl    = TextEditingController(text: 'password123');
-    final secCodeCtrl = TextEditingController(text: '1234');
+  void _showTeacherProfileDialog() async {
+    final passCtrl    = TextEditingController();
+    final secCodeCtrl = TextEditingController();
     bool obscurePass  = true;
     bool obscureSec   = true;
+    bool loading      = true;
     bool saving       = false;
 
     showModalBottomSheet(
@@ -155,6 +159,27 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
+          if (loading) {
+            http.get(
+              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=get_profile&user_id=${_currentUser.id}'),
+            ).then((res) {
+              final pData = jsonDecode(res.body);
+              if (pData['success'] == true && pData['data'] != null) {
+                final profile = pData['data'];
+                passCtrl.text    = (profile['password'] ?? 'teacher1').toString();
+                secCodeCtrl.text = (profile['security_code'] ?? '1234@').toString();
+              } else {
+                passCtrl.text    = 'teacher1';
+                secCodeCtrl.text = '1234@';
+              }
+              if (ctx.mounted) setModalState(() => loading = false);
+            }).catchError((_) {
+              passCtrl.text    = 'teacher1';
+              secCodeCtrl.text = '1234@';
+              if (ctx.mounted) setModalState(() => loading = false);
+            });
+          }
+
           final initials = _currentUser.fullName.trim().split(' ')
               .take(2).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join();
 
@@ -173,17 +198,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Drag handle
                   Container(
                     width: 40, height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: _border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2)),
                   ),
 
-                  // Avatar Header Banner
+                  // Header Badge
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -198,12 +219,11 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                     child: Row(
                       children: [
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: 56, height: 56,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
                           ),
                           child: Center(
                             child: Text(
@@ -224,182 +244,143 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                               const SizedBox(height: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
+                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
                                 child: Text(
-                                  roleLabel,
+                                  _isEn ? 'Teacher' : 'Enseignant',
                                   style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.verified_rounded, color: Colors.white, size: 24),
                       ],
                     ),
                   ),
                   const SizedBox(height: 18),
 
-                  // Title
                   Row(
                     children: [
                       Icon(Icons.badge_outlined, color: _green, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        widget.isEn ? 'Teacher Information & Credentials' : 'Informations & Identifiants Enseignant',
-                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
+                        _isEn ? 'Teacher Database Credentials' : 'Identifiants Enseignant en Base de Données',
+                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 14.5),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+
+                  _profileInfoRow(Icons.badge_rounded, _isEn ? 'Matricule / Staff ID' : 'Matricule / Identifiant', 'T2026001'),
+                  const SizedBox(height: 8),
+                  _profileInfoRow(Icons.school_rounded, _isEn ? 'School' : 'Établissement', 'LYCEE TECHNIQUE DE NGAOUNDAL'),
+                  const SizedBox(height: 8),
+                  _profileInfoRow(Icons.map_rounded, _isEn ? 'Region & Division' : 'Région & Département', '${_currentUser.region ?? "ADAMOUA"} — ${_currentUser.division ?? "DJEREM"}'),
                   const SizedBox(height: 14),
 
-                  // Profile Details (Read-only Cards)
-                  _profileInfoRow(Icons.person_outline_rounded, widget.isEn ? 'Full Name' : 'Nom Complet', _currentUser.fullName),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.confirmation_number_outlined, widget.isEn ? 'Matricule / Staff ID' : 'Matricule Enseignant', _classData?['staff_id'] ?? 'T2026001'),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.school_outlined, widget.isEn ? 'School' : 'École', 'LYCEE TECHNIQUE DE NGAOUNDAL'),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.class_outlined, widget.isEn ? 'Assigned Class' : 'Classe Assignée', _classData?['class_name'] ?? '1ère TI'),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.menu_book_outlined, widget.isEn ? 'Subject' : 'Matière Enseignée', _classData?['subject'] ?? 'Informatique'),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.map_outlined, widget.isEn ? 'Region' : 'Région', _currentUser.region ?? 'ADAMOUA'),
-                  const SizedBox(height: 8),
-                  _profileInfoRow(Icons.location_city_outlined, widget.isEn ? 'Division' : 'Département', _currentUser.division ?? 'DJEREM'),
-                  const SizedBox(height: 18),
-
-                  // Security Settings Section Header
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      widget.isEn ? 'Modify Present Password & Security Code' : 'Modifier Mot de Passe & Code de Sécurité',
+                      _isEn ? 'Modify Password & Security Code' : 'Modifier Mot de Passe & Code de Sécurité',
                       style: TextStyle(color: _text, fontWeight: FontWeight.w700, fontSize: 13.5),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // Present Security Code Input
-                  TextField(
-                    controller: secCodeCtrl,
-                    obscureText: obscureSec,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: widget.isEn ? 'Present Security Code (e.g. 1234)' : 'Code de Sécurité Présent (ex: 1234)',
-                      labelStyle: TextStyle(color: _sub, fontSize: 12),
-                      prefixIcon: Icon(Icons.security_rounded, color: _green, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                        onPressed: () => setModalState(() => obscureSec = !obscureSec),
+                  if (loading)
+                    const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    )
+                  else ...[
+                    // 1. PRESENT PASSWORD INPUT (FETCHED FROM DB)
+                    TextField(
+                      controller: passCtrl,
+                      obscureText: obscurePass,
+                      decoration: InputDecoration(
+                        labelText: _isEn ? 'Present Password (Loaded from DB)' : 'Mot de Passe Présent (Base de Données)',
+                        labelStyle: TextStyle(color: _sub, fontSize: 12),
+                        prefixIcon: Icon(Icons.lock_outline_rounded, color: _green, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+                          onPressed: () => setModalState(() => obscurePass = !obscurePass),
+                        ),
+                        filled: true,
+                        fillColor: _bg,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
                       ),
-                      filled: true,
-                      fillColor: _bg,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _green, width: 1.5)),
                     ),
-                  ),
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 12),
 
-                  // Present Password Input
-                  TextField(
-                    controller: passCtrl,
-                    obscureText: obscurePass,
-                    decoration: InputDecoration(
-                      labelText: widget.isEn ? 'Present Password' : 'Mot de Passe Présent',
-                      labelStyle: TextStyle(color: _sub, fontSize: 12),
-                      prefixIcon: Icon(Icons.lock_outline_rounded, color: _green, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                        onPressed: () => setModalState(() => obscurePass = !obscurePass),
+                    // 2. PRESENT SECURITY CODE INPUT (FETCHED FROM DB)
+                    TextField(
+                      controller: secCodeCtrl,
+                      obscureText: obscureSec,
+                      keyboardType: TextInputType.visiblePassword,
+                      decoration: InputDecoration(
+                        labelText: _isEn ? 'Present Security Code (Loaded from DB)' : 'Code de Sécurité Présent (Base de Données)',
+                        labelStyle: TextStyle(color: _sub, fontSize: 12),
+                        prefixIcon: Icon(Icons.security_rounded, color: _green, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+                          onPressed: () => setModalState(() => obscureSec = !obscureSec),
+                        ),
+                        filled: true,
+                        fillColor: _bg,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
                       ),
-                      filled: true,
-                      fillColor: _bg,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _green, width: 1.5)),
                     ),
-                  ),
-                  const SizedBox(height: 18),
+                    const SizedBox(height: 20),
 
-                  // Save Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _green,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: saving ? null : () async {
-                        final newPass = passCtrl.text.trim();
-                        final newSec  = secCodeCtrl.text.trim();
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: saving ? null : () async {
+                          final newPass = passCtrl.text.trim();
+                          final newSec  = secCodeCtrl.text.trim();
 
-                        if (newPass.isEmpty && newSec.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(widget.isEn ? 'Please enter a password or security code.' : 'Veuillez saisir un mot de passe ou code de sécurité.')),
-                          );
-                          return;
-                        }
+                          setModalState(() => saving = true);
 
-                        setModalState(() => saving = true);
+                          try {
+                            await http.post(
+                              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode({
+                                'user_id': _currentUser.id,
+                                if (newPass.isNotEmpty) 'password': newPass,
+                                if (newSec.isNotEmpty) 'security_code': newSec,
+                              }),
+                            );
 
-                        try {
-                          final resp = await http.post(
-                            Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
-                            headers: {'Content-Type': 'application/json'},
-                            body: jsonEncode({
-                              'user_id': _currentUser.id,
-                              if (newPass.isNotEmpty) 'password': newPass,
-                              if (newSec.isNotEmpty) 'security_code': newSec,
-                            }),
-                          );
-
-                          final data = jsonDecode(resp.body);
-                          if (data['success'] == true) {
                             if (mounted) {
                               Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: _green,
-                                  content: Text(widget.isEn ? 'Security code & password updated in database!' : 'Code de sécurité et mot de passe mis à jour dans la base de données !'),
-                                ),
-                              );
                             }
-                          } else {
-                            setModalState(() => saving = false);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(data['message'] ?? 'Failed to update credentials.')),
-                            );
+                          } catch (e) {
+                            if (mounted) Navigator.pop(ctx);
                           }
-                        } catch (e) {
-                          setModalState(() => saving = false);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Network error: $e')),
-                          );
-                        }
-                      },
-                      icon: saving
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.save_rounded, size: 20),
-                      label: Text(
-                        saving ? (widget.isEn ? 'Saving...' : 'Enregistrement...') : (widget.isEn ? 'Save Changes' : 'Enregistrer les Modifications'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        },
+                        icon: saving
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.save_rounded, size: 20),
+                        label: Text(
+                          saving ? (_isEn ? 'Saving...' : 'Enregistrement...') : (_isEn ? 'Save Changes' : 'Enregistrer les Modifications'),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 10),
 
-                  // Close button
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: Text(widget.isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
+                    child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
                   ),
                 ],
               ),
@@ -439,510 +420,778 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final className = _classData?['class_name'] ?? '1ère TI';
-    final subject   = _classData?['subject'] ?? 'Informatique';
-    final summary   = _classData?['summary'] as Map<String, dynamic>? ?? {};
+    final className = _selectedClass ?? (_classData?['class_name'] ?? '1ère TI');
+    final subject   = _selectedSubject ?? (_classData?['subject'] ?? 'Informatique');
 
-    final int totalSt    = summary['total_students'] ?? 0;
-    final int assessedSt = summary['assessed'] ?? 0;
-    final int visualSt   = summary['visual'] ?? 0;
-    final int auditorySt = summary['auditory'] ?? 0;
-    final int kinesSt    = summary['kinesthetic'] ?? 0;
-    final int readWriteSt= summary['read_write'] ?? 0;
+    final summary        = _classData?['summary'] as Map<String, dynamic>? ?? {};
+    final int visSt      = _parseInt(summary['visual']);
+    final int audSt      = _parseInt(summary['auditory']);
+    final int kinesSt    = _parseInt(summary['kinesthetic']);
+    final int readWriteSt= _parseInt(summary['read_write']);
 
-    final aiRec = widget.isEn
+    final aiRec = _isEn
         ? (_classData?['ai_recommendation_en'] ?? '')
         : (_classData?['ai_recommendation_fr'] ?? '');
 
-    final List students    = _classData?['students'] as List? ?? [];
-    final List assignments = _classData?['assignments'] as List? ?? [];
+    final List students      = _classData?['students'] as List? ?? [];
+    final List tickedClasses = (_classData?['ticked_classes'] as List?)?.map((e) => e.toString()).toList() ?? ['1ère TI', 'Terminale TI'];
+
+    final isWide = MediaQuery.of(context).size.width >= 800;
+
+    final sidebarWidget = AppSidebar(
+      user: _currentUser,
+      isDarkMode: _isDarkMode,
+      isEn: _isEn,
+      selectedIndex: _currentNavIndex,
+      tickedClasses: tickedClasses.cast<String>(),
+      selectedClass: className,
+      onClassSelected: (cls) {
+        setState(() => _currentNavIndex = 1);
+        _fetchClassData(cls);
+      },
+      onItemSelected: (idx) {
+        setState(() => _currentNavIndex = idx);
+        if (idx == 0) {
+          _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          _fetchClassData(_selectedClass, _selectedSubject);
+        }
+      },
+      onOpenProfile: _showTeacherProfileDialog,
+      onToggleTheme: () => setState(() => _isDarkMode = !_isDarkMode),
+      onToggleLanguage: () => setState(() => _isEn = !_isEn),
+    );
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: widget.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: _green.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.school_rounded, color: _green, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      drawer: isWide ? null : sidebarWidget,
+      body: Row(
+        children: [
+          if (isWide) sidebarWidget,
+          Expanded(
+            child: Column(
               children: [
-                Text('EDU PROFILE', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 15)),
-                Text(
-                  widget.isEn ? 'Teacher Workspace' : 'Espace Enseignant',
-                  style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (val) {
-              if (val == 'profile') _showTeacherProfileDialog();
-              if (val == 'logout') {
-                AuthService.logout();
-                Navigator.of(context).popUntil((r) => r.isFirst);
-              }
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: _green,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: _green.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.person_outline_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 6),
-                  Text(
-                    widget.isEn ? 'Account' : 'Compte',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_drop_down_rounded, color: Colors.white, size: 20),
-                ],
-              ),
-            ),
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'profile',
-                child: Row(
-                  children: [
-                    Icon(Icons.badge_outlined, color: _green, size: 18),
-                    const SizedBox(width: 10),
-                    Text(widget.isEn ? 'Profile & Settings' : 'Profil & Identifiants', style: const TextStyle(fontSize: 13)),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 18),
-                    const SizedBox(width: 10),
-                    Text(widget.isEn ? 'Logout' : 'Déconnexion', style: const TextStyle(color: Color(0xFFFF5252), fontSize: 13, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _fetchClassData,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18),
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome & Assigned Scope Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_green, const Color(0xFF009966)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(color: _green.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(widget.isEn ? 'Welcome,' : 'Bienvenue,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
-                            Text(_currentUser.fullName, style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w900)),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.co_present_rounded, color: Colors.white, size: 26),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _scopeBadge(Icons.class_rounded, '${widget.isEn ? "Class" : "Classe"}: $className'),
-                        _scopeBadge(Icons.book_rounded, '${widget.isEn ? "Subject" : "Matière"}: $subject'),
-                        _scopeBadge(Icons.location_city_rounded, _currentUser.division ?? 'DJEREM'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Multi-Class & Multi-Subject Selector Dropdown Bar (Academic Year 2025-2026)
-              if (assignments.isNotEmpty) ...[
+                // ── TOP NAVIGATION BAR ──────────────────────────────────────
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  height: 68,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: _card,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _green.withOpacity(0.3), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
-                    ],
+                    color: _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFF0B132B),
+                    border: Border(bottom: BorderSide(color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFF1E293B))),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.collections_bookmark_rounded, color: _green, size: 22),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.isEn ? 'Select Active Assignment (2025-2026)' : 'Sélectionner l\'Affectation (2025-2026)',
-                              style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 2),
-                            DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isDense: true,
-                                isExpanded: true,
-                                value: '$className - $subject',
-                                icon: Icon(Icons.keyboard_arrow_down_rounded, color: _green),
-                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
-                                items: assignments.map<DropdownMenuItem<String>>((asg) {
-                                  final cName = asg['class_name'] ?? '1ère TI';
-                                  final sName = asg['subject_name'] ?? 'Informatique';
-                                  final val = '$cName - $sName';
-                                  return DropdownMenuItem<String>(
-                                    value: val,
-                                    child: Text('$cName — $sName'),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    final parts = val.split(' - ');
-                                    _fetchClassData(parts[0], parts.length > 1 ? parts[1] : null);
-                                  }
-                                },
+                      if (!isWide) ...[
+                        IconButton(
+                          icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
+                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+
+                      const Spacer(),
+
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // 1. Circular Theme Switcher Button
+                          InkWell(
+                            onTap: () => setState(() => _isDarkMode = !_isDarkMode),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white24, width: 1.5),
+                              ),
+                              child: Icon(
+                                _isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                                color: const Color(0xFFFCD116),
+                                size: 18,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-              ],
-
-              // Class Access Control Notice
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _green.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _green.withOpacity(0.2)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.lock_clock_rounded, color: _green, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.isEn
-                            ? 'Scoped Access: You are currently viewing analytics strictly for your assigned class ($className) in $subject.'
-                            : 'Accès Filtré : Vous consultez exclusivement les résultats de votre classe assignée ($className) en $subject.',
-                        style: TextStyle(color: _text, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              if (_isLoading)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(40.0),
-                    child: CircularProgressIndicator(color: _green),
-                  ),
-                )
-              else ...[
-                // Section Header: VARK Learning Styles Breakdown
-                Row(
-                  children: [
-                    Icon(Icons.pie_chart_outline_rounded, color: _green, size: 22),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.isEn ? 'Class Learning Styles Breakdown' : 'Profil des Styles d\'Apprentissage ($className)',
-                      style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Stat Cards Grid
-                Row(
-                  children: [
-                    Expanded(child: _varkStatCard('Visuel', visualSt, const Color(0xFF3B82F6), Icons.visibility_rounded)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _varkStatCard('Auditif', auditorySt, const Color(0xFF8B5CF6), Icons.hearing_rounded)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _varkStatCard('Kinesthésique', kinesSt, const Color(0xFF10B981), Icons.directions_run_rounded)),
-                  ],
-                ),
-                const SizedBox(height: 18),
-
-                // AI Pedagogical Recommendations Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: _card,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: _accent.withOpacity(0.4), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3)),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _accent.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(width: 10),
+
+                          // 2. Segmented Capsule Button for Language [ EN | FR ]
+                          Container(
+                            height: 36,
+                            width: 100,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: Colors.white24, width: 1.5),
+                            ),
+                            padding: const EdgeInsets.all(2),
+                            child: Row(
                               children: [
-                                Text(
-                                  widget.isEn ? 'AI Pedagogical Recommendations' : 'Recommandations Pédagogiques IA',
-                                  style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () { if (!_isEn) setState(() => _isEn = true); },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: _isEn ? const Color(0xFF006A4E) : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'EN',
+                                        style: TextStyle(
+                                          color: _isEn ? Colors.white : Colors.white54,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                Text(
-                                  widget.isEn ? 'Tailored for your $className $subject class' : 'Adaptées sur mesure pour votre classe de $className en $subject',
-                                  style: TextStyle(color: _sub, fontSize: 11.5),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () { if (_isEn) setState(() => _isEn = false); },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: !_isEn ? const Color(0xFF006A4E) : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'FR',
+                                        style: TextStyle(
+                                          color: !_isEn ? Colors.white : Colors.white54,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 10),
+
+                          // Account Profile Button with Popup Menu
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 22),
+                            color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            onSelected: (value) async {
+                              if (value == 'profile') {
+                                _showTeacherProfileDialog();
+                              } else if (value == 'logout') {
+                                await AuthService.logout();
+                                if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'profile',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.person_rounded, color: Color(0xFF34D399), size: 18),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _isEn ? 'Profile' : 'Profil',
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'logout',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 18),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      _isEn ? 'Logout' : 'Déconnexion',
+                                      style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.w600, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                      ),
-                      const Divider(height: 24),
-                      Text(
-                        aiRec.isNotEmpty
-                            ? aiRec
-                            : (widget.isEn
-                                ? '• Incorporate visual code diagrams and flowcharts.\n• Provide audio explanations and collaborative discussions.\n• Schedule hands-on computer lab sessions.'
-                                : '• Intégrez des diagrammes visuels et cartes mentales.\n• Favorisez les explications orales et échanges interactifs.\n• Planifiez des séances de travaux pratiques sur ordinateur.'),
-                        style: TextStyle(color: _text, fontSize: 13, height: 1.55, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 22),
 
-                // Student List Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.people_alt_outlined, color: _green, size: 22),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.isEn ? 'Students Roster & Profiles' : 'Liste des Élèves & Profils ($assessedSt / $totalSt)',
-                          style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.refresh_rounded, color: _sub, size: 20),
-                      onPressed: _fetchClassData,
-                      tooltip: widget.isEn ? 'Refresh' : 'Actualiser',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Student Roster Cards
-                if (students.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                    child: Column(
-                      children: [
-                        Icon(Icons.person_off_outlined, color: _sub, size: 38),
-                        const SizedBox(height: 10),
-                        Text(
-                          widget.isEn ? 'No student assessment results found for $className.' : 'Aucun résultat d\'évaluation trouvé pour la classe $className.',
-                          style: TextStyle(color: _sub, fontSize: 13),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: students.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (ctx, idx) {
-                      final st = students[idx] as Map<String, dynamic>;
-                      final stName = st['full_name'] ?? 'Élève';
-                      final stMat  = st['mat_number'] ?? 'CM2026';
-                      final style  = st['learning_style'] ?? 'Visuel';
-                      final vis    = st['visual_score'] ?? 0;
-                      final aud    = st['auditory_score'] ?? 0;
-                      final kin    = st['kinesthetic_score'] ?? 0;
-
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: _card,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: _border),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: _green.withOpacity(0.12),
-                              child: Text(
-                                stName.substring(0, stName.length > 1 ? 2 : 1).toUpperCase(),
-                                style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 14),
+                // Main Scrollable Body Content
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => _fetchClassData(_selectedClass, _selectedSubject),
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(22),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── TAB INDEX 0: DASHBOARD OVERVIEW LANDING PAGE (WELCOME BANNER ONLY) ──
+                          if (_currentNavIndex == 0) ...[
+                            // Teacher Welcome Banner Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(22),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: [_green, const Color(0xFF009966)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))],
                               ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(stName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Matricule: $stMat | ${widget.isEn ? "Style" : "Style"}: $style',
-                                    style: TextStyle(color: _sub, fontSize: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(_isEn ? 'Welcome,' : 'Bienvenue,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
+                                          Text(_currentUser.fullName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
+                                        child: const Icon(Icons.co_present_rounded, color: Colors.white, size: 26),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 14),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _scopeBadge(Icons.class_rounded, '${_isEn ? "Class" : "Classe"}: $className'),
+                                      _scopeBadge(Icons.book_rounded, '${_isEn ? "Subject" : "Matière"}: $subject'),
+                                      _scopeBadge(Icons.location_city_rounded, _currentUser.division ?? 'DJEREM'),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Executive Summary Metric Cards Grid
+                            Text(
+                              _isEn ? 'Executive Overview Summary' : 'Aperçu Synthétique Global',
+                              style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                            ),
+                            const SizedBox(height: 14),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _overviewStatCard(
+                                    icon: Icons.people_alt_rounded,
+                                    label: _isEn ? 'Total Students' : 'Total Élèves',
+                                    value: '${students.length}',
+                                    color: const Color(0xFF006A4E),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _overviewStatCard(
+                                    icon: Icons.assignment_turned_in_rounded,
+                                    label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
+                                    value: '${summary["assessed"] ?? students.length}',
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _overviewStatCard(
+                                    icon: Icons.class_rounded,
+                                    label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
+                                    value: '${tickedClasses.length}',
+                                    color: const Color(0xFF3B82F6),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _overviewStatCard(
+                                    icon: Icons.psychology_rounded,
+                                    label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
+                                    value: _isEn ? 'Optimal' : 'Optimal',
+                                    color: const Color(0xFF8B5CF6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // VARK Pie Chart Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(22),
+                              decoration: BoxDecoration(
+                                color: _card,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: _border),
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Row(
                                     children: [
-                                      _miniScoreChip('Visuel', '$vis', const Color(0xFF3B82F6)),
-                                      const SizedBox(width: 6),
-                                      _miniScoreChip('Auditif', '$aud', const Color(0xFF8B5CF6)),
-                                      const SizedBox(width: 6),
-                                      _miniScoreChip('Kinesthésique', '$kin', const Color(0xFF10B981)),
+                                      Icon(Icons.pie_chart_rounded, color: _green, size: 24),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        _isEn
+                                            ? 'Overall Classes VARK Learning Styles Breakdown (Pie Chart)'
+                                            : 'Répartition VARK des Classes (Graphique en Camembert)',
+                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 140,
+                                        height: 140,
+                                        child: CustomPaint(
+                                          painter: _VarkPieChartPainter(
+                                            visual: visSt,
+                                            auditory: audSt,
+                                            kinesthetic: kinesSt,
+                                            readWrite: readWriteSt,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 24),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            _pieLegendItem(_isEn ? 'Visual Learner' : 'Apprenant Visuel', visSt, const Color(0xFF3B82F6)),
+                                            const SizedBox(height: 10),
+                                            _pieLegendItem(_isEn ? 'Auditory Learner' : 'Apprenant Auditif', audSt, const Color(0xFFEC4899)),
+                                            const SizedBox(height: 10),
+                                            _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Apprenant Kinesthésique', kinesSt, const Color(0xFF10B981)),
+                                            const SizedBox(height: 10),
+                                            _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Apprenant Lecture/Écriture', readWriteSt, const Color(0xFFF59E0B)),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _scopeBadge(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 14),
-          const SizedBox(width: 5),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                          // ── TAB INDEX 1: CLASS DETAILS VIEW (WELCOME BANNER REMOVED AS REQUESTED) ──
+                          if (_currentNavIndex == 1) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '$className — $subject',
+                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 20),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _isEn ? 'Class Diagnostic Results & Student Roster' : 'Résultats Diagnostics de Classe & Liste des Élèves',
+                                      style: TextStyle(color: _sub, fontSize: 12.5),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                  child: Text(
+                                    _currentUser.division ?? 'DJEREM',
+                                    style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+
+                            // VARK Cards Grid
+                            Text(
+                              _isEn ? 'Class Learning Styles Breakdown' : 'Répartition des Styles d\'Apprentissage de la Classe',
+                              style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                            ),
+                            const SizedBox(height: 14),
+
+                            Row(
+                              children: [
+                                Expanded(child: _varkStatCard(_isEn ? 'Visual' : 'Visuel', '$visSt', Icons.visibility_rounded, const Color(0xFF3B82F6))),
+                                const SizedBox(width: 10),
+                                Expanded(child: _varkStatCard(_isEn ? 'Auditory' : 'Auditif', '$audSt', Icons.record_voice_over_rounded, const Color(0xFFEC4899))),
+                                const SizedBox(width: 10),
+                                Expanded(child: _varkStatCard(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$kinesSt', Icons.directions_run_rounded, const Color(0xFF10B981))),
+                                const SizedBox(width: 10),
+                                Expanded(child: _varkStatCard(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$readWriteSt', Icons.menu_book_rounded, const Color(0xFFF59E0B))),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // AI Recommendation Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: _card,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _isEn ? 'AI Pedagogical Teaching Recommendations' : 'Recommandations Pédagogiques IA',
+                                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    aiRec,
+                                    style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+
+                            // STUDENT ROSTER & RESULTS SECTION
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.people_alt_rounded, color: _green, size: 22),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _isEn ? 'Student Roster & Assessment Results' : 'Liste des Élèves & Résultats VARK',
+                                      style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                  child: Text(
+                                    '${_isEn ? "Total" : "Total"}: ${students.length}',
+                                    style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+
+                            if (students.isEmpty)
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                child: Center(
+                                  child: Text(
+                                    _isEn ? 'No students found in the database for this class.' : 'Aucun élève trouvé dans la base de données pour cette classe.',
+                                    style: TextStyle(color: _sub, fontSize: 13),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: students.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (ctx, idx) {
+                                  final st = students[idx] as Map<String, dynamic>;
+                                  final stName = st['full_name'] ?? 'Élève';
+                                  final stMat  = st['mat_number'] ?? 'AD2026001';
+                                  final style  = st['learning_style'] ?? (_isEn ? 'Not Assessed Yet' : 'Pas encore évalué');
+
+                                  final int vScore = _parseInt(st['visual_score']);
+                                  final int aScore = _parseInt(st['auditory_score']);
+                                  final int kScore = _parseInt(st['kinesthetic_score']);
+                                  final int rScore = _parseInt(st['read_write_score']);
+
+                                  Color styleColor = const Color(0xFF64748B);
+                                  if (style.contains('Visual')) styleColor = const Color(0xFF3B82F6);
+                                  if (style.contains('Auditory')) styleColor = const Color(0xFFEC4899);
+                                  if (style.contains('Kinesthetic')) styleColor = const Color(0xFF10B981);
+                                  if (style.contains('Read/Write')) styleColor = const Color(0xFFF59E0B);
+
+                                  return Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: _card,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: _border),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor: _green.withValues(alpha: 0.12),
+                                              child: Icon(Icons.person_rounded, color: _green, size: 22),
+                                            ),
+                                            const SizedBox(width: 14),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(stName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'Matricule: $stMat | ${st['class_name'] ?? className}',
+                                                    style: TextStyle(color: _sub, fontSize: 12),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(color: styleColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                                              child: Text(style, style: TextStyle(color: styleColor, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+
+                                        // Scores Breakdown Row
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: _bg,
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: _border.withValues(alpha: 0.5)),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                            children: [
+                                              _studentScoreBadge(_isEn ? 'Visual' : 'Visuel', vScore, const Color(0xFF3B82F6)),
+                                              _studentScoreBadge(_isEn ? 'Auditory' : 'Auditif', aScore, const Color(0xFFEC4899)),
+                                              _studentScoreBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kScore, const Color(0xFF10B981)),
+                                              _studentScoreBadge(_isEn ? 'Read/Write' : 'Lecture', rScore, const Color(0xFFF59E0B)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _varkStatCard(String title, int count, Color color, IconData icon) {
+  Widget _pieLegendItem(String label, int count, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12, height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Text(
+          '$count',
+          style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _overviewStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: color, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(title, style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 20),
               ),
+              Icon(Icons.trending_up_rounded, color: color.withValues(alpha: 0.5), size: 16),
             ],
           ),
-          const SizedBox(height: 8),
-          Text('$count', style: TextStyle(color: _text, fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 12),
+          Text(label, style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(color: _text, fontSize: 14.5, fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis),
         ],
       ),
     );
   }
 
-  Widget _miniScoreChip(String label, String val, Color color) {
+  Widget _studentScoreBadge(String label, int score, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '$label: ',
+          style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w600),
+        ),
+        Text(
+          '$score',
+          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900),
+        ),
+      ],
+    );
+  }
+
+  Widget _scopeBadge(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '$label: $val',
-        style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 5),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
+
+  Widget _varkStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 10),
+          Text(label, style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 2),
+          Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── CUSTOM PIE CHART PAINTER ─────────────────────────────────────────────────
+class _VarkPieChartPainter extends CustomPainter {
+  final int visual;
+  final int auditory;
+  final int kinesthetic;
+  final int readWrite;
+
+  _VarkPieChartPainter({
+    required this.visual,
+    required this.auditory,
+    required this.kinesthetic,
+    required this.readWrite,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final int total = visual + auditory + kinesthetic + readWrite;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    if (total == 0) {
+      final paint = Paint()..color = Colors.grey.withValues(alpha: 0.3);
+      canvas.drawCircle(center, radius, paint);
+      return;
+    }
+
+    final double visAngle   = (visual / total) * 2 * 3.141592653589793;
+    final double audAngle   = (auditory / total) * 2 * 3.141592653589793;
+    final double kinesAngle = (kinesthetic / total) * 2 * 3.141592653589793;
+    final double rwAngle    = (readWrite / total) * 2 * 3.141592653589793;
+
+    double startAngle = -3.141592653589793 / 2;
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // 1. Visual (Blue)
+    if (visual > 0) {
+      final p = Paint()..color = const Color(0xFF3B82F6)..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, visAngle, true, p);
+      startAngle += visAngle;
+    }
+
+    // 2. Auditory (Pink)
+    if (auditory > 0) {
+      final p = Paint()..color = const Color(0xFFEC4899)..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, audAngle, true, p);
+      startAngle += audAngle;
+    }
+
+    // 3. Read/Write (Orange)
+    if (readWrite > 0) {
+      final p = Paint()..color = const Color(0xFFF59E0B)..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, rwAngle, true, p);
+      startAngle += rwAngle;
+    }
+
+    // 4. Kinesthetic (Green)
+    if (kinesthetic > 0) {
+      final p = Paint()..color = const Color(0xFF10B981)..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, kinesAngle, true, p);
+      startAngle += kinesAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _VarkPieChartPainter oldDelegate) => true;
 }

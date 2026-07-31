@@ -53,59 +53,48 @@ switch ($action) {
         respond(true, 'Result found.', ['has_result' => true, 'result' => $result]);
         break;
 
-    // ── TEACHER: class results ─────────────────────────────────
+    // ── TEACHER: class results (Ticked Classes System) ────────
     case 'teacher_class':
         if ($authUser['role'] !== 'teacher') respondError('Access denied.', 403);
 
-        // 1. Fetch teacher staff_id
+        // 1. Fetch teacher staff_id & fallback class
         $stmtT = $pdo->prepare("SELECT staff_id, subject, class_name FROM teachers WHERE user_id = ?");
         $stmtT->execute([$userId]);
         $tData = $stmtT->fetch() ?: ['staff_id' => 'T2026001', 'subject' => 'Informatique', 'class_name' => '1ère TI'];
 
-        // 2. Fetch all multi-class & multi-subject assignments for current academic year
-        $stmtA = $pdo->prepare("
-            SELECT class_name, subject_name, academic_year
-            FROM teacher_assignments
-            WHERE teacher_id = ? AND is_current = 1
-            ORDER BY class_name, subject_name
+        // 2. Fetch all ticked classes for this teacher
+        $stmtC = $pdo->prepare("
+            SELECT DISTINCT class_name
+            FROM teacher_classes
+            WHERE teacher_id = ?
+            ORDER BY class_name
         ");
-        $stmtA->execute([$userId]);
-        $assignments = $stmtA->fetchAll();
+        $stmtC->execute([$userId]);
+        $tickedClasses = $stmtC->fetchAll(PDO::FETCH_COLUMN);
 
-        if (empty($assignments)) {
-            $assignments = [
-                ['class_name' => $tData['class_name'] ?: '1ère TI', 'subject_name' => $tData['subject'] ?: 'Informatique', 'academic_year' => '2025-2026']
-            ];
+        if (empty($tickedClasses)) {
+            $tickedClasses = [$tData['class_name'] ?: '1ère TI'];
         }
 
-        // Determine requested class & subject
-        $reqClass   = trim($body['class_name'] ?? '');
-        $reqSubject = trim($body['subject'] ?? '');
+        // Determine target selected class
+        $reqClass    = trim($body['class_name'] ?? '');
+        $targetClass = $tickedClasses[0];
 
-        $targetClass   = $assignments[0]['class_name'];
-        $targetSubject = $assignments[0]['subject_name'];
-
-        if (!empty($reqClass)) {
-            foreach ($assignments as $asg) {
-                if ($asg['class_name'] === $reqClass && (empty($reqSubject) || $asg['subject_name'] === $reqSubject)) {
-                    $targetClass   = $asg['class_name'];
-                    $targetSubject = $asg['subject_name'];
-                    break;
-                }
-            }
+        if (!empty($reqClass) && in_array($reqClass, $tickedClasses)) {
+            $targetClass = $reqClass;
         }
 
-        // 3. Query students strictly for the target class
+        // 3. Query students belonging strictly to the selected ticked class
         $stmt = $pdo->prepare("
             SELECT u.full_name, s.class_name, s.mat_number,
-                   a.visual_score, a.auditory_score, a.kinesthetic_score,
+                   a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score,
                    a.learning_style, r.summary_en, r.summary_fr
             FROM students s
             JOIN users u ON u.id = s.user_id
             LEFT JOIN assessments a ON a.student_id = s.id
             LEFT JOIN results r ON r.student_id = s.id
             WHERE u.school_id = ? AND (s.class_name = ? OR s.class_name LIKE ?)
-            ORDER BY s.class_name, u.full_name
+            ORDER BY u.full_name
         ");
         $stmt->execute([$authUser['school_id'], $targetClass, "%$targetClass%"]);
         $rows = $stmt->fetchAll();
@@ -130,24 +119,23 @@ switch ($action) {
         $recFr = "• Intégrez des cartes mentales, des schémas d'architecture et des organigrammes au tableau.\n• Fournissez des fiches de cours structurées et des résumés de code rédigés.\n• Proposez des travaux pratiques guidés et des démonstrations de code interactives en classe.";
 
         if ($vCount >= $aCount && $vCount >= $kCount && $vCount > 0) {
-            $recEn = "• Primary Mode: Visual Learners Dominant in $targetClass ($targetSubject)\n• Use high-contrast color coding, mind maps, and interactive code diagrams.\n• Display step-by-step visual solution workflows on slides or whiteboard.";
-            $recFr = "• Mode Principal : Apprenants Visuels Dominants en $targetClass ($targetSubject)\n• Utilisez du surlignage couleur contrasté, des cartes mentales et des diagrammes de code.\n• Affichez les étapes de résolution visuelles au tableau ou sur projecteur.";
+            $recEn = "• Primary Mode: Visual Learners Dominant in $targetClass\n• Use high-contrast color coding, mind maps, and interactive code diagrams.\n• Display step-by-step visual solution workflows on slides or whiteboard.";
+            $recFr = "• Mode Principal : Apprenants Visuels Dominants en $targetClass\n• Utilisez du surlignage couleur contrasté, des cartes mentales et des diagrammes de code.\n• Affichez les étapes de résolution visuelles au tableau ou sur projecteur.";
         } else if ($aCount >= $vCount && $aCount >= $kCount && $aCount > 0) {
-            $recEn = "• Primary Mode: Auditory Learners Dominant in $targetClass ($targetSubject)\n• Conduct verbal walkthroughs, group discussions, and peer explanations.\n• Encourage students to explain coding concepts out loud in class.";
-            $recFr = "• Mode Principal : Apprenants Auditifs Dominants en $targetClass ($targetSubject)\n• Privilégiez les explications orales, débats en groupe et synthèses verbales.\n• Encouragez les élèves à expliquer les concepts informatiques à voix haute.";
+            $recEn = "• Primary Mode: Auditory Learners Dominant in $targetClass\n• Conduct verbal walkthroughs, group discussions, and peer explanations.\n• Encourage students to explain coding concepts out loud in class.";
+            $recFr = "• Mode Principal : Apprenants Auditifs Dominants en $targetClass\n• Privilégiez les explications orales, débats en groupe et synthèses verbales.\n• Encouragez les élèves à expliquer les concepts informatiques à voix haute.";
         } else if ($kCount >= $vCount && $kCount >= $aCount && $kCount > 0) {
-            $recEn = "• Primary Mode: Kinesthetic Learners Dominant in $targetClass ($targetSubject)\n• Maximize hands-on computer lab sessions and practical exercises.\n• Allow students to build small interactive projects and test code live.";
-            $recFr = "• Mode Principal : Apprenants Kinesthésiques Dominants en $targetClass ($targetSubject)\n• Maximisez les séances de travaux pratiques sur machine et exercices interactifs.\n• Permettez aux élèves de manipuler directement et tester le code en direct.";
+            $recEn = "• Primary Mode: Kinesthetic Learners Dominant in $targetClass\n• Maximize hands-on computer lab sessions and practical exercises.\n• Allow students to build small interactive projects and test code live.";
+            $recFr = "• Mode Principal : Apprenants Kinesthésiques Dominants en $targetClass\n• Maximisez les séances de travaux pratiques sur machine et exercices interactifs.\n• Permettez aux élèves de manipuler directement et tester le code en direct.";
         }
 
         respond(true, 'Class results.', [
-            'class_name'    => $targetClass,
-            'subject'       => $targetSubject,
-            'staff_id'      => $tData['staff_id'] ?: 'T2026001',
-            'academic_year' => '2025-2026',
-            'assignments'   => $assignments,
-            'students'      => $rows,
-            'summary'       => [
+            'class_name'     => $targetClass,
+            'subject'        => $tData['subject'] ?: 'Informatique',
+            'staff_id'       => $tData['staff_id'] ?: 'T2026001',
+            'ticked_classes' => $tickedClasses,
+            'students'       => $rows,
+            'summary'        => [
                 'total_students' => count($rows),
                 'assessed'       => $totalAssessed,
                 'visual'         => $vCount,

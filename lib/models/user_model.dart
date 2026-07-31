@@ -5,6 +5,7 @@ class UserModel {
   final int? schoolId;
   final String? region;
   final String? division;
+  final String? matNumber;
   final String token;
 
   const UserModel({
@@ -14,29 +15,45 @@ class UserModel {
     this.schoolId,
     this.region,
     this.division,
+    this.matNumber,
     required this.token,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, String token) {
+    int parseId(dynamic val) {
+      if (val is int) return val;
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
+
+    int? parseNullableId(dynamic val) {
+      if (val == null) return null;
+      if (val is int) return val;
+      if (val is String) return int.tryParse(val);
+      return null;
+    }
+
     return UserModel(
-      id:       json['user_id'] as int,
-      fullName: json['full_name'] as String,
-      role:     json['role'] as String,
-      schoolId: json['school_id'] as int?,
-      region:   json['region'] as String?,
-      division: json['division'] as String?,
-      token:    token,
+      id:        parseId(json['user_id'] ?? json['id']),
+      fullName:  (json['full_name'] ?? json['name'] ?? '').toString(),
+      role:      (json['role'] ?? 'student').toString(),
+      schoolId:  parseNullableId(json['school_id']),
+      region:    json['region']?.toString(),
+      division:  json['division']?.toString(),
+      matNumber: json['mat_number']?.toString() ?? json['matricule']?.toString(),
+      token:     token,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'user_id':   id,
-    'full_name': fullName,
-    'role':      role,
-    'school_id': schoolId,
-    'region':    region,
-    'division':  division,
-    'token':     token,
+    'user_id':    id,
+    'full_name':  fullName,
+    'role':       role,
+    'school_id':  schoolId,
+    'region':     region,
+    'division':   division,
+    'mat_number': matNumber,
+    'token':      token,
   };
 
   UserModel copyWith({
@@ -46,6 +63,7 @@ class UserModel {
     int? schoolId,
     String? region,
     String? division,
+    String? matNumber,
     String? token,
   }) {
     return UserModel(
@@ -55,6 +73,7 @@ class UserModel {
       schoolId: schoolId ?? this.schoolId,
       region: region ?? this.region,
       division: division ?? this.division,
+      matNumber: matNumber ?? this.matNumber,
       token: token ?? this.token,
     );
   }

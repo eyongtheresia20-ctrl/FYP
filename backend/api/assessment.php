@@ -140,22 +140,22 @@ if ($action === 'submit_assessment') {
         'recommendations' => $aiRecommendations
     ]);
 
-} else if ($action === 'get_result') {
-    $studentUserId = $_GET['user_id'] ?? null;
-    if (!$studentUserId) respondError('User ID is required.');
+} else if ($action === 'get_result' || $action === 'get_student_result') {
+    $paramId = $_GET['user_id'] ?? $_GET['student_id'] ?? null;
+    if (!$paramId) respondError('User ID or Student ID is required.');
 
-    $stmt = $pdo->prepare("SELECT id FROM students WHERE user_id = ?");
-    $stmt->execute([$studentUserId]);
+    $stmt = $pdo->prepare("SELECT id FROM students WHERE user_id = ? OR id = ?");
+    $stmt->execute([$paramId, $paramId]);
     $studentId = $stmt->fetchColumn();
 
     if (!$studentId) respondError('Student profile not found.', 404);
 
     $stmt = $pdo->prepare("
         SELECT a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score, 
-               r.learning_style, r.summary_en, r.summary_fr, a.completed_at
-        FROM results r
-        JOIN assessments a ON a.id = r.assessment_id
-        WHERE r.student_id = ?
+               a.learning_style, r.summary_en, r.summary_fr, a.completed_at
+        FROM assessments a
+        LEFT JOIN results r ON r.assessment_id = a.id
+        WHERE a.student_id = ?
         ORDER BY a.id DESC LIMIT 1
     ");
     $stmt->execute([$studentId]);

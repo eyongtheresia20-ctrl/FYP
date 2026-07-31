@@ -90,7 +90,11 @@ class AuthService {
   static Future<UserModel?> loadSession() async {
     final prefs = await SharedPreferences.getInstance();
     final token  = prefs.getString(_keyToken);
-    final userId = prefs.getInt(_keyUserId);
+    final rawUserId = prefs.get(_keyUserId);
+    int? userId;
+    if (rawUserId is int) userId = rawUserId;
+    if (rawUserId is String) userId = int.tryParse(rawUserId);
+
     final name   = prefs.getString(_keyFullName);
     final role   = prefs.getString(_keyRole);
     if (token == null || userId == null || name == null || role == null) return null;

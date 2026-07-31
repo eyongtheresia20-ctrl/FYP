@@ -73,8 +73,8 @@ class _ActivationViewState extends State<ActivationView> {
       setState(() { _error = _isEn ? 'Password must be at least 6 characters.' : 'Au moins 6 caractères.'; });
       return;
     }
-    if (!RegExp(r'^\d{4,6}$').hasMatch(_securityCtrl.text)) {
-      setState(() { _error = _isEn ? 'Security code must be 4-6 digits.' : 'Code de sécurité : 4 à 6 chiffres.'; });
+    if (_securityCtrl.text.trim().length < 4) {
+      setState(() { _error = _isEn ? 'Security code must be at least 4 characters.' : 'Code de sécurité : au moins 4 caractères.'; });
       return;
     }
     setState(() { _loading = true; _error = null; });

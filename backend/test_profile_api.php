@@ -1,6 +1,6 @@
 <?php
 // Test 1: Get Profile
-$ch = curl_init('http://127.0.0.1:8080/minesec_api/api/auth.php?action=get_profile&user_id=2');
+$ch = curl_init('http://127.0.0.1:8080/minesec_api/api/auth.php?action=get_profile&user_id=8');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $res = curl_exec($ch);
 echo "=== GET PROFILE USER 2 ===\n$res\n\n";

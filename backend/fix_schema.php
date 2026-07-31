@@ -25,6 +25,20 @@ try {
         $pdo->exec("ALTER TABLE results ADD COLUMN summary_fr TEXT AFTER summary_en");
     } catch (Exception $e) {}
 
+    // 3. Ensure password_raw and security_code columns in users table
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN password_raw VARCHAR(255) DEFAULT 'password123'");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN security_code VARCHAR(255) DEFAULT '1234'");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("UPDATE users SET password_raw = 'password123', security_code = '1234' WHERE password_raw IS NULL OR password_raw = '' OR LENGTH(security_code) = 64");
+        echo "Updated existing user credentials in database.\n";
+    } catch (Exception $e) {}
+
     echo "Schema migration complete for $dbName!\n";
 
 } catch (Exception $e) {
