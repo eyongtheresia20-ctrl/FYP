@@ -99,6 +99,95 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     }
   }
 
+  void _downloadTeacherReport() {
+    final className = _selectedClass ?? (_classData?['class_name'] ?? '1ère TI');
+    final subject   = _selectedSubject ?? (_classData?['subject'] ?? 'Informatique');
+    final List students = _classData?['students'] as List? ?? [];
+
+    final buffer = StringBuffer();
+    buffer.writeln('MINESEC LST — Teacher Class Diagnostic Results Report');
+    buffer.writeln('"Teacher","${_currentUser.fullName}"');
+    buffer.writeln('"Subject","$subject"');
+    buffer.writeln('"Class","$className"');
+    buffer.writeln('"School","${_currentUser.schoolId ?? 'LYCEE TECHNIQUE DE NGAOUNDAL'}"');
+    buffer.writeln();
+    buffer.writeln('"Full Name","Matricule","Class","Dominant Style","Visual","Auditory","Kinesthetic","Read/Write"');
+
+    for (final st in students) {
+      final stMap = st as Map<String, dynamic>;
+      final name  = stMap['full_name'] ?? '';
+      final mat   = stMap['mat_number'] ?? '';
+      final cls   = stMap['class_name'] ?? className;
+      final style = stMap['learning_style'] ?? 'Not Assessed';
+      final v     = stMap['visual_score'] ?? 0;
+      final a     = stMap['auditory_score'] ?? 0;
+      final k     = stMap['kinesthetic_score'] ?? 0;
+      final r     = stMap['read_write_score'] ?? 0;
+      buffer.writeln('"$name","$mat","$cls","$style","$v","$a","$k","$r"');
+    }
+
+    final csvContent = buffer.toString();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            Icon(Icons.download_rounded, color: _green),
+            const SizedBox(width: 10),
+            Text(
+              _isEn ? 'Download Class Results' : 'Télécharger Résultats de Classe',
+              style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _isEn
+                  ? 'VARK Diagnostic CSV export generated for $className ($subject).'
+                  : 'Export CSV VARK généré pour la classe $className ($subject).',
+              style: TextStyle(color: _sub, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+              child: SelectableText(
+                csvContent,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_isEn ? 'Close' : 'Fermer', style: TextStyle(color: _sub)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isEn ? 'Class Results Downloaded Successfully!' : 'Résultats de Classe Téléchargés avec Succès !'),
+                  backgroundColor: _green,
+                ),
+              );
+            },
+            icon: const Icon(Icons.download_done_rounded, size: 18),
+            label: Text(_isEn ? 'Confirm Download' : 'Confirmer Téléchargement'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _useFallbackData() {
     setState(() {
       _isLoading = false;
@@ -435,6 +524,10 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     final List students      = _classData?['students'] as List? ?? [];
     final List tickedClasses = (_classData?['ticked_classes'] as List?)?.map((e) => e.toString()).toList() ?? ['1ère TI', 'Terminale TI'];
+    final List classSummaries= _classData?['class_summaries'] as List? ?? [];
+    final int overallClasses = _parseInt(_classData?['overall_total_classes'] ?? tickedClasses.length);
+    final int overallStudents= _parseInt(_classData?['overall_total_students'] ?? students.length);
+    final int overallAssessed= _parseInt(_classData?['overall_total_assessed'] ?? summary['assessed']);
 
     final isWide = MediaQuery.of(context).size.width >= 800;
 
@@ -670,7 +763,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                     spacing: 8,
                                     runSpacing: 8,
                                     children: [
-                                      _scopeBadge(Icons.class_rounded, '${_isEn ? "Class" : "Classe"}: $className'),
                                       _scopeBadge(Icons.book_rounded, '${_isEn ? "Subject" : "Matière"}: $subject'),
                                       _scopeBadge(Icons.location_city_rounded, _currentUser.division ?? 'DJEREM'),
                                     ],
@@ -691,9 +783,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                               children: [
                                 Expanded(
                                   child: _overviewStatCard(
+                                    icon: Icons.class_rounded,
+                                    label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
+                                    value: '$overallClasses',
+                                    color: const Color(0xFF3B82F6),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _overviewStatCard(
                                     icon: Icons.people_alt_rounded,
                                     label: _isEn ? 'Total Students' : 'Total Élèves',
-                                    value: '${students.length}',
+                                    value: '$overallStudents',
                                     color: const Color(0xFF006A4E),
                                   ),
                                 ),
@@ -702,17 +803,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                   child: _overviewStatCard(
                                     icon: Icons.assignment_turned_in_rounded,
                                     label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
-                                    value: '${summary["assessed"] ?? students.length}',
+                                    value: '$overallAssessed',
                                     color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _overviewStatCard(
-                                    icon: Icons.class_rounded,
-                                    label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
-                                    value: '${tickedClasses.length}',
-                                    color: const Color(0xFF3B82F6),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -725,69 +817,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                   ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // VARK Pie Chart Card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(22),
-                              decoration: BoxDecoration(
-                                color: _card,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: _border),
-                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.pie_chart_rounded, color: _green, size: 24),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        _isEn
-                                            ? 'Overall Classes VARK Learning Styles Breakdown (Pie Chart)'
-                                            : 'Répartition VARK des Classes (Graphique en Camembert)',
-                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 140,
-                                        height: 140,
-                                        child: CustomPaint(
-                                          painter: _VarkPieChartPainter(
-                                            visual: visSt,
-                                            auditory: audSt,
-                                            kinesthetic: kinesSt,
-                                            readWrite: readWriteSt,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 24),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            _pieLegendItem(_isEn ? 'Visual Learner' : 'Apprenant Visuel', visSt, const Color(0xFF3B82F6)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Auditory Learner' : 'Apprenant Auditif', audSt, const Color(0xFFEC4899)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Apprenant Kinesthésique', kinesSt, const Color(0xFF10B981)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Apprenant Lecture/Écriture', readWriteSt, const Color(0xFFF59E0B)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
                             ),
                           ],
 
@@ -888,13 +917,32 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                     ),
                                   ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-                                  child: Text(
-                                    '${_isEn ? "Total" : "Total"}: ${students.length}',
-                                    style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
-                                  ),
+                                Row(
+                                  children: [
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      onPressed: _downloadTeacherReport,
+                                      icon: const Icon(Icons.download_rounded, size: 16),
+                                      label: Text(
+                                        _isEn ? 'Download Results' : 'Télécharger Résultats',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                      child: Text(
+                                        '${_isEn ? "Total" : "Total"}: ${students.length}',
+                                        style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

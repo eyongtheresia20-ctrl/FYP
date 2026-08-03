@@ -24,19 +24,32 @@ switch ($action) {
         $pdo       = getDB();
         $matricule = trim($body['matricule']);
 
-        // Search in students table
+        // 1. Direct search in users table
         $stmt = $pdo->prepare("
             SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
-                   s.class_name, s.matricule, sc.name AS school_name
-            FROM students s
-            JOIN users u ON u.id = s.user_id
+                   u.matricule, sc.name AS school_name
+            FROM users u
             LEFT JOIN schools sc ON sc.id = u.school_id
-            WHERE s.matricule = ? OR s.mat_number = ?
+            WHERE u.matricule = ?
         ");
-        $stmt->execute([$matricule, $matricule]);
+        $stmt->execute([$matricule]);
         $user = $stmt->fetch();
 
-        // Search in teachers table
+        // 2. Fallback search in students table
+        if (!$user) {
+            $stmt = $pdo->prepare("
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                       s.class_name, s.matricule, sc.name AS school_name
+                FROM students s
+                JOIN users u ON u.id = s.user_id
+                LEFT JOIN schools sc ON sc.id = u.school_id
+                WHERE s.matricule = ? OR s.mat_number = ?
+            ");
+            $stmt->execute([$matricule, $matricule]);
+            $user = $stmt->fetch();
+        }
+
+        // 3. Fallback search in teachers table
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -50,7 +63,7 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // Search in principals table
+        // 4. Fallback search in principals table
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -64,7 +77,7 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // Search in divisional_delegates table
+        // 5. Fallback search in divisional_delegates table
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -77,7 +90,7 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // Search in regional_delegates table
+        // 6. Fallback search in regional_delegates table
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -90,7 +103,7 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // Search in admins table
+        // 7. Fallback search in admins table
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -103,7 +116,7 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // Search by phone for delegates / admins / users
+        // 8. Search by phone for delegates / admins / users
         if (!$user) {
             $stmt = $pdo->prepare("
                 SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
@@ -149,46 +162,54 @@ switch ($action) {
         $pdo       = getDB();
         $matricule = trim($body['matricule']);
 
-        // Resolve user_id from matricule / staff_id
+        // Resolve user_id from matricule / staff_id directly from users or sub-tables
         $userId = null;
         $row    = null;
 
-        $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM students s JOIN users u ON u.id = s.user_id WHERE s.mat_number = ?");
+        // 1. Check users table directly
+        $stmt = $pdo->prepare("SELECT id, is_activated FROM users WHERE matricule = ?");
         $stmt->execute([$matricule]);
         $row = $stmt->fetch();
         if ($row) $userId = $row['id'];
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM teachers t JOIN users u ON u.id = t.user_id WHERE t.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM students s JOIN users u ON u.id = s.user_id WHERE s.matricule = ? OR s.mat_number = ?");
+            $stmt->execute([$matricule, $matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM principals p JOIN users u ON u.id = p.user_id WHERE p.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM teachers t JOIN users u ON u.id = t.user_id WHERE t.matricule = ? OR t.staff_id = ?");
+            $stmt->execute([$matricule, $matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM principals p JOIN users u ON u.id = p.user_id WHERE p.matricule = ? OR p.staff_id = ?");
+            $stmt->execute([$matricule, $matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM regional_delegates r JOIN users u ON u.id = r.user_id WHERE r.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.matricule = ? OR d.staff_id = ?");
+            $stmt->execute([$matricule, $matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM admins a JOIN users u ON u.id = a.user_id WHERE a.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM regional_delegates r JOIN users u ON u.id = r.user_id WHERE r.matricule = ? OR r.staff_id = ?");
+            $stmt->execute([$matricule, $matricule]);
+            $row = $stmt->fetch();
+            if ($row) $userId = $row['id'];
+        }
+
+        if (!$userId) {
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM admins a JOIN users u ON u.id = a.user_id WHERE a.matricule = ? OR a.staff_id = ?");
+            $stmt->execute([$matricule, $matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }

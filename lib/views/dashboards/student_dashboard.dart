@@ -98,6 +98,85 @@ class _StudentDashboardState extends State<StudentDashboard> {
     });
   }
 
+  void _downloadStudentReport() {
+    final name = _currentUser.fullName;
+    final mat = _currentUser.matNumber ?? 'AD2026001';
+    final style = _resultData?['learning_style'] ?? 'Auditory-Visual (Dual Style)';
+    final scores = _resultData?['scores'] as Map<String, dynamic>? ?? {};
+
+    final csvContent = '''MINESEC LST — Student VARK Diagnostic Report
+"Field","Value"
+"Student Name","$name"
+"Matricule","$mat"
+"Class","1ère TI"
+"School","LYCEE TECHNIQUE DE NGAOUNDAL"
+"Dominant Style","$style"
+"Visual Score","${scores['visual'] ?? 30}%"
+"Auditory Score","${scores['auditory'] ?? 30}%"
+"Kinesthetic Score","${scores['kinesthetic'] ?? 20}%"
+"Read/Write Score","${scores['read_write'] ?? 20}%"
+''';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            Icon(Icons.download_rounded, color: _green),
+            const SizedBox(width: 10),
+            Text(
+              _isEn ? 'Download Diagnostic Report' : 'Télécharger le Rapport Diagnostic',
+              style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _isEn
+                  ? 'Your VARK Diagnostic Results report has been generated for $name ($mat).'
+                  : 'Votre rapport d\'évaluation VARK a été généré pour $name ($mat).',
+              style: TextStyle(color: _sub, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+              child: SelectableText(
+                csvContent,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_isEn ? 'Close' : 'Fermer', style: TextStyle(color: _sub)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isEn ? 'Diagnostic Report Downloaded Successfully!' : 'Rapport Diagnostic Téléchargé avec Succès !'),
+                  backgroundColor: _green,
+                ),
+              );
+            },
+            icon: const Icon(Icons.download_done_rounded, size: 18),
+            label: Text(_isEn ? 'Confirm Download' : 'Confirmer Téléchargement'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showModifyProfileDialog() async {
     final passCtrl    = TextEditingController();
     final secCodeCtrl = TextEditingController();
@@ -687,7 +766,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 runSpacing: 8,
                                 children: [
                                   _scopeBadge(Icons.badge_rounded, 'Matricule: ${_currentUser.matNumber ?? "AD2026001"}'),
-                                  _scopeBadge(Icons.class_rounded, _isEn ? 'Class: 1ère TI' : 'Classe: 1ère TI'),
                                   _scopeBadge(Icons.location_city_rounded, _currentUser.division ?? 'DJEREM'),
                                 ],
                               ),
@@ -744,9 +822,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
                         // ── TAB INDEX 2: MY DIAGNOSTIC RESULTS ────────────────────────
                         if (_currentNavIndex == 2) ...[
-                          Text(
-                            _isEn ? 'My VARK Diagnostic Results' : 'Mes Résultats Diagnostics VARK',
-                            style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _isEn ? 'My VARK Diagnostic Results' : 'Mes Résultats Diagnostics VARK',
+                                style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                              ),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: _downloadStudentReport,
+                                icon: const Icon(Icons.download_rounded, size: 18),
+                                label: Text(
+                                  _isEn ? 'Download Results' : 'Télécharger Résultats',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 14),
 
@@ -762,12 +859,30 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Icon(Icons.stars_rounded, color: _green, size: 24),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      '${_isEn ? "Dominant Style" : "Style Dominant"}: $learningStyle',
-                                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.stars_rounded, color: _green, size: 24),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          '${_isEn ? "Dominant Style" : "Style Dominant"}: $learningStyle',
+                                          style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: _green,
+                                        side: BorderSide(color: _green),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      onPressed: _downloadStudentReport,
+                                      icon: const Icon(Icons.file_download_outlined, size: 16),
+                                      label: Text(
+                                        _isEn ? 'Export CSV' : 'Exporter CSV',
+                                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                                      ),
                                     ),
                                   ],
                                 ),

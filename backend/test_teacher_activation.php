@@ -21,14 +21,14 @@ $teacher = $stmt->fetch();
 echo "--- STEP 1: CHECK MATRICULE ---\n";
 print_r($teacher);
 
-// 2. Perform Activation: Teacher sets password 'teacherPass2026' and PIN '9876'
-$passHash = hash('sha256', 'teacherPass2026');
-$pinHash  = hash('sha256', '9876');
+// 2. Perform Activation: Teacher sets password 'teacher1' and PIN '1234@'
+$passHash = hash('sha256', 'teacher1');
+$pinHash  = hash('sha256', '1234@');
 
-$pdo->prepare("UPDATE users SET password_hash = ?, security_code = ?, is_activated = 1, activated_at = NOW() WHERE id = ?")
-    ->execute([$passHash, $pinHash, $teacher['id']]);
-$pdo->prepare("UPDATE teachers SET password_hash = ?, security_code = ? WHERE user_id = ?")
-    ->execute([$passHash, $pinHash, $teacher['id']]);
+$pdo->prepare("UPDATE users SET password_hash = ?, password_raw = 'teacher1', security_code = '1234@', is_activated = 1, activated_at = NOW() WHERE id = ?")
+    ->execute([$passHash, $teacher['id']]);
+$pdo->prepare("UPDATE teachers SET password_hash = ?, security_code = '1234@' WHERE user_id = ?")
+    ->execute([$passHash, $teacher['id']]);
 
 echo "\n--- STEP 2: TEACHER ACTIVATED ---\n";
 $stmt = $pdo->prepare("SELECT u.full_name, u.is_activated, u.password_hash, u.security_code FROM users u WHERE u.id = ?");
