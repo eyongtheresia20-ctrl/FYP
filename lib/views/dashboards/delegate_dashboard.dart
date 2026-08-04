@@ -29,6 +29,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
   bool _isLoading = true;
   Map<String, dynamic>? _delegateData;
   String? _selectedSchoolFilter;
+  String? _selectedSubSchoolFilter;
   final Map<String, String> _selectedClassFilterPerSchool = {};
   int _currentNavIndex = 0;
 
@@ -175,20 +176,71 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
         'delegate_name': _currentUser.fullName,
         'region': _currentUser.region ?? 'ADAMOUA',
         'division': _currentUser.division ?? 'DJEREM',
-        'total_schools': isReg ? 45 : 3,
-        'total_students': isReg ? 18500 : 2,
-        'assessed_students': isReg ? 15200 : 1,
-        'total_teachers': isReg ? 980 : 1,
-        'visual_count': isReg ? 6800 : 1,
-        'auditory_count': isReg ? 4900 : 1,
-        'kinesthetic_count': isReg ? 2100 : 0,
-        'read_write_count': isReg ? 1400 : 0,
+        'total_schools': isReg ? 4 : 3,
+        'total_students': 2,
+        'assessed_students': 1,
+        'total_teachers': 1,
+        'visual_count': 1,
+        'auditory_count': 1,
+        'kinesthetic_count': 0,
+        'read_write_count': 0,
         'items': isReg
             ? [
-                {'name': 'DJEREM', 'schools_count': 3, 'students_count': 2, 'assessed_rate': '50%'},
-                {'name': 'MAYO-BALEO', 'schools_count': 0, 'students_count': 0, 'assessed_rate': '0%'},
-                {'name': 'FARO-ET-DEO', 'schools_count': 0, 'students_count': 0, 'assessed_rate': '0%'},
-                {'name': 'VINA', 'schools_count': 0, 'students_count': 0, 'assessed_rate': '0%'},
+                {
+                  'name': 'DJEREM',
+                  'schools_count': 3,
+                  'teachers_count': 1,
+                  'students_count': 2,
+                  'assessed_count': 1,
+                  'assessed_rate': '50%',
+                  'schools': [
+                    {
+                      'name': 'LYCEE TECHNIQUE DE NGAOUNDAL',
+                      'teachers_count': 1,
+                      'students_count': 2,
+                      'assessed_rate': '50%',
+                      'classes': [
+                        {
+                          'class_name': '1ère TI',
+                          'total_students': 1,
+                          'assessed': 1,
+                          'visual': 1,
+                          'auditory': 1,
+                          'kinesthetic': 0,
+                          'read_write': 0,
+                          'students': [
+                            {'full_name': 'Bello Oumarou', 'mat_number': 'AD2026001', 'class_name': '1ère TI', 'learning_style': 'Auditory-Visual (Dual Style)'},
+                          ]
+                        },
+                        {
+                          'class_name': 'Terminale TI',
+                          'total_students': 1,
+                          'assessed': 0,
+                          'visual': 0,
+                          'auditory': 0,
+                          'kinesthetic': 0,
+                          'read_write': 0,
+                          'students': [
+                            {'full_name': 'Amina Mohamadou', 'mat_number': 'AD2026002', 'class_name': 'Terminale TI', 'learning_style': 'Not Assessed'},
+                          ]
+                        }
+                      ]
+                    },
+                    {'name': 'LYCEE CLASSIQUE DE NGAOUNDAL', 'teachers_count': 0, 'students_count': 0, 'assessed_rate': '0%', 'classes': []},
+                    {'name': 'LYCEE BILINGUE DE NGAOUNDAL', 'teachers_count': 0, 'students_count': 0, 'assessed_rate': '0%', 'classes': []}
+                  ]
+                },
+                {'name': 'MAYO-BALEO', 'schools_count': 0, 'students_count': 0, 'assessed_rate': '0%', 'schools': []},
+                {'name': 'FARO-ET-DEO', 'schools_count': 0, 'students_count': 0, 'assessed_rate': '0%', 'schools': []},
+                {
+                  'name': 'VINA',
+                  'schools_count': 1,
+                  'students_count': 0,
+                  'assessed_rate': '0%',
+                  'schools': [
+                    {'name': 'LYCEE TECHNIQUE DE NGAOUNDERE', 'teachers_count': 0, 'students_count': 0, 'assessed_rate': '0%', 'classes': []}
+                  ]
+                },
               ]
             : [
                 {
@@ -249,10 +301,10 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                 },
               ],
         'ai_policy_en': isReg
-            ? '• Distribute digital lab equipment across Adamoua region focusing on Vina and Djerem divisions.\n• Establish regional teacher training centers for VARK-adaptive curriculum design.'
+            ? '• Dominant Regional VARK Learning Profile for ADAMOUA Region: Visual (50% of assessed students across all regional lycées).\n• Regional Equipment Directive: Allocate digital projectors, interactive smartboards, and visual simulation software to technical and general secondary schools across all divisions in ADAMOUA.\n• Pedagogical Training Strategy: Establish regional teacher seminars focused on VARK-adaptive lesson planning and visual diagrammatic instruction.'
             : '• Divisional Policy Directive for DJEREM: Coordinate inspection visits and prioritize digital infrastructure across technical and general secondary lycées.',
         'ai_policy_fr': isReg
-            ? '• Distribuez les équipements informatiques dans la région de l\'Adamaoua en ciblant les départements de la Vina et du Djerem.\n• Créez des centres régionaux de formation continue des enseignants aux méthodes VARK.'
+            ? '• Profil Pédagogique VARK Dominant pour la Région de l\'ADAMOUA : Visuel (50% des élèves évalués dans tous les lycées régionaux).\n• Directive Régionale d\'Équipement : Allouez des projecteurs numériques, des tableaux interactifs et des logiciels de simulation visuelle dans tous les départements de l\'ADAMOUA.\n• Stratégie de Formation Pédagogique : Organisez des séminaires régionaux de formation des enseignants à la pédagogie différenciée VARK et aux supports visuels d\'enseignement.'
             : '• Directive Départementale pour le DJEREM : Coordonnez les inspections pédagogiques et priorisez l\'infrastructure numérique dans les lycées.',
       };
     });
@@ -555,6 +607,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
       selectedIndex: _currentNavIndex,
       tickedClasses: schoolNames,
       selectedClass: _selectedSchoolFilter ?? schoolNames.first,
+      delegateItems: items,
       onClassSelected: (selection) {
         setState(() {
           _currentNavIndex = 2;
@@ -566,6 +619,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
             _selectedClassFilterPerSchool[scName] = clsName;
           } else {
             _selectedSchoolFilter = selection;
+            _selectedSubSchoolFilter = null;
           }
         });
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
@@ -860,334 +914,272 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                             ),
                           ],
 
-                          // ── TAB 2: DIVISIONS / SCHOOLS DIRECTORY ─────────────────────
+                          // ── TAB 2: DIVISIONS / SCHOOLS & CLASSES DIRECTORY ─────────
                           if (_currentNavIndex == 2) ...[
-
-                            // Dropdown Selector Component for Schools/Divisions
                             Builder(
                               builder: (ctx) {
-                                final activeSelection = (_selectedSchoolFilter != null && schoolNames.contains(_selectedSchoolFilter))
+                                // 1. Selected Division or Primary Filter
+                                final activeDivisionName = (_selectedSchoolFilter != null && schoolNames.contains(_selectedSchoolFilter))
                                     ? _selectedSchoolFilter!
                                     : schoolNames.first;
 
-                                return Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(18),
-                                  margin: const EdgeInsets.only(bottom: 18),
-                                  decoration: BoxDecoration(
-                                    color: _card,
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
-                                    boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4))],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                // Extract items matching activeDivisionName
+                                Map<String, dynamic> activeDivObj = {};
+                                List<Map<String, dynamic>> schoolItems = [];
+
+                                if (isReg) {
+                                  activeDivObj = items.firstWhere(
+                                    (it) => (it['name'] ?? '') == activeDivisionName,
+                                    orElse: () => items.isNotEmpty ? items.first as Map<String, dynamic> : {'name': activeDivisionName},
+                                  ) as Map<String, dynamic>;
+
+                                  final rawSc = activeDivObj['schools'] as List? ?? [];
+                                  schoolItems = rawSc.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+                                } else {
+                                  schoolItems = items.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+                                }
+
+                                if (schoolItems.isEmpty) {
+                                  schoolItems = [
+                                    {
+                                      'name': 'LYCEE TECHNIQUE DE NGAOUNDAL',
+                                      'teachers_count': 1,
+                                      'students_count': 2,
+                                      'classes': [
+                                        {
+                                          'class_name': '1ère TI',
+                                          'total_students': 65,
+                                          'assessed': 54,
+                                          'visual': 28,
+                                          'auditory': 16,
+                                          'kinesthetic': 6,
+                                          'read_write': 4,
+                                          'students': [
+                                            {'full_name': 'Bello Oumarou', 'mat_number': 'AD2026001', 'learning_style': 'Visual Learner'},
+                                          ]
+                                        },
+                                        {
+                                          'class_name': 'Terminale TI',
+                                          'total_students': 58,
+                                          'assessed': 48,
+                                          'visual': 22,
+                                          'auditory': 12,
+                                          'kinesthetic': 10,
+                                          'read_write': 4,
+                                          'students': [
+                                            {'full_name': 'Amina Mohamadou', 'mat_number': 'AD2026002', 'learning_style': 'Auditory Learner'},
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      'name': 'LYCEE CLASSIQUE DE NGAOUNDAL',
+                                      'teachers_count': 0,
+                                      'students_count': 0,
+                                      'classes': []
+                                    },
+                                    {
+                                      'name': 'LYCEE BILINGUE DE NGAOUNDAL',
+                                      'teachers_count': 0,
+                                      'students_count': 0,
+                                      'classes': []
+                                    }
+                                  ];
+                                }
+
+                                final availableSchoolNames = schoolItems.map((s) => s['name'] as String? ?? '').where((s) => s.isNotEmpty).toList();
+                                if (availableSchoolNames.isEmpty) availableSchoolNames.add('LYCEE TECHNIQUE DE NGAOUNDAL');
+
+                                final activeSchoolName = (_selectedSubSchoolFilter != null && availableSchoolNames.contains(_selectedSubSchoolFilter))
+                                    ? _selectedSubSchoolFilter!
+                                    : availableSchoolNames.first;
+
+                                final selectedSchoolObj = schoolItems.firstWhere(
+                                  (it) => (it['name'] ?? '') == activeSchoolName,
+                                  orElse: () => schoolItems.first,
+                                );
+
+                                final scName = selectedSchoolObj['name'] ?? activeSchoolName;
+                                final schoolClasses = selectedSchoolObj['classes'] as List? ?? [];
+
+                                final List<String> classNamesOnly = [];
+                                for (var c in schoolClasses) {
+                                  final cn = (c['class_name'] ?? '').toString();
+                                  if (cn.isNotEmpty && !classNamesOnly.contains(cn)) {
+                                    classNamesOnly.add(cn);
+                                  }
+                                }
+                                if (classNamesOnly.isEmpty) classNamesOnly.addAll(['1ère TI', 'Terminale TI']);
+
+                                final activeClass = (_selectedClassFilterPerSchool[scName] != null && classNamesOnly.contains(_selectedClassFilterPerSchool[scName]))
+                                    ? _selectedClassFilterPerSchool[scName]!
+                                    : classNamesOnly.first;
+
+                                final selectedClassObj = schoolClasses.firstWhere(
+                                  (c) => (c['class_name'] ?? '') == activeClass,
+                                  orElse: () => schoolClasses.isNotEmpty ? schoolClasses.first as Map<String, dynamic> : {},
+                                ) as Map<String, dynamic>;
+
+                                final cName = selectedClassObj['class_name'] ?? activeClass;
+                                final totSt = _parseInt(selectedClassObj['total_students'] ?? 0);
+                                final assSt = _parseInt(selectedClassObj['assessed'] ?? 0);
+                                final vis   = _parseInt(selectedClassObj['visual'] ?? 0);
+                                final aud   = _parseInt(selectedClassObj['auditory'] ?? 0);
+                                final kin   = _parseInt(selectedClassObj['kinesthetic'] ?? 0);
+                                final rw    = _parseInt(selectedClassObj['read_write'] ?? 0);
+                                final stList = selectedClassObj['students'] as List? ?? [];
+
+                                // ── Dynamic AI Recommendation from VARK Analysis ──────────
+                                String cRec;
+                                final totalVark = vis + aud + kin + rw;
+                                if (totalVark > 0) {
+                                  final styles = [
+                                    MapEntry(_isEn ? 'Visual' : 'Visuel', vis),
+                                    MapEntry(_isEn ? 'Auditory' : 'Auditif', aud),
+                                    MapEntry(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin),
+                                    MapEntry(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw),
+                                  ];
+                                  styles.sort((a, b) => b.value.compareTo(a.value));
+                                  final dom = styles.first;
+                                  final domPct = ((dom.value / totalVark) * 100).round();
+
+                                  if (_isEn) {
+                                    cRec = "• Dominant VARK Learning Profile for $cName at $scName: ${dom.key} ($domPct% of assessed students).\n" +
+                                           (dom.key.contains('Visual') ? "• Pedagogical Analysis Recommendation: Implement color-coded visual charts, interactive flowcharts, and video demonstrations for $cName." :
+                                            dom.key.contains('Auditory') ? "• Pedagogical Analysis Recommendation: Prioritize class discussions, peer debriefs, and oral explanations for $cName." :
+                                            dom.key.contains('Kinesthetic') ? "• Pedagogical Analysis Recommendation: Prioritize hands-on lab experiments, hardware wiring workshops, and physical practice." :
+                                            "• Pedagogical Analysis Recommendation: Prioritize structured reading materials, written summaries, and essay documentation.");
+                                  } else {
+                                    cRec = "• Profil VARK Dominant pour $cName à $scName : ${dom.key} ($domPct% des élèves évalués).\n" +
+                                           (dom.key.contains('Visuel') ? "• Recommandation d'Analyse Pédagogique : Priorisez les organigrammes interactifs, les diagrammes et schémas visuels pour $cName." :
+                                            dom.key.contains('Auditif') ? "• Recommandation d'Analyse Pédagogique : Priorisez les débats en classe, les explications orales et les cours récapitulatifs." :
+                                            dom.key.contains('Kinesthésique') ? "• Recommandation d'Analyse Pédagogique : Priorisez les travaux pratiques en laboratoire et les ateliers pratiques." :
+                                            "• Recommandation d'Analyse Pédagogique : Priorisez les fiches de lecture structurées et la rédaction de synthèses.");
+                                  }
+                                } else {
+                                  cRec = _isEn
+                                      ? "• Diagnostic Analysis Active for $cName: Pending student assessment completion. Encourage students to complete the VARK test."
+                                      : "• Analyse Diagnostique Active pour $cName : Évaluations en attente. Encouragez les élèves à passer l'évaluation VARK.";
+                                }
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+
+                                    // SELECTED CLASS DETAILS & VARK BREAKDOWN CARD
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: _card,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: _border),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            children: [
-                                              Icon(Icons.tune_rounded, color: _green, size: 22),
-                                              const SizedBox(width: 10),
-                                              Text(
-                                                isReg ? (_isEn ? 'Select Division:' : 'Sélectionner un Département :') : (_isEn ? 'Select School:' : 'Sélectionner un Établissement :'),
-                                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                            decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                            child: Text(
-                                              '${schoolNames.length} ${isReg ? (_isEn ? "Divisions" : "Départements") : (_isEn ? "Schools" : "Établissements")}',
-                                              style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 14),
-
-                                      // Dropdown Popup Menu Trigger
-                                      PopupMenuButton<String>(
-                                        tooltip: _isEn ? 'Select Dropdown' : 'Menu Déroulant',
-                                        onSelected: (val) {
-                                          setState(() => _selectedSchoolFilter = val);
-                                        },
-                                        itemBuilder: (ctx) => schoolNames.map((scName) {
-                                          final isSelected = scName == activeSelection;
-                                          return PopupMenuItem<String>(
-                                            value: scName,
-                                            child: Row(
-                                              children: [
-                                                Icon(isReg ? Icons.location_city_rounded : Icons.school_rounded, color: isSelected ? _green : _sub, size: 20),
-                                                const SizedBox(width: 12),
-                                                Text(
-                                                  scName,
-                                                  style: TextStyle(
-                                                    color: isSelected ? _green : _text,
-                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                if (isSelected) ...[
-                                                  const Spacer(),
-                                                  Icon(Icons.check_circle_rounded, color: _green, size: 18),
-                                                ],
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                        child: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                                          decoration: BoxDecoration(
-                                            color: _bg,
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: _green, width: 1.5),
-                                            boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.1), blurRadius: 6)],
-                                          ),
-                                          child: Row(
                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
                                               Row(
                                                 children: [
-                                                  Icon(isReg ? Icons.location_city_rounded : Icons.school_rounded, color: _green, size: 22),
-                                                  const SizedBox(width: 12),
-                                                  Text(
-                                                    activeSelection,
-                                                    style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 15.5),
-                                                  ),
+                                                  Icon(Icons.school_rounded, color: _green, size: 20),
+                                                  const SizedBox(width: 8),
+                                                  Text('Class: $cName', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16)),
                                                 ],
                                               ),
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                                                    child: Text(
-                                                      _isEn ? 'Dropdown Menu ▾' : 'Menu Déroulant ▾',
-                                                      style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12.5),
-                                                    ),
-                                                  ),
-                                                ],
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                                                child: Text(
+                                                  '${_isEn ? "Students" : "Élèves"}: $totSt ($assSt ${_isEn ? "Assessed" : "Évalués"})',
+                                                  style: TextStyle(color: _green, fontSize: 12, fontWeight: FontWeight.bold),
+                                                ),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: items.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 14),
-                              itemBuilder: (ctx, idx) {
-                                final item = items[idx] as Map<String, dynamic>;
-                                final schoolClasses = item['classes'] as List? ?? [
-                                  {
-                                    'class_name': '1ère TI',
-                                    'total_students': 65,
-                                    'assessed': 54,
-                                    'visual': 28,
-                                    'auditory': 16,
-                                    'kinesthetic': 6,
-                                    'read_write': 4,
-                                    'ai_recommendation_en': '• Prioritize interactive ICT programming workshops and visual flowcharts for 1ère TI.',
-                                    'ai_recommendation_fr': '• Priorisez les ateliers interactifs de programmation et les organigrammes visuels pour la classe de 1ère TI.',
-                                    'students': [
-                                      {'full_name': 'Bello Oumarou', 'mat_number': 'AD2026001', 'learning_style': 'Visual-Auditory Learner'},
-                                    ]
-                                  },
-                                  {
-                                    'class_name': 'Terminale TI',
-                                    'total_students': 58,
-                                    'assessed': 48,
-                                    'visual': 22,
-                                    'auditory': 12,
-                                    'kinesthetic': 10,
-                                    'read_write': 4,
-                                    'ai_recommendation_en': '• Focus on practical network physical wiring and hardware labs for Terminale TI.',
-                                    'ai_recommendation_fr': '• Axez l\'apprentissage sur le câblage réseau pratique et les travaux pratiques informatiques pour la classe de Terminale TI.',
-                                    'students': [
-                                      {'full_name': 'Amina Mohamadou', 'mat_number': 'AD2026002', 'learning_style': 'Kinesthetic-Visual Learner'},
-                                    ]
-                                  }
-                                ];
-
-                                return Container(
-                                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                  child: Theme(
-                                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                    child: ExpansionTile(
-                                      initiallyExpanded: idx == 0,
-                                      leading: CircleAvatar(backgroundColor: _green.withValues(alpha: 0.12), child: Icon(isReg ? Icons.location_city_rounded : Icons.school_rounded, color: _green, size: 22)),
-                                      title: Text(item['name'] ?? '', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15)),
-                                      subtitle: Text(
-                                        isReg ? '${item["schools_count"]} ${_isEn ? "Schools" : "Établissements"}' : '${item["teachers_count"]} ${_isEn ? "Teachers" : "Enseignants"} • Click to view Classes & Results',
-                                        style: TextStyle(color: _sub, fontSize: 12),
-                                      ),
-                                      trailing: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                        child: Text('${item["students_count"]} ${_isEn ? "Students" : "Élèves"}', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12)),
-                                      ),
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Builder(
-                                            builder: (cContext) {
-                                              final scName = item['name'] ?? '';
-                                              final List<String> classNamesOnly = [];
-                                              for (var c in schoolClasses) {
-                                                final cn = (c['class_name'] ?? '').toString();
-                                                if (cn.isNotEmpty && !classNamesOnly.contains(cn)) {
-                                                  classNamesOnly.add(cn);
-                                                }
-                                              }
-                                              if (classNamesOnly.isEmpty) classNamesOnly.addAll(['1ère TI', 'Terminale TI']);
-
-                                              final activeClass = (_selectedClassFilterPerSchool[scName] != null && classNamesOnly.contains(_selectedClassFilterPerSchool[scName]))
-                                                  ? _selectedClassFilterPerSchool[scName]!
-                                                  : classNamesOnly.first;
-
-                                              final selectedClassObj = schoolClasses.firstWhere(
-                                                (c) => (c['class_name'] ?? '') == activeClass,
-                                                orElse: () => schoolClasses.first,
-                                              ) as Map<String, dynamic>;
-
-                                              final cName = selectedClassObj['class_name'] ?? activeClass;
-                                              final totSt = selectedClassObj['total_students'] ?? 0;
-                                              final assSt = selectedClassObj['assessed'] ?? 0;
-                                              final vis   = selectedClassObj['visual'] ?? 0;
-                                              final aud   = selectedClassObj['auditory'] ?? 0;
-                                              final kin   = selectedClassObj['kinesthetic'] ?? 0;
-                                              final rw    = selectedClassObj['read_write'] ?? 0;
-                                              final cRec  = _isEn ? (selectedClassObj['ai_recommendation_en'] ?? '') : (selectedClassObj['ai_recommendation_fr'] ?? '');
-                                              final stList = selectedClassObj['students'] as List? ?? [];
-
-                                              return Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  // 2. SELECTED CLASS DETAILS CARD
-                                                  Container(
-                                                    padding: const EdgeInsets.all(16),
-                                                    decoration: BoxDecoration(
-                                                      color: _bg,
-                                                      borderRadius: BorderRadius.circular(16),
-                                                      border: Border.all(color: _border),
-                                                    ),
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8, runSpacing: 6,
+                                            children: [
+                                              _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
+                                              _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
+                                              _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
+                                              _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 14),
+                                          Text(
+                                            _isEn ? 'Students & Dominant Learning Styles:' : 'Élèves & Styles d\'Apprentissage Dominants :',
+                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Column(
+                                            children: stList.map<Widget>((st) {
+                                              final sMap = st as Map<String, dynamic>;
+                                              final sName = sMap['full_name'] ?? '';
+                                              final sMat = sMap['mat_number'] ?? '';
+                                              final sStyle = sMap['learning_style'] ?? '';
+                                              return Container(
+                                                margin: const EdgeInsets.only(bottom: 6),
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                                decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Row(
                                                       children: [
-                                                        Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          children: [
-                                                            Row(
-                                                              children: [
-                                                                Icon(Icons.school_rounded, color: _green, size: 20),
-                                                                const SizedBox(width: 8),
-                                                                Text('Class: $cName', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16)),
-                                                              ],
-                                                            ),
-                                                            Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                              decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                                              child: Text('${_isEn ? "Students" : "Élèves"}: $totSt ($assSt ${_isEn ? "Assessed" : "Évalués"})', style: TextStyle(color: _green, fontSize: 12, fontWeight: FontWeight.bold)),
-                                                            ),
-                                                          ],
+                                                        CircleAvatar(
+                                                          radius: 14,
+                                                          backgroundColor: _green.withValues(alpha: 0.15),
+                                                          child: Icon(Icons.person_rounded, color: _green, size: 16),
                                                         ),
-                                                        const SizedBox(height: 12),
-                                                        Wrap(
-                                                          spacing: 8, runSpacing: 6,
-                                                          children: [
-                                                            _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
-                                                            _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
-                                                            _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
-                                                            _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
-                                                          ],
-                                                        ),
-                                                        const SizedBox(height: 14),
-                                                        Text(_isEn ? 'Students & Dominant Learning Styles:' : 'Élèves & Styles d\'Apprentissage Dominants :', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
-                                                        const SizedBox(height: 8),
+                                                        const SizedBox(width: 10),
                                                         Column(
-                                                          children: stList.map<Widget>((st) {
-                                                            final sMap = st as Map<String, dynamic>;
-                                                            final sName = sMap['full_name'] ?? '';
-                                                            final sMat = sMap['mat_number'] ?? '';
-                                                            final sStyle = sMap['learning_style'] ?? '';
-                                                            return Container(
-                                                              margin: const EdgeInsets.only(bottom: 6),
-                                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                                              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-                                                              child: Row(
-                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                                children: [
-                                                                  Row(
-                                                                    children: [
-                                                                      CircleAvatar(
-                                                                        radius: 14,
-                                                                        backgroundColor: _green.withValues(alpha: 0.15),
-                                                                        child: Icon(Icons.person_rounded, color: _green, size: 16),
-                                                                      ),
-                                                                      const SizedBox(width: 10),
-                                                                      Column(
-                                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                                        children: [
-                                                                          Text(sName, style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
-                                                                          Text('${_isEn ? "Matricule" : "Matricule"} : $sMat', style: TextStyle(color: _sub, fontSize: 11)),
-                                                                        ],
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                  Container(
-                                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                                    decoration: BoxDecoration(color: const Color(0xFFEC4899).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                                                                    child: Text(sStyle, style: const TextStyle(color: Color(0xFFEC4899), fontSize: 11, fontWeight: FontWeight.bold)),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            );
-                                                          }).toList(),
-                                                        ),
-                                                        const SizedBox(height: 14),
-                                                        Container(
-                                                          width: double.infinity,
-                                                          padding: const EdgeInsets.all(12),
-                                                          decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(10), border: Border.all(color: _green.withValues(alpha: 0.3))),
-                                                          child: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Row(
-                                                                children: [
-                                                                  Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
-                                                                  const SizedBox(width: 8),
-                                                                  Text(
-                                                                    '${_isEn ? "Final AI Recommendation for" : "Recommandation Finale IA pour"} $cName :',
-                                                                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              const SizedBox(height: 6),
-                                                              Text(cRec, style: TextStyle(color: _text, fontSize: 12, height: 1.5)),
-                                                            ],
-                                                          ),
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(sName, style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                                                            Text('${_isEn ? "Matricule" : "Matricule"} : $sMat', style: TextStyle(color: _sub, fontSize: 11)),
+                                                          ],
                                                         ),
                                                       ],
                                                     ),
-                                                  ),
-                                                ],
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                      decoration: BoxDecoration(color: const Color(0xFFEC4899).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                                                      child: Text(sStyle, style: const TextStyle(color: Color(0xFFEC4899), fontSize: 11, fontWeight: FontWeight.bold)),
+                                                    ),
+                                                  ],
+                                                ),
                                               );
-                                            },
+                                            }).toList(),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(height: 14),
+                                          Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _green.withValues(alpha: 0.3))),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      '${_isEn ? "Final AI Recommendation for" : "Recommandation Finale IA pour"} $cName :',
+                                                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(cRec, style: TextStyle(color: _text, fontSize: 12, height: 1.5)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 );
                               },
                             ),

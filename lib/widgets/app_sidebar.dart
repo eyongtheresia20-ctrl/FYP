@@ -16,6 +16,8 @@ class AppSidebar extends StatelessWidget {
   final List<String> tickedClasses;
   final String selectedClass;
   final Function(String)? onClassSelected;
+  final List? delegateItems;
+  final List? adminItems;
 
   const AppSidebar({
     super.key,
@@ -32,6 +34,8 @@ class AppSidebar extends StatelessWidget {
     this.tickedClasses = const [],
     this.selectedClass = '1ère TI',
     this.onClassSelected,
+    this.delegateItems,
+    this.adminItems,
   });
 
   Widget _navTile({
@@ -311,7 +315,7 @@ class AppSidebar extends StatelessWidget {
                     child: ExpansionTile(
                       initiallyExpanded: selectedIndex == 2,
                       tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                      childrenPadding: const EdgeInsets.only(left: 16),
+                      childrenPadding: const EdgeInsets.only(left: 12),
                       leading: Icon(Icons.location_city_rounded, color: _subTextColor, size: 20),
                       title: Text(
                         user.isRegionalDelegate
@@ -325,92 +329,7 @@ class AppSidebar extends StatelessWidget {
                       ),
                       iconColor: _subTextColor,
                       collapsedIconColor: _subTextColor,
-                      children: classes.map((scItem) {
-                        final isSchoolSelected = selectedIndex == 2 && selectedClass == scItem;
-                        // Determine class list for this school
-                        final List<String> scClasses = scItem.contains('TECHNIQUE')
-                            ? ['1ère TI', 'Terminale TI']
-                            : scItem.contains('CLASSIQUE')
-                                ? ['2nde C', '1ère C', 'Terminale C']
-                                : ['Form 5 Science', 'Lower Sixth'];
-
-                        if (user.isDivisionalDelegate) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                            child: ExpansionTile(
-                              initiallyExpanded: isSchoolSelected,
-                              tilePadding: const EdgeInsets.only(left: 12, right: 8),
-                              childrenPadding: const EdgeInsets.only(left: 20),
-                              leading: Icon(
-                                isSchoolSelected ? Icons.check_circle_rounded : Icons.school_rounded,
-                                color: isSchoolSelected ? const Color(0xFF34D399) : _subTextColor,
-                                size: 16,
-                              ),
-                              title: Text(
-                                scItem,
-                                style: TextStyle(
-                                  color: isSchoolSelected ? const Color(0xFF006A4E) : _textColor,
-                                  fontWeight: isSchoolSelected ? FontWeight.bold : FontWeight.w600,
-                                  fontSize: 12.0,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              iconColor: _subTextColor,
-                              collapsedIconColor: _subTextColor,
-                              children: scClasses.map((clsName) {
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 2),
-                                  child: ListTile(
-                                    dense: true,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                    leading: const Icon(Icons.class_rounded, color: Color(0xFF006A4E), size: 14),
-                                    title: Text(
-                                      'Classe $clsName',
-                                      style: TextStyle(
-                                        color: _textColor,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 11.5,
-                                      ),
-                                    ),
-                                    onTap: () {
-                                      onItemSelected(2);
-                                      if (onClassSelected != null) onClassSelected!('$scItem::$clsName');
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          );
-                        }
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          child: ListTile(
-                            dense: true,
-                            selected: isSchoolSelected,
-                            selectedTileColor: const Color(0xFF006A4E),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            leading: Icon(
-                              isSchoolSelected ? Icons.check_circle_rounded : Icons.location_city_rounded,
-                              color: isSchoolSelected ? const Color(0xFF34D399) : _subTextColor,
-                              size: 16,
-                            ),
-                            title: Text(
-                              scItem,
-                              style: TextStyle(
-                                color: isSchoolSelected ? Colors.white : _textColor,
-                                fontWeight: isSchoolSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 12.0,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () {
-                              onItemSelected(2);
-                              if (onClassSelected != null) onClassSelected!(scItem);
-                            },
-                          ),
-                        );
-                      }).toList(),
+                      children: _buildDelegateChildren(context, _textColor, _subTextColor),
                     ),
                   ),
                 ],
@@ -444,36 +363,7 @@ class AppSidebar extends StatelessWidget {
                       ),
                       iconColor: _subTextColor,
                       collapsedIconColor: _subTextColor,
-                      children: (tickedClasses.isNotEmpty ? tickedClasses : ['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST']).map((reg) {
-                        final isSelected = selectedIndex == 2 && selectedClass == reg;
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          child: ListTile(
-                            dense: true,
-                            selected: isSelected,
-                            selectedTileColor: const Color(0xFF006A4E),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            leading: Icon(
-                              isSelected ? Icons.check_circle_rounded : Icons.map_rounded,
-                              color: isSelected ? const Color(0xFF34D399) : _subTextColor,
-                              size: 16,
-                            ),
-                            title: Text(
-                              'Région: $reg',
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : _textColor,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 12.0,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            onTap: () {
-                              onItemSelected(2);
-                              if (onClassSelected != null) onClassSelected!(reg);
-                            },
-                          ),
-                        );
-                      }).toList(),
+                      children: _buildAdminChildren(context, _textColor, _subTextColor),
                     ),
                   ),
                   _navTile(
@@ -533,5 +423,331 @@ class AppSidebar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildDelegateChildren(BuildContext context, Color textColor, Color subTextColor) {
+    if (user.isRegionalDelegate && delegateItems != null && delegateItems!.isNotEmpty) {
+      return delegateItems!.map((divObjRaw) {
+        final divObj = Map<String, dynamic>.from(divObjRaw as Map);
+        final divName = (divObj['name'] ?? '').toString();
+        final isDivSelected = selectedIndex == 2 && selectedClass == divName;
+
+        final rawScList = divObj['schools'] as List? ?? [];
+        final divSchools = rawScList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+        return Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: isDivSelected,
+            tilePadding: const EdgeInsets.only(left: 8, right: 8),
+            childrenPadding: const EdgeInsets.only(left: 14),
+            leading: Icon(
+              isDivSelected ? Icons.check_circle_rounded : Icons.location_city_rounded,
+              color: isDivSelected ? const Color(0xFF34D399) : subTextColor,
+              size: 16,
+            ),
+            title: Text(
+              divName,
+              style: TextStyle(
+                color: isDivSelected ? const Color(0xFF006A4E) : textColor,
+                fontWeight: isDivSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 12.5,
+              ),
+            ),
+            iconColor: subTextColor,
+            collapsedIconColor: subTextColor,
+            children: divSchools.map((scObj) {
+              final scName = (scObj['name'] ?? '').toString();
+              final rawClsList = scObj['classes'] as List? ?? [];
+              final scClasses = rawClsList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+              return Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.only(left: 8, right: 8),
+                  childrenPadding: const EdgeInsets.only(left: 14),
+                  leading: Icon(Icons.school_rounded, color: subTextColor, size: 14),
+                  title: Text(
+                    scName,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  iconColor: subTextColor,
+                  collapsedIconColor: subTextColor,
+                  children: scClasses.isNotEmpty
+                      ? scClasses.map((clsObj) {
+                          final clsName = (clsObj['class_name'] ?? '').toString();
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 2),
+                            child: ListTile(
+                              dense: true,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              leading: const Icon(Icons.class_rounded, color: Color(0xFF006A4E), size: 13),
+                              title: Text(
+                                'Classe $clsName',
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 11.0,
+                                ),
+                              ),
+                              onTap: () {
+                                onItemSelected(2);
+                                if (onClassSelected != null) {
+                                  onClassSelected!('$scName::$clsName');
+                                }
+                              },
+                            ),
+                          );
+                        }).toList()
+                      : [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            child: Text(
+                              isEn ? '(No classes in DB)' : '(Aucune classe en BD)',
+                              style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }).toList();
+    }
+
+    return (tickedClasses.isNotEmpty ? tickedClasses : ['LYCEE TECHNIQUE DE NGAOUNDAL', 'LYCEE CLASSIQUE DE NGAOUNDAL', 'LYCEE BILINGUE DE NGAOUNDAL']).map((scItem) {
+      final List<String> scClasses = scItem.contains('TECHNIQUE')
+          ? ['1ère TI', 'Terminale TI']
+          : [];
+
+      return Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.only(left: 12, right: 8),
+          childrenPadding: const EdgeInsets.only(left: 20),
+          leading: Icon(Icons.school_rounded, color: subTextColor, size: 16),
+          title: Text(
+            scItem,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 12.0,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          iconColor: subTextColor,
+          collapsedIconColor: subTextColor,
+          children: scClasses.isNotEmpty
+              ? scClasses.map((clsName) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 2),
+                    child: ListTile(
+                      dense: true,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      leading: const Icon(Icons.class_rounded, color: Color(0xFF006A4E), size: 14),
+                      title: Text(
+                        'Classe $clsName',
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      onTap: () {
+                        onItemSelected(2);
+                        if (onClassSelected != null) onClassSelected!('$scItem::$clsName');
+                      },
+                    ),
+                  );
+                }).toList()
+              : [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Text(
+                      isEn ? '(No classes in DB)' : '(Aucune classe en BD)',
+                      style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildAdminChildren(BuildContext context, Color textColor, Color subTextColor) {
+    if (adminItems != null && adminItems!.isNotEmpty) {
+      return adminItems!.map((regObjRaw) {
+        final regObj = Map<String, dynamic>.from(regObjRaw as Map);
+        final regName = (regObj['name'] ?? '').toString();
+        final isRegSelected = selectedIndex == 2 && selectedClass == regName;
+
+        final rawDivList = regObj['divisions'] as List? ?? [];
+        final regDivisions = rawDivList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+        return Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: isRegSelected,
+            tilePadding: const EdgeInsets.only(left: 8, right: 8),
+            childrenPadding: const EdgeInsets.only(left: 12),
+            leading: Icon(
+              isRegSelected ? Icons.check_circle_rounded : Icons.map_rounded,
+              color: isRegSelected ? const Color(0xFF34D399) : subTextColor,
+              size: 16,
+            ),
+            title: Text(
+              'Région $regName',
+              style: TextStyle(
+                color: isRegSelected ? const Color(0xFF006A4E) : textColor,
+                fontWeight: isRegSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 12.5,
+              ),
+            ),
+            iconColor: subTextColor,
+            collapsedIconColor: subTextColor,
+            children: regDivisions.isNotEmpty
+                ? regDivisions.map((divObj) {
+                    final divName = (divObj['name'] ?? '').toString();
+                    final rawScList = divObj['schools'] as List? ?? [];
+                    final divSchools = rawScList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+                    return Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.only(left: 8, right: 8),
+                        childrenPadding: const EdgeInsets.only(left: 12),
+                        leading: Icon(Icons.location_city_rounded, color: subTextColor, size: 15),
+                        title: Text(
+                          'Dép: $divName',
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.0,
+                          ),
+                        ),
+                        iconColor: subTextColor,
+                        collapsedIconColor: subTextColor,
+                        children: divSchools.isNotEmpty
+                            ? divSchools.map((scObj) {
+                                final scName = (scObj['name'] ?? '').toString();
+                                final rawClsList = scObj['classes'] as List? ?? [];
+                                final scClasses = rawClsList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+                                return Theme(
+                                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.only(left: 8, right: 8),
+                                    childrenPadding: const EdgeInsets.only(left: 12),
+                                    leading: Icon(Icons.school_rounded, color: subTextColor, size: 14),
+                                    title: Text(
+                                      scName,
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11.5,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    iconColor: subTextColor,
+                                    collapsedIconColor: subTextColor,
+                                    children: scClasses.isNotEmpty
+                                        ? scClasses.map((clsObj) {
+                                            final clsName = (clsObj['class_name'] ?? '').toString();
+                                            return Container(
+                                              margin: const EdgeInsets.only(bottom: 2),
+                                              child: ListTile(
+                                                dense: true,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                leading: const Icon(Icons.class_rounded, color: Color(0xFF006A4E), size: 13),
+                                                title: Text(
+                                                  'Classe $clsName',
+                                                  style: TextStyle(
+                                                    color: textColor,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 11.0,
+                                                  ),
+                                                ),
+                                                onTap: () {
+                                                  onItemSelected(2);
+                                                  if (onClassSelected != null) {
+                                                    onClassSelected!('$scName::$clsName');
+                                                  }
+                                                },
+                                              ),
+                                            );
+                                          }).toList()
+                                        : [
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                              child: Text(
+                                                isEn ? '(No classes in DB)' : '(Aucune classe en BD)',
+                                                style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
+                                              ),
+                                            ),
+                                          ],
+                                  ),
+                                );
+                              }).toList()
+                            : [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  child: Text(
+                                    isEn ? '(No schools in DB)' : '(Aucun établissement en BD)',
+                                    style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
+                                  ),
+                                ),
+                              ],
+                      ),
+                    );
+                  }).toList()
+                : [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Text(
+                        isEn ? '(No divisions in DB)' : '(Aucun département en BD)',
+                        style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  ],
+          ),
+        );
+      }).toList();
+    }
+
+    return (tickedClasses.isNotEmpty ? tickedClasses : ['ADAMOUA', 'CENTRE', 'LITTORAL']).map((reg) {
+      final isSelected = selectedIndex == 2 && selectedClass == reg;
+      return Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        child: ListTile(
+          dense: true,
+          selected: isSelected,
+          selectedTileColor: const Color(0xFF006A4E).withValues(alpha: 0.12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          leading: Icon(
+            isSelected ? Icons.check_circle_rounded : Icons.map_rounded,
+            color: isSelected ? const Color(0xFF34D399) : subTextColor,
+            size: 16,
+          ),
+          title: Text(
+            'Région: $reg',
+            style: TextStyle(
+              color: isSelected ? const Color(0xFF006A4E) : textColor,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 12.0,
+            ),
+          ),
+          onTap: () {
+            onItemSelected(2);
+            if (onClassSelected != null) onClassSelected!(reg);
+          },
+        ),
+      );
+    }).toList();
   }
 }

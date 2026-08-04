@@ -31,6 +31,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String? _selectedRegionFilter;
   int _currentNavIndex = 0;
 
+  // Selected Class details state
+  String? _selectedSchoolFilter;
+  String? _selectedClassFilter;
+  Map<String, dynamic>? _classDetailsData;
+  bool _isLoadingClassDetails = false;
+
+  // User Management state
+  List<dynamic> _allUsersList = [];
+  List<dynamic> _allSchoolsList = [];
+  bool _isLoadingUsers = false;
+  String _userRoleFilter = 'ALL';
+  String _userSearchQuery = '';
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
 
@@ -55,6 +68,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _isDarkMode = widget.isDarkMode;
     _isEn = widget.isEn;
     _fetchAdminData();
+    _fetchAllUsersAndSchools();
+    _fetchClassDetails('LYCEE TECHNIQUE DE NGAOUNDAL', '1ère TI');
   }
 
   @override
@@ -83,6 +98,138 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  Future<void> _fetchClassDetails(String schoolName, String className) async {
+    setState(() {
+      _selectedSchoolFilter = schoolName;
+      _selectedClassFilter  = className;
+      _isLoadingClassDetails = true;
+    });
+    try {
+      final resp = await http.get(
+        Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=get_class_details&school_name=${Uri.encodeComponent(schoolName)}&class_name=${Uri.encodeComponent(className)}'),
+      );
+      final data = jsonDecode(resp.body);
+      if (data['success'] == true && data['data'] != null) {
+        setState(() {
+          _classDetailsData = data['data'];
+          _isLoadingClassDetails = false;
+        });
+      } else {
+        setState(() => _isLoadingClassDetails = false);
+      }
+    } catch (_) {
+      setState(() => _isLoadingClassDetails = false);
+    }
+  }
+
+  Future<void> _fetchAllUsersAndSchools() async {
+    setState(() => _isLoadingUsers = true);
+    try {
+      final uResp = await http.get(
+        Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=get_all_users'),
+      );
+      final uData = jsonDecode(uResp.body);
+
+      final sResp = await http.get(
+        Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=get_all_schools'),
+      );
+      final sData = jsonDecode(sResp.body);
+
+      setState(() {
+        if (uData['success'] == true && uData['data'] != null) {
+          _allUsersList = uData['data'] as List;
+        }
+        if (sData['success'] == true && sData['data'] != null) {
+          _allSchoolsList = sData['data'] as List;
+        }
+        _isLoadingUsers = false;
+      });
+    } catch (_) {
+      setState(() => _isLoadingUsers = false);
+    }
+  }
+
+  Future<void> _toggleUserStatus(int userId, int newStatus) async {
+    try {
+      final resp = await http.post(
+        Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=toggle_user_status'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'user_id': userId, 'is_activated': newStatus}),
+      );
+      final data = jsonDecode(resp.body);
+      if (data['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(newStatus == 1 ? (_isEn ? 'User unblocked & activated!' : 'Utilisateur débloqué et activé !') : (_isEn ? 'User blocked!' : 'Utilisateur bloqué !')),
+              backgroundColor: newStatus == 1 ? _green : Colors.orange,
+            ),
+          );
+          _fetchAllUsersAndSchools();
+        }
+      }
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _deleteUserAccount(int userId, String userName) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+            const SizedBox(width: 8),
+            Text(_isEn ? 'Delete User Account' : 'Supprimer l\'Utilisateur', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Text(
+          _isEn
+              ? 'Are you sure you want to permanently delete account "$userName"? This action cannot be undone.'
+              : 'Êtes-vous sûr de vouloir supprimer définitivement le compte "$userName" ? Cette action est irréversible.',
+          style: TextStyle(color: _sub, fontSize: 13.5),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub))),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.delete_forever_rounded, size: 18),
+            label: Text(_isEn ? 'Delete Permanently' : 'Supprimer Définitivement'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final resp = await http.post(
+          Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=delete_user'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'user_id': userId}),
+        );
+        final data = jsonDecode(resp.body);
+        if (data['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(_isEn ? 'User deleted successfully.' : 'Utilisateur supprimé avec succès.'), backgroundColor: _green),
+            );
+            _fetchAllUsersAndSchools();
+          }
+        }
+      } catch (err) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
+        }
+      }
+    }
+  }
+
   void _downloadAdminReport() {
     final title = _adminData?['title'] ?? 'MINESEC NATIONAL SYSTEM';
     final admin = _currentUser.fullName;
@@ -98,61 +245,41 @@ class _AdminDashboardState extends State<AdminDashboard> {
 "Assessed Students","${_parseInt(stats['assessed'] ?? 985000)}"
 "Total Teachers","${_parseInt(_adminData?['total_teachers'] ?? 45000)}"
 "Visual Count","${_parseInt(stats['visual'] ?? 410000)}"
-"Auditory Count","${_parseInt(stats['auditory'] ?? 310000)}"
-"Kinesthetic Count","${_parseInt(stats['kinesthetic'] ?? 160000)}"
-"Read/Write Count","${_parseInt(stats['read_write'] ?? 105000)}"
+"Auditory Count","${_parseInt(stats['auditory'] ?? 320000)}"
+"Kinesthetic Count","${_parseInt(stats['kinesthetic'] ?? 155000)}"
+"Read/Write Count","${_parseInt(stats['read_write'] ?? 100000)}"
 ''';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.download_rounded, color: _green),
+            Icon(Icons.summarize_rounded, color: _green, size: 26),
             const SizedBox(width: 10),
-            Text(
-              _isEn ? 'Download National Report' : 'Télécharger le Rapport National',
-              style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text(_isEn ? 'National System Report' : 'Rapport Système National', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isEn
-                  ? 'VARK Diagnostic CSV national report generated for MINESEC.'
-                  : 'Rapport CSV VARK national généré pour le MINESEC.',
-              style: TextStyle(color: _sub, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            Container(
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-              child: SelectableText(
-                csvContent,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5),
-              ),
+              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _border)),
+              child: SelectableText(csvContent, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
             ),
-          ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(_isEn ? 'Close' : 'Fermer', style: TextStyle(color: _sub)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_isEn ? 'Close' : 'Fermer', style: TextStyle(color: _sub))),
           ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isEn ? 'National Report Downloaded Successfully!' : 'Rapport National Téléchargé avec Succès !'),
-                  backgroundColor: _green,
-                ),
+                SnackBar(content: Text(_isEn ? 'National Report Downloaded Successfully!' : 'Rapport National Téléchargé avec Succès !'), backgroundColor: _green),
               );
             },
             icon: const Icon(Icons.download_done_rounded, size: 18),
@@ -169,26 +296,340 @@ class _AdminDashboardState extends State<AdminDashboard> {
       _adminData = {
         'admin_name': _currentUser.fullName,
         'title': 'MINISTÈRE DE L\'ENSEIGNEMENT SECONDAIRE — DIRECTION GÉNÉRALE',
-        'total_regions': 10,
-        'total_schools': 2450,
-        'total_students': 1250000,
-        'assessed_students': 985000,
-        'total_teachers': 64000,
-        'visual_count': 440000,
-        'auditory_count': 320000,
-        'kinesthetic_count': 135000,
-        'read_write_count': 90000,
+        'total_regions': 3,
+        'total_schools': 6,
+        'total_students': 2,
+        'assessed_students': 1,
+        'total_teachers': 1,
+        'visual_count': 1,
+        'auditory_count': 1,
+        'kinesthetic_count': 0,
+        'read_write_count': 0,
         'regions_analytics': [
-          {'name': 'CENTRE', 'schools': 420, 'students': 280000, 'assessed_pct': '84%'},
-          {'name': 'LITTORAL', 'schools': 380, 'students': 250000, 'assessed_pct': '86%'},
-          {'name': 'ADAMOUA', 'schools': 140, 'students': 85000, 'assessed_pct': '81%'},
-          {'name': 'OUEST', 'schools': 310, 'students': 190000, 'assessed_pct': '85%'},
-          {'name': 'NORD', 'schools': 180, 'students': 110000, 'assessed_pct': '79%'},
+          {'name': 'ADAMOUA', 'schools': 4, 'students': 2, 'assessed_pct': '50%'},
+          {'name': 'CENTRE', 'schools': 1, 'students': 0, 'assessed_pct': '0%'},
+          {'name': 'LITTORAL', 'schools': 1, 'students': 0, 'assessed_pct': '0%'},
         ],
-        'ai_national_strategy_en': '• Implement nation-wide teacher training modules for VARK-differentiated instruction across all 10 Regions.\n• Allocate annual budget for digital media infrastructure in schools with predominant visual learner ratios.\n• Monitor real-time student diagnostic assessment coverage at national scale.',
-        'ai_national_strategy_fr': '• Mettez en œuvre des modules nationaux de formation des enseignants à la pédagogie différenciée VARK dans les 10 Régions.\n• Allouez le budget annuel pour les infrastructures numériques d\'apprentissage dans les lycées à fort taux d\'apprenants visuels.\n• Suivez le taux de couverture des évaluations diagnostiques à l\'échelle nationale.',
+        'ai_national_strategy_en': '• Implement nation-wide teacher training modules for VARK-differentiated instruction across all Regions.\n• Allocate budget for digital media infrastructure based on live database assessments.\n• Monitor real-time student diagnostic assessment coverage at national scale.',
+        'ai_national_strategy_fr': '• Mettez en œuvre des modules nationaux de formation des enseignants à la pédagogie différenciée VARK.\n• Allouez le budget pour les infrastructures numériques d\'apprentissage selon la base de données.\n• Suivez le taux de couverture des évaluations diagnostiques à l\'échelle nationale.',
       };
     });
+  }
+
+  void _showAddUserDialog() {
+    final nameCtrl     = TextEditingController();
+    final matCtrl      = TextEditingController();
+    final passCtrl     = TextEditingController(text: '123456');
+    final secCtrl      = TextEditingController(text: '123456');
+    final classCtrl    = TextEditingController(text: '1ère TI');
+    final subjectCtrl  = TextEditingController(text: 'Informatique');
+
+    String selectedRole     = 'teacher';
+    String selectedRegion   = 'ADAMOUA';
+    String selectedDivision = 'DJEREM';
+    int selectedSchoolId    = _allSchoolsList.isNotEmpty ? _parseInt(_allSchoolsList.first['id']) : 1;
+    bool saving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 22, right: 22, top: 22,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 22,
+            ),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _border),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.person_add_rounded, color: _green, size: 24),
+                          const SizedBox(width: 10),
+                          Text(
+                            _isEn ? 'Create New System Account' : 'Créer un Compte Utilisateur',
+                            style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16.5),
+                          ),
+                        ],
+                      ),
+                      IconButton(icon: Icon(Icons.close, color: _sub), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(_isEn ? 'System Role:' : 'Rôle Système :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    decoration: InputDecoration(
+                      filled: true, fillColor: _bg,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                    dropdownColor: _card,
+                    style: TextStyle(color: _text, fontWeight: FontWeight.bold),
+                    items: [
+                      DropdownMenuItem(value: 'regional_delegate', child: Text(_isEn ? 'Regional Delegate' : 'Délégué Régional')),
+                      DropdownMenuItem(value: 'divisional_delegate', child: Text(_isEn ? 'Divisional Delegate' : 'Délégué Départemental')),
+                      DropdownMenuItem(value: 'principal', child: Text(_isEn ? 'Principal / Headmaster' : 'Proviseur / Chef d\'Établissement')),
+                      DropdownMenuItem(value: 'teacher', child: Text(_isEn ? 'Teacher' : 'Enseignant')),
+                      DropdownMenuItem(value: 'student', child: Text(_isEn ? 'Student' : 'Élève')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => selectedRole = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextField(
+                    controller: nameCtrl,
+                    style: TextStyle(color: _text),
+                    decoration: InputDecoration(
+                      labelText: _isEn ? 'Full Name' : 'Nom Complet',
+                      labelStyle: TextStyle(color: _sub),
+                      filled: true, fillColor: _bg,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                      prefixIcon: Icon(Icons.person_outline_rounded, color: _green),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextField(
+                    controller: matCtrl,
+                    style: TextStyle(color: _text),
+                    decoration: InputDecoration(
+                      labelText: _isEn ? 'Matricule / Staff ID' : 'Matricule / Identifiant',
+                      labelStyle: TextStyle(color: _sub),
+                      filled: true, fillColor: _bg,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                      prefixIcon: Icon(Icons.badge_outlined, color: _green),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: passCtrl,
+                          style: TextStyle(color: _text),
+                          decoration: InputDecoration(
+                            labelText: _isEn ? 'Password' : 'Mot de passe',
+                            labelStyle: TextStyle(color: _sub),
+                            filled: true, fillColor: _bg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: _green),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: secCtrl,
+                          style: TextStyle(color: _text),
+                          decoration: InputDecoration(
+                            labelText: _isEn ? 'Security PIN' : 'Code PIN',
+                            labelStyle: TextStyle(color: _sub),
+                            filled: true, fillColor: _bg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                            prefixIcon: Icon(Icons.pin_outlined, color: _green),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedRegion,
+                          decoration: InputDecoration(
+                            labelText: _isEn ? 'Region' : 'Région',
+                            labelStyle: TextStyle(color: _sub),
+                            filled: true, fillColor: _bg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                          ),
+                          dropdownColor: _card,
+                          style: TextStyle(color: _text, fontWeight: FontWeight.bold),
+                          items: ['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedRegion = val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedDivision,
+                          decoration: InputDecoration(
+                            labelText: _isEn ? 'Division' : 'Département',
+                            labelStyle: TextStyle(color: _sub),
+                            filled: true, fillColor: _bg,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                          ),
+                          dropdownColor: _card,
+                          style: TextStyle(color: _text, fontWeight: FontWeight.bold),
+                          items: ['DJEREM', 'VINA', 'MFOUNDI', 'WOURI', 'MAYO-BALEO', 'FARO-ET-DEO'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedDivision = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (_allSchoolsList.isNotEmpty) ...[
+                    Text(_isEn ? 'School:' : 'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      value: selectedSchoolId,
+                      decoration: InputDecoration(
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                      dropdownColor: _card,
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold),
+                      items: _allSchoolsList.map<DropdownMenuItem<int>>((sc) {
+                        final id = _parseInt(sc['id']);
+                        final name = (sc['name'] ?? '').toString();
+                        return DropdownMenuItem<int>(value: id, child: Text(name, overflow: TextOverflow.ellipsis));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedSchoolId = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  if (selectedRole == 'student' || selectedRole == 'teacher') ...[
+                    TextField(
+                      controller: classCtrl,
+                      style: TextStyle(color: _text),
+                      decoration: InputDecoration(
+                        labelText: _isEn ? 'Class Name' : 'Classe',
+                        labelStyle: TextStyle(color: _sub),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                        prefixIcon: Icon(Icons.class_outlined, color: _green),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  if (selectedRole == 'teacher') ...[
+                    TextField(
+                      controller: subjectCtrl,
+                      style: TextStyle(color: _text),
+                      decoration: InputDecoration(
+                        labelText: _isEn ? 'Subject' : 'Matière / Discipline',
+                        labelStyle: TextStyle(color: _sub),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
+                        prefixIcon: Icon(Icons.book_outlined, color: _green),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  const SizedBox(height: 10),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: saving ? null : () async {
+                        final name = nameCtrl.text.trim();
+                        final mat  = matCtrl.text.trim();
+                        final pass = passCtrl.text.trim();
+                        final sec  = secCtrl.text.trim();
+
+                        if (name.isEmpty || mat.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(_isEn ? 'Name and Matricule are required!' : 'Nom et Matricule requis !'), backgroundColor: Colors.red),
+                          );
+                          return;
+                        }
+
+                        setModalState(() => saving = true);
+
+                        try {
+                          final resp = await http.post(
+                            Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=create_user'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode({
+                              'full_name': name,
+                              'role': selectedRole,
+                              'matricule': mat,
+                              'password': pass,
+                              'security_code': sec,
+                              'region': selectedRegion,
+                              'division': selectedDivision,
+                              'school_id': selectedSchoolId,
+                              'class_name': classCtrl.text.trim(),
+                              'subject': subjectCtrl.text.trim(),
+                            }),
+                          );
+                          final resData = jsonDecode(resp.body);
+
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            if (resData['success'] == true) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(resData['message'] ?? (_isEn ? 'User created successfully!' : 'Utilisateur créé avec succès !')), backgroundColor: _green),
+                              );
+                              _fetchAllUsersAndSchools();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(resData['message'] ?? 'Error creating user.'), backgroundColor: Colors.red),
+                              );
+                            }
+                          }
+                        } catch (err) {
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                      icon: saving
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.check_circle_rounded, size: 20),
+                      label: Text(
+                        saving ? (_isEn ? 'Creating...' : 'Création...') : (_isEn ? 'Create User Account' : 'Créer l\'Utilisateur'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showAdminProfileDialog() async {
@@ -213,137 +654,91 @@ class _AdminDashboardState extends State<AdminDashboard> {
               if (pData['success'] == true && pData['data'] != null) {
                 final profile = pData['data'];
                 passCtrl.text    = (profile['password'] ?? 'admin1').toString();
-                secCodeCtrl.text = (profile['security_code'] ?? '1234@').toString();
+                secCodeCtrl.text = (profile['security_code'] ?? '1234#').toString();
               } else {
                 passCtrl.text    = 'admin1';
-                secCodeCtrl.text = '1234@';
+                secCodeCtrl.text = '1234#';
               }
               if (ctx.mounted) setModalState(() => loading = false);
             }).catchError((_) {
               passCtrl.text    = 'admin1';
-              secCodeCtrl.text = '1234@';
+              secCodeCtrl.text = '1234#';
               if (ctx.mounted) setModalState(() => loading = false);
             });
           }
 
-          final initials = _currentUser.fullName.trim().split(' ')
-              .take(2).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join();
-
           return Container(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.90),
+            padding: EdgeInsets.only(
+              left: 24, right: 24, top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
             decoration: BoxDecoration(
               color: _card,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border(top: BorderSide(color: _border)),
-            ),
-            padding: EdgeInsets.only(
-              left: 24, right: 24, top: 12,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _border),
             ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 40, height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2)),
-                  ),
-
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [_green, const Color(0xFF009966)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 56, height: 56,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: _green.withValues(alpha: 0.15),
+                            child: Icon(Icons.admin_panel_settings_rounded, color: _green, size: 24),
                           ),
-                          child: Center(
-                            child: Text(
-                              initials.isEmpty ? 'A' : initials,
-                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
+                          const SizedBox(width: 12),
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _currentUser.fullName,
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17),
+                                _isEn ? 'Admin Profile' : 'Profil Administrateur',
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 18),
                               ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
-                                child: Text(
-                                  _isEn ? 'MINESEC Central Administrator' : 'Administrateur Central MINESEC',
-                                  style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold),
-                                ),
+                              Text(
+                                _currentUser.fullName,
+                                style: TextStyle(color: _sub, fontSize: 13),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  Row(
-                    children: [
-                      Icon(Icons.security_rounded, color: _green, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isEn ? 'System Admin Credentials' : 'Identifiants Administrateur Système',
-                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 14.5),
+                        ],
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: _sub),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
 
-                  _profileInfoRow(Icons.public_rounded, _isEn ? 'Scope' : 'Portée', 'REPUBLIQUE DU CAMEROUN — MINESEC'),
-                  const SizedBox(height: 14),
+                  if (loading) ...[
+                    const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator())),
+                  ] else ...[
+                    _profileInfoRow(Icons.badge_outlined, _isEn ? 'Matricule / Admin ID' : 'Matricule / Identifiant', _currentUser.matNumber ?? 'ADM202601'),
+                    const SizedBox(height: 10),
+                    _profileInfoRow(Icons.email_outlined, 'Email', 'admin@minesec.cm'),
+                    const SizedBox(height: 10),
+                    _profileInfoRow(Icons.security_rounded, _isEn ? 'Role' : 'Rôle', 'ADMINISTRATEUR CENTRAL MINESEC'),
+                    const SizedBox(height: 16),
 
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      _isEn ? 'Modify Password & Security Code' : 'Modifier Mot de Passe & Code de Sécurité',
-                      style: TextStyle(color: _text, fontWeight: FontWeight.w700, fontSize: 13.5),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (loading)
-                    const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    )
-                  else ...[
                     TextField(
                       controller: passCtrl,
                       obscureText: obscurePass,
+                      style: TextStyle(color: _text),
                       decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Password' : 'Mot de Passe Présent',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.lock_outline_rounded, color: _green, size: 20),
+                        labelText: _isEn ? 'New Password' : 'Nouveau Mot de passe',
+                        labelStyle: TextStyle(color: _sub),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _border)),
+                        prefixIcon: Icon(Icons.lock_outline_rounded, color: _green),
                         suffixIcon: IconButton(
-                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub),
                           onPressed: () => setModalState(() => obscurePass = !obscurePass),
                         ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -351,19 +746,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     TextField(
                       controller: secCodeCtrl,
                       obscureText: obscureSec,
-                      keyboardType: TextInputType.visiblePassword,
+                      style: TextStyle(color: _text),
                       decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Security Code' : 'Code de Sécurité Présent',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.security_rounded, color: _green, size: 20),
+                        labelText: _isEn ? 'New Security Code' : 'Nouveau Code de Sécurité',
+                        labelStyle: TextStyle(color: _sub),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: _border)),
+                        prefixIcon: Icon(Icons.pin_outlined, color: _green),
                         suffixIcon: IconButton(
-                          icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+                          icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub),
                           onPressed: () => setModalState(() => obscureSec = !obscureSec),
                         ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -409,11 +802,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ],
                   const SizedBox(height: 10),
-
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
-                  ),
                 ],
               ),
             ),
@@ -448,16 +836,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final int totalRegions  = _parseInt(_adminData?['total_regions'] ?? 10);
-    final int totalSchools  = _parseInt(_adminData?['total_schools'] ?? 2450);
-    final int totalStudents = _parseInt(_adminData?['total_students'] ?? 1250000);
-    final int assessed      = _parseInt(_adminData?['assessed_students'] ?? 985000);
-    final int totalTeachers = _parseInt(_adminData?['total_teachers'] ?? 64000);
+    final int totalSchools  = _parseInt(_adminData?['total_schools'] ?? 6);
+    final int totalStudents = _parseInt(_adminData?['total_students'] ?? 2);
+    final int assessed      = _parseInt(_adminData?['assessed_students'] ?? 1);
+    final int totalTeachers = _parseInt(_adminData?['total_teachers'] ?? 1);
 
-    final int visSt   = _parseInt(_adminData?['visual_count'] ?? 440000);
-    final int audSt   = _parseInt(_adminData?['auditory_count'] ?? 320000);
-    final int kinesSt = _parseInt(_adminData?['kinesthetic_count'] ?? 135000);
-    final int rwSt    = _parseInt(_adminData?['read_write_count'] ?? 90000);
+    final int visSt   = _parseInt(_adminData?['visual_count'] ?? 1);
+    final int audSt   = _parseInt(_adminData?['auditory_count'] ?? 1);
+    final int kinesSt = _parseInt(_adminData?['kinesthetic_count'] ?? 0);
+    final int rwSt    = _parseInt(_adminData?['read_write_count'] ?? 0);
 
     final List regions = _adminData?['regions_analytics'] as List? ?? [];
     final List<String> regionNames = [];
@@ -467,13 +854,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         regionNames.add(name);
       }
     }
-    if (regionNames.isEmpty) regionNames.addAll(['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST']);
+    if (regionNames.isEmpty) regionNames.addAll(['ADAMOUA', 'CENTRE', 'LITTORAL']);
 
     final String aiStrategy = _isEn
         ? (_adminData?['ai_national_strategy_en'] ?? '')
         : (_adminData?['ai_national_strategy_fr'] ?? '');
 
     final isWide = MediaQuery.of(context).size.width >= 800;
+    final List nationalHierarchy = _adminData?['national_hierarchy'] as List? ?? [];
 
     final sidebarWidget = AppSidebar(
       user: _currentUser,
@@ -482,15 +870,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
       selectedIndex: _currentNavIndex,
       tickedClasses: regionNames,
       selectedClass: _selectedRegionFilter ?? regionNames.first,
-      onClassSelected: (regName) {
+      adminItems: nationalHierarchy,
+      onClassSelected: (selection) {
         setState(() {
           _currentNavIndex = 2;
-          _selectedRegionFilter = regName;
+          if (selection.contains('::')) {
+            final parts = selection.split('::');
+            final scName = parts[parts.length - 2];
+            final clsName = parts[parts.length - 1];
+            _fetchClassDetails(scName, clsName);
+          } else {
+            _selectedRegionFilter = selection;
+          }
         });
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
       },
       onItemSelected: (idx) {
         setState(() => _currentNavIndex = idx);
+        if (idx == 3) {
+          _fetchAllUsersAndSchools();
+        }
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
       },
       onOpenProfile: _showAdminProfileDialog,
@@ -513,8 +912,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   height: 68,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFF0B132B),
-                    border: Border(bottom: BorderSide(color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFF1E293B))),
+                    color: const Color(0xFF0F172A),
+                    border: const Border(bottom: BorderSide(color: Color(0xFF1E293B))),
                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: Row(
@@ -535,7 +934,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             child: Container(
                               width: 38, height: 38,
                               decoration: BoxDecoration(
-                                color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                                color: const Color(0xFF1E293B),
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white24, width: 1.5),
                               ),
@@ -581,7 +980,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           const SizedBox(width: 10),
                           PopupMenuButton<String>(
                             icon: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 22),
-                            color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                            color: const Color(0xFF1E293B),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                             onSelected: (value) async {
                               if (value == 'profile') {
@@ -598,10 +997,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   children: [
                                     const Icon(Icons.person_rounded, color: Color(0xFF34D399), size: 18),
                                     const SizedBox(width: 10),
-                                    Text(_isEn ? 'Profile' : 'Profil', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                                    Text(_isEn ? 'Admin Profile' : 'Profil Administrateur', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
                                   ],
                                 ),
                               ),
+                              const PopupMenuDivider(),
                               PopupMenuItem(
                                 value: 'logout',
                                 child: Row(
@@ -620,7 +1020,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ),
 
-                // Main Content
+                // Main Content Body
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _fetchAdminData,
@@ -631,9 +1031,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── TAB 0: DASHBOARD OVERVIEW LANDING PAGE ──────────────────
+                          // ── TAB 0: DASHBOARD OVERVIEW ──────────────────────────────
                           if (_currentNavIndex == 0) ...[
-                            // Central Admin Welcome Banner Card
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(22),
@@ -651,14 +1050,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(_isEn ? 'Welcome Administrator,' : 'Bienvenue Administrateur,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
+                                          Text(_isEn ? 'Welcome Central Inspector General,' : 'Bienvenue Inspecteur Général,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
                                           Text(_currentUser.fullName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
                                         ],
                                       ),
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
-                                        child: const Icon(Icons.public_rounded, color: Colors.white, size: 26),
+                                        child: const Icon(Icons.account_balance_rounded, color: Colors.white, size: 26),
                                       ),
                                     ],
                                   ),
@@ -666,8 +1065,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   Wrap(
                                     spacing: 8, runSpacing: 8,
                                     children: [
-                                      _scopeBadge(Icons.account_balance_rounded, _isEn ? 'MINESEC Central Administration' : 'Administration Centrale MINESEC'),
-                                      _scopeBadge(Icons.flag_rounded, _isEn ? '10 Regions of Cameroon' : '10 Régions du Cameroun'),
+                                      _scopeBadge(Icons.public_rounded, 'Territoire: NATIONAL (10 Régions)'),
                                     ],
                                   ),
                                 ],
@@ -675,86 +1073,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                             const SizedBox(height: 20),
 
-                            // National Executive Overview Metric Cards
-                            // National System Executive Overview Header
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(_isEn ? 'National System Executive Overview' : 'Aperçu Exécutif National du Système', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16)),
+                                Text(_isEn ? 'National System Metrics' : 'Aperçu Exécutif National', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16)),
                                 ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _green,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
                                   onPressed: _downloadAdminReport,
-                                  icon: const Icon(Icons.download_rounded, size: 18),
-                                  label: Text(_isEn ? 'Download Results' : 'Télécharger Résultats', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                  style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                  icon: const Icon(Icons.download_rounded, size: 16),
+                                  label: Text(_isEn ? 'Download Report' : 'Exporter Rapport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 14),
 
-                            Row(
-                              children: [
-                                Expanded(child: _overviewStatCard(icon: Icons.flag_rounded, label: _isEn ? 'Regions' : 'Régions', value: '$totalRegions', color: const Color(0xFF006A4E))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.school_rounded, label: _isEn ? 'Schools' : 'Établissements', value: '$totalSchools', color: const Color(0xFF3B82F6))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Students' : 'Élèves', value: '$totalStudents', color: const Color(0xFF10B981))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed' : 'Évalués', value: '$assessed', color: const Color(0xFF8B5CF6))),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // VARK Pie Chart Card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(22),
-                              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(20), border: Border.all(color: _border)),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.pie_chart_rounded, color: _green, size: 24),
-                                      const SizedBox(width: 10),
-                                      Text(_isEn ? 'National VARK Learning Styles Breakdown' : 'Répartition VARK Nationale des Apprenants', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 140, height: 140,
-                                        child: CustomPaint(painter: _VarkPieChartPainter(visual: visSt, auditory: audSt, kinesthetic: kinesSt, readWrite: rwSt)),
-                                      ),
-                                      const SizedBox(width: 24),
-                                      Expanded(
-                                        child: Column(
-                                          children: [
-                                            _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', visSt, const Color(0xFF3B82F6)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', audSt, const Color(0xFFEC4899)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kinesSt, const Color(0xFF10B981)),
-                                            const SizedBox(height: 10),
-                                            _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rwSt, const Color(0xFFF59E0B)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                            LayoutBuilder(
+                              builder: (ctx, constraints) {
+                                final isSmall = constraints.maxWidth < 600;
+                                final width = isSmall ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 36) / 4;
+                                return Wrap(
+                                  spacing: 12, runSpacing: 12,
+                                  children: [
+                                    SizedBox(width: width, child: _overviewStatCard(icon: Icons.school_rounded, label: _isEn ? 'Total Schools' : 'Établissements', value: '$totalSchools', color: const Color(0xFF3B82F6))),
+                                    SizedBox(width: width, child: _overviewStatCard(icon: Icons.groups_rounded, label: _isEn ? 'Total Students' : 'Total Élèves', value: '$totalStudents', color: const Color(0xFF10B981))),
+                                    SizedBox(width: width, child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'VARK Assessed' : 'Élèves Évalués', value: '$assessed', color: const Color(0xFFF59E0B))),
+                                    SizedBox(width: width, child: _overviewStatCard(icon: Icons.person_rounded, label: _isEn ? 'Teachers' : 'Enseignants', value: '$totalTeachers', color: const Color(0xFF8B5CF6))),
+                                  ],
+                                );
+                              },
                             ),
                           ],
 
                           // ── TAB 1: NATIONAL VARK ANALYTICS & POLICY ──────────────────
                           if (_currentNavIndex == 1) ...[
-                            Text(_isEn ? 'National Educational Policy & AI Strategic Guidelines' : 'Politique Éducative Nationale & Directives IA', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
+                            Text(_isEn ? 'National Educational Policy & AI Guidelines' : 'Directives Pédagogiques Nationales IA', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
                             const SizedBox(height: 16),
                             Container(
                               width: double.infinity,
@@ -777,43 +1129,424 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                           ],
 
-                          // ── TAB 2: USER & REGIONAL ADMIN DIRECTORY ──────────────────
+                          // ── TAB 2: SCHOOL & CLASS BREAKDOWN VIEW ──────────────────────
                           if (_currentNavIndex == 2) ...[
-                            Text(_isEn ? 'Regional Breakdown & System Governance' : 'Répartition Régionale & Gouvernance du Système', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
-                            const SizedBox(height: 16),
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: regions.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
-                              itemBuilder: (ctx, idx) {
-                                final r = regions[idx] as Map<String, dynamic>;
-                                return Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                  child: Row(
+                            if (_isLoadingClassDetails) ...[
+                              const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
+                            ] else if (_classDetailsData != null) ...[
+                              Builder(
+                                builder: (ctx) {
+                                  final scName  = _classDetailsData!['school_name'] ?? '';
+                                  final clsName = _classDetailsData!['class_name'] ?? '';
+                                  final regName = _classDetailsData!['region'] ?? 'ADAMOUA';
+                                  final divName = _classDetailsData!['division'] ?? 'DJEREM';
+                                  final totSt   = _parseInt(_classDetailsData!['total_students']);
+                                  final assSt   = _parseInt(_classDetailsData!['assessed_students']);
+                                  final rate    = _classDetailsData!['assessed_rate'] ?? '0%';
+
+                                  final vis = _parseInt(_classDetailsData!['visual_count']);
+                                  final aud = _parseInt(_classDetailsData!['auditory_count']);
+                                  final kin = _parseInt(_classDetailsData!['kinesthetic_count']);
+                                  final rw  = _parseInt(_classDetailsData!['read_write_count']);
+
+                                  final students = _classDetailsData!['students'] as List? ?? [];
+                                  final aiRec = _isEn ? (_classDetailsData!['ai_recommendation_en'] ?? '') : (_classDetailsData!['ai_recommendation_fr'] ?? '');
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      CircleAvatar(backgroundColor: _green.withValues(alpha: 0.12), child: Icon(Icons.map_rounded, color: _green, size: 22)),
-                                      const SizedBox(width: 14),
-                                      Expanded(
+                                      // Class Header Banner Card
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: _card,
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
+                                        ),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(r['name'] ?? '', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15)),
-                                            const SizedBox(height: 2),
-                                            Text('${r["schools"]} ${_isEn ? "Secondary Schools" : "Établissements"}', style: TextStyle(color: _sub, fontSize: 12.5)),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      backgroundColor: _green.withValues(alpha: 0.15),
+                                                      child: Icon(Icons.school_rounded, color: _green, size: 22),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text('$scName — Classe $clsName', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 17)),
+                                                        const SizedBox(height: 2),
+                                                        Text('Région : $regName • Département : $divName', style: TextStyle(color: _sub, fontSize: 12.5)),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                  decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                                                  child: Text(
+                                                    'Taux Évalué: $rate',
+                                                    style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Wrap(
+                                              spacing: 8, runSpacing: 8,
+                                              children: [
+                                                _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
+                                                _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
+                                                _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
+                                                _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
+                                      const SizedBox(height: 16),
+
+                                      // Class AI Recommendation Card
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                        child: Text('${r["students"]} ${_isEn ? "Students" : "Élèves"} (${r["assessed_pct"]})', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12)),
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.psychology_rounded, color: _green, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                   _isEn ? 'National VARK Policy & AI Recommendation ($clsName at $scName)' : 'Directives Pédagogiques IA & Recommandations Nationales ($clsName à $scName)',
+                                                   style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5),
+                                                 ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(aiRec, style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500)),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+
+                                      // Students Roster List Table
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _isEn ? 'Class Student Roster (${students.length})' : 'Liste des Élèves de la Classe (${students.length})',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            if (students.isEmpty) ...[
+                                              Text(_isEn ? 'No students registered in this class.' : 'Aucun élève inscrit dans cette classe.', style: TextStyle(color: _sub, fontSize: 13, fontStyle: FontStyle.italic)),
+                                            ] else ...[
+                                              Column(
+                                                children: students.map<Widget>((s) {
+                                                  final sName  = s['full_name'] ?? '';
+                                                  final sMat   = s['mat_number'] ?? 'N/A';
+                                                  final sStyle = s['learning_style'] ?? 'Not Assessed';
+                                                  final isDiag = sStyle != 'Not Assessed';
+
+                                                  return Container(
+                                                    margin: const EdgeInsets.only(bottom: 8),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                    decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _border)),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            CircleAvatar(
+                                                              radius: 16,
+                                                              backgroundColor: _green.withValues(alpha: 0.15),
+                                                              child: Text(sName.isNotEmpty ? sName[0] : 'S', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12)),
+                                                            ),
+                                                            const SizedBox(width: 10),
+                                                            Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                Text(sName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                                Text('Matricule: $sMat', style: TextStyle(color: _sub, fontSize: 11)),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: isDiag ? const Color(0xFF10B981).withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
+                                                            borderRadius: BorderRadius.circular(8),
+                                                          ),
+                                                          child: Text(
+                                                            sStyle,
+                                                            style: TextStyle(color: isDiag ? const Color(0xFF10B981) : Colors.orange, fontWeight: FontWeight.bold, fontSize: 11.5),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ] else ...[
+                              // Select class message
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(30),
+                                decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(18), border: Border.all(color: _border)),
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.touch_app_rounded, color: _green, size: 40),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _isEn ? 'Select a Class from the Left Sidebar' : 'Sélectionnez une Classe dans le Menu de Gauche',
+                                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _isEn
+                                          ? 'Expand Region ➔ Division ➔ School ➔ Class to view live students & VARK AI recommendations.'
+                                          : 'Déroulez Région ➔ Département ➔ Établissement ➔ Classe pour afficher les élèves et les directives IA.',
+                                      style: TextStyle(color: _sub, fontSize: 13),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+
+                          // ── TAB 3: SYSTEM USER & GOVERNANCE DIRECTORY ───────────────
+                          if (_currentNavIndex == 3) ...[
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Action Header Bar
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(_isEn ? 'User & System Governance' : 'Gestion des Utilisateurs & Sécurité', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
+                                        const SizedBox(height: 2),
+                                        Text(_isEn ? 'Direct database access for account creation & role assignment' : 'Accès direct à la base de données pour la création des comptes', style: TextStyle(color: _sub, fontSize: 12.5)),
+                                      ],
+                                    ),
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                                      onPressed: _showAddUserDialog,
+                                      icon: const Icon(Icons.person_add_rounded, size: 18),
+                                      label: Text(_isEn ? '+ Create User' : '+ Créer un Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Users Filter & Search Row
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14), border: Border.all(color: _border)),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          onChanged: (val) => setState(() => _userSearchQuery = val),
+                                          style: TextStyle(color: _text),
+                                          decoration: InputDecoration(
+                                            hintText: _isEn ? 'Search user by name or matricule...' : 'Rechercher par nom ou matricule...',
+                                            hintStyle: TextStyle(color: _sub, fontSize: 13),
+                                            prefixIcon: Icon(Icons.search_rounded, color: _sub),
+                                            filled: true, fillColor: _bg,
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      DropdownButton<String>(
+                                        value: _userRoleFilter,
+                                        dropdownColor: _card,
+                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                                        underline: const SizedBox(),
+                                        items: [
+                                          DropdownMenuItem(value: 'ALL', child: Text(_isEn ? 'All Roles' : 'Tous les Rôles')),
+                                          DropdownMenuItem(value: 'regional_delegate', child: Text(_isEn ? 'Regional Delegates' : 'Délégués Régionaux')),
+                                          DropdownMenuItem(value: 'divisional_delegate', child: Text(_isEn ? 'Divisional Delegates' : 'Délégués Départementaux')),
+                                          DropdownMenuItem(value: 'principal', child: Text(_isEn ? 'Principals' : 'Proviseurs')),
+                                          DropdownMenuItem(value: 'teacher', child: Text(_isEn ? 'Teachers' : 'Enseignants')),
+                                          DropdownMenuItem(value: 'student', child: Text(_isEn ? 'Students' : 'Élèves')),
+                                        ],
+                                        onChanged: (val) {
+                                          if (val != null) setState(() => _userRoleFilter = val);
+                                        },
                                       ),
                                     ],
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Users Live Database List Table
+                                if (_isLoadingUsers) ...[
+                                  const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator())),
+                                ] else ...[
+                                  Builder(
+                                    builder: (ctx) {
+                                      final filteredUsers = _allUsersList.where((u) {
+                                        final r = (u['role'] ?? '').toString();
+                                        if (r == 'admin') return false;
+
+                                        final name = (u['full_name'] ?? '').toString().toLowerCase();
+                                        final mat  = (u['matricule'] ?? '').toString().toLowerCase();
+
+                                        final matchesRole = (_userRoleFilter == 'ALL') || (r == _userRoleFilter);
+                                        final matchesSearch = _userSearchQuery.isEmpty || name.contains(_userSearchQuery.toLowerCase()) || mat.contains(_userSearchQuery.toLowerCase());
+
+                                        return matchesRole && matchesSearch;
+                                      }).toList();
+
+                                      return Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _isEn ? 'Registered Users Directory (${filteredUsers.length})' : 'Répertoire des Utilisateurs Enregistrés (${filteredUsers.length})',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
+                                            ),
+                                            const SizedBox(height: 14),
+                                            if (filteredUsers.isEmpty) ...[
+                                              Text(_isEn ? 'No users matching criteria.' : 'Aucun utilisateur correspondant.', style: TextStyle(color: _sub, fontSize: 13)),
+                                            ] else ...[
+                                              SingleChildScrollView(
+                                                scrollDirection: Axis.horizontal,
+                                                child: DataTable(
+                                                  headingRowColor: WidgetStateProperty.all(_bg),
+                                                  dataRowMinHeight: 52,
+                                                  dataRowMaxHeight: 64,
+                                                  columnSpacing: 24,
+                                                  columns: [
+                                                    DataColumn(label: Text(_isEn ? 'User Name' : 'Nom & Utilisateur', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Role' : 'Rôle', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Matricule' : 'Matricule', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Region / Division' : 'Région / Dép.', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'School / Governance Entity' : 'Établissement / Structure', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Status' : 'Statut', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Actions' : 'Actions', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                  ],
+                                                  rows: filteredUsers.map<DataRow>((u) {
+                                                    final uId     = _parseInt(u['id']);
+                                                    final uName   = (u['full_name'] ?? '').toString();
+                                                    final uRole   = (u['role'] ?? '').toString();
+                                                    final uMat    = (u['matricule'] ?? 'N/A').toString();
+                                                    final uReg    = (u['region'] ?? 'ADAMOUA').toString();
+                                                    final uDiv    = (u['division'] ?? 'DJEREM').toString();
+                                                    final uSchool = (u['school_name'] ?? '').toString();
+                                                    final isAct   = _parseInt(u['is_activated']) == 1;
+
+                                                    Color roleColor = Colors.teal;
+                                                    if (uRole == 'regional_delegate') roleColor = const Color(0xFF2563EB);
+                                                    if (uRole == 'divisional_delegate') roleColor = const Color(0xFF8B5CF6);
+                                                    if (uRole == 'principal') roleColor = const Color(0xFFF59E0B);
+                                                    if (uRole == 'teacher') roleColor = const Color(0xFF10B981);
+
+                                                    return DataRow(
+                                                      cells: [
+                                                        DataCell(
+                                                          Row(
+                                                            children: [
+                                                              CircleAvatar(
+                                                                radius: 14,
+                                                                backgroundColor: roleColor.withValues(alpha: 0.15),
+                                                                child: Text(uName.isNotEmpty ? uName[0] : 'U', style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11.5)),
+                                                              ),
+                                                              const SizedBox(width: 10),
+                                                              Text(uName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                            decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                                                            child: Text(
+                                                              uRole.toUpperCase().replaceAll('_', ' '),
+                                                              style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        DataCell(Text(uMat, style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 12.5))),
+                                                        DataCell(Text('$uReg / $uDiv', style: TextStyle(color: _sub, fontSize: 12))),
+                                                        DataCell(Text(uSchool.isNotEmpty ? uSchool : 'N/A', style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w500))),
+                                                        DataCell(
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                            decoration: BoxDecoration(
+                                                              color: isAct ? _green.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                                                              borderRadius: BorderRadius.circular(8),
+                                                            ),
+                                                            child: Text(
+                                                              isAct ? (_isEn ? 'Active' : 'Actif') : (_isEn ? 'Blocked' : 'Bloqué'),
+                                                              style: TextStyle(color: isAct ? _green : Colors.red, fontWeight: FontWeight.bold, fontSize: 11.5),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              IconButton(
+                                                                icon: Icon(
+                                                                  isAct ? Icons.block_rounded : Icons.check_circle_outline_rounded,
+                                                                  color: isAct ? Colors.orange : _green,
+                                                                  size: 20,
+                                                                ),
+                                                                tooltip: isAct ? (_isEn ? 'Block Account' : 'Bloquer le Compte') : (_isEn ? 'Activate Account' : 'Activer le Compte'),
+                                                                onPressed: () => _toggleUserStatus(uId, isAct ? 0 : 1),
+                                                              ),
+                                                              IconButton(
+                                                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                                                tooltip: _isEn ? 'Delete Account' : 'Supprimer le Compte',
+                                                                onPressed: () => _deleteUserAccount(uId, uName),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ],
@@ -846,14 +1579,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _pieLegendItem(String label, int count, Color color) {
-    return Row(
-      children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(label, style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600))),
-        Text('$count', style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
-      ],
+  Widget _varkBadge(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.3))),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text('$label: ', style: TextStyle(color: _text, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          Text('$count', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w900)),
+        ],
+      ),
     );
   }
 
@@ -871,54 +1609,4 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
-}
-
-class _VarkPieChartPainter extends CustomPainter {
-  final int visual;
-  final int auditory;
-  final int kinesthetic;
-  final int readWrite;
-
-  _VarkPieChartPainter({required this.visual, required this.auditory, required this.kinesthetic, required this.readWrite});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final int total = visual + auditory + kinesthetic + readWrite;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    if (total == 0) {
-      final paint = Paint()..color = Colors.grey.withValues(alpha: 0.3);
-      canvas.drawCircle(center, radius, paint);
-      return;
-    }
-
-    final double visAngle   = (visual / total) * 2 * 3.141592653589793;
-    final double audAngle   = (auditory / total) * 2 * 3.141592653589793;
-    final double kinesAngle = (kinesthetic / total) * 2 * 3.141592653589793;
-    final double rwAngle    = (readWrite / total) * 2 * 3.141592653589793;
-
-    double startAngle = -3.141592653589793 / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    if (visual > 0) {
-      canvas.drawArc(rect, startAngle, visAngle, true, Paint()..color = const Color(0xFF3B82F6));
-      startAngle += visAngle;
-    }
-    if (auditory > 0) {
-      canvas.drawArc(rect, startAngle, audAngle, true, Paint()..color = const Color(0xFFEC4899));
-      startAngle += audAngle;
-    }
-    if (readWrite > 0) {
-      canvas.drawArc(rect, startAngle, rwAngle, true, Paint()..color = const Color(0xFFF59E0B));
-      startAngle += rwAngle;
-    }
-    if (kinesthetic > 0) {
-      canvas.drawArc(rect, startAngle, kinesAngle, true, Paint()..color = const Color(0xFF10B981));
-      startAngle += kinesAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _VarkPieChartPainter oldDelegate) => true;
 }

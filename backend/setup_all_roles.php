@@ -15,25 +15,29 @@ try {
     $secCode  = '1234@';
     $db->exec("UPDATE users SET password_hash = '$passHash', security_code = '$secCode', is_activated = 1, matricule = 'P2026001' WHERE id = 11 OR role = 'principal'");
 
-    // 2. Setup Divisional Delegate: M. Bikoi Joseph (DD2026001)
-    $passHashDel = hash('sha256', 'delegate1');
-    $db->exec("UPDATE users SET password_hash = '$passHashDel', security_code = '$secCode', is_activated = 1, matricule = 'DD2026001' WHERE id = 12 OR role = 'divisional_delegate'");
+    // 2. Setup Divisional Delegate: M. Bikoi Joseph (DEL202601)
+    $passHashDiv = hash('sha256', 'divisional123');
+    $secCodeDiv  = '12345@';
+    $db->exec("UPDATE users SET password_hash = '$passHashDiv', security_code = '$secCodeDiv', is_activated = 1, matricule = 'DEL202601' WHERE id = 12 OR role = 'divisional_delegate'");
 
-    // 3. Setup Regional Delegate: Dr. Fouda Alphonse (RD2026001)
-    $db->exec("UPDATE users SET password_hash = '$passHashDel', security_code = '$secCode', is_activated = 1, matricule = 'RD2026001' WHERE id = 13 OR role = 'regional_delegate'");
+    // 3. Setup Regional Delegate: Dr. Fouda Alphonse (REG202601)
+    $passHashReg = hash('sha256', 'regional123');
+    $secCodeReg  = '123456';
+    $db->exec("UPDATE users SET password_hash = '$passHashReg', security_code = '$secCodeReg', is_activated = 1, matricule = 'REG202601' WHERE id = 13 OR role = 'regional_delegate'");
 
-    // 4. Setup MINESEC Admin: MINESEC Inspector General (ADMIN2026)
+    // 4. Setup MINESEC Admin: MINESEC Inspector General (ADM202601)
     $passHashAdmin = hash('sha256', 'admin1');
-    $db->exec("UPDATE users SET password_hash = '$passHashAdmin', security_code = '$secCode', is_activated = 1, matricule = 'ADMIN2026' WHERE id = 14 OR role = 'admin'");
+    $secCodeAdmin  = '1234567';
+    $db->exec("UPDATE users SET password_hash = '$passHashAdmin', security_code = '$secCodeAdmin', is_activated = 1, matricule = 'ADM202601' WHERE id = 14 OR role = 'admin'");
 
     echo json_encode([
         'success' => true,
         'message' => 'All actor credentials updated successfully in database.',
         'credentials' => [
-            'principal' => ['matricule' => 'P2026001', 'password' => 'principal1', 'security_code' => '1234@'],
-            'divisional_delegate' => ['matricule' => 'DD2026001', 'password' => 'delegate1', 'security_code' => '1234@'],
-            'regional_delegate' => ['matricule' => 'RD2026001', 'password' => 'delegate1', 'security_code' => '1234@'],
-            'admin' => ['matricule' => 'ADMIN2026', 'password' => 'admin1', 'security_code' => '1234@'],
+            'principal' => ['matricule' => 'PRN202601', 'password' => 'principal1', 'security_code' => '12345'],
+            'divisional_delegate' => ['matricule' => 'DEL202601', 'password' => 'divisional123', 'security_code' => '12345@'],
+            'regional_delegate' => ['matricule' => 'REG202601', 'password' => 'regional123', 'security_code' => '123456'],
+            'admin' => ['matricule' => 'ADM202601', 'password' => 'admin1', 'security_code' => '1234567'],
         ]
     ], JSON_PRETTY_PRINT);
 
