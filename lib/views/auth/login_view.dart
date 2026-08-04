@@ -152,15 +152,15 @@ class _LoginViewState extends State<LoginView> {
                   ],
 
                   // Matricule
-                  _label(_isEn ? 'MATRICULE / PHONE' : 'MATRICULE / TÉLÉPHONE'),
+                  _label('MATRICULE'),
                   const SizedBox(height: 8),
-                  _field(_matriculeCtrl, _isEn ? 'e.g. CM12345 or 6XXXXXXXX' : 'ex. CM12345 ou 6XXXXXXXX', Icons.badge_outlined),
+                  _field(_matriculeCtrl, '', Icons.badge_outlined),
                   const SizedBox(height: 16),
 
                   // Password
                   _label(_isEn ? 'PASSWORD' : 'MOT DE PASSE'),
                   const SizedBox(height: 8),
-                  _field(_passwordCtrl, '••••••••', Icons.lock_outline,
+                  _field(_passwordCtrl, '', Icons.lock_outline,
                       obscure: !_showPass,
                       suffix: IconButton(
                         icon: Icon(_showPass ? Icons.visibility_off : Icons.visibility, size: 18, color: _sub),
@@ -171,7 +171,7 @@ class _LoginViewState extends State<LoginView> {
                   // Security Code
                   _label(_isEn ? 'SECURITY CODE' : 'CODE DE SÉCURITÉ'),
                   const SizedBox(height: 8),
-                  _field(_pinCtrl, 'e.g. SEC#2026', Icons.shield_outlined,
+                  _field(_pinCtrl, '', Icons.shield_outlined,
                       obscure: !_showPin,
                       suffix: IconButton(
                         icon: Icon(_showPin ? Icons.visibility_off : Icons.visibility, size: 18, color: _sub),

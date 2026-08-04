@@ -649,8 +649,7 @@ class _WelcomeViewState extends State<WelcomeView>
                 keyboardType: TextInputType.text,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: isEn ? 'Matricule or Phone Number' : 'Matricule ou Numéro de téléphone',
-                  hintStyle: TextStyle(color: subColor, fontSize: 13.5),
+                  hintText: '',
                   prefixIcon: Icon(Icons.badge_outlined, color: accent, size: 20),
                   filled: true,
                   fillColor: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),

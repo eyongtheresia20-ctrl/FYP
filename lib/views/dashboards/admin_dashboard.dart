@@ -149,6 +149,382 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  void _showAddUserDialog() {
+    final nameCtrl      = TextEditingController();
+    final matCtrl       = TextEditingController();
+    final emailCtrl     = TextEditingController();
+    final phoneCtrl     = TextEditingController();
+    final birthDateCtrl = TextEditingController();
+    final divCtrl       = TextEditingController();
+    final classCtrl     = TextEditingController();
+    final subjectCtrl   = TextEditingController();
+
+    String selectedRole   = 'student';
+    String selectedGender = 'M';
+    String selectedRegion = 'ADAMOUA';
+    int? selectedSchoolId = _allSchoolsList.isNotEmpty ? _parseInt(_allSchoolsList.first['id']) : 1;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: _card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Row(
+              children: [
+                Icon(Icons.person_add_rounded, color: _green, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  _isEn ? 'Create New User Account' : 'Créer un Nouveau Compte',
+                  style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 17),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: 520,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // System Role
+                    Text(_isEn ? 'System Role:' : 'Rôle Système :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      value: selectedRole,
+                      dropdownColor: _card,
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      items: [
+                        DropdownMenuItem(value: 'regional_delegate', child: Text(_isEn ? 'Regional Delegate' : 'Délégué Régional')),
+                        DropdownMenuItem(value: 'divisional_delegate', child: Text(_isEn ? 'Divisional Delegate' : 'Délégué Départemental')),
+                        DropdownMenuItem(value: 'principal', child: Text(_isEn ? 'Principal' : 'Proviseur')),
+                        DropdownMenuItem(value: 'teacher', child: Text(_isEn ? 'Teacher' : 'Enseignant')),
+                        DropdownMenuItem(value: 'student', child: Text(_isEn ? 'Student' : 'Élève')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedRole = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Full Name
+                    Text(_isEn ? 'Full Name:' : 'Nom Complet :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: nameCtrl,
+                      style: TextStyle(color: _text, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: '',
+                        prefixIcon: Icon(Icons.person_outline, color: _green, size: 20),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Matricule & Gender (Row)
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Matricule / Staff ID:' : 'Matricule / Identifiant :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: matCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  hintText: '',
+                                  prefixIcon: Icon(Icons.badge_outlined, color: _green, size: 20),
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Gender:' : 'Genre :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: selectedGender,
+                                dropdownColor: _card,
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                                decoration: InputDecoration(
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                                items: [
+                                  DropdownMenuItem(value: 'M', child: Text(_isEn ? 'Male (M)' : 'Masculin (M)')),
+                                  DropdownMenuItem(value: 'F', child: Text(_isEn ? 'Female (F)' : 'Féminin (F)')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedGender = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Date of Birth & Phone (Row - Phone hidden for Students)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Date of Birth (YYYY-MM-DD):' : 'Date de Naissance (AAAA-MM-JJ) :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: birthDateCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  hintText: '',
+                                  prefixIcon: Icon(Icons.cake_outlined, color: _green, size: 20),
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (selectedRole != 'student') ...[
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_isEn ? 'Phone (Optional):' : 'Téléphone (Optionnel) :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                TextField(
+                                  controller: phoneCtrl,
+                                  style: TextStyle(color: _text, fontSize: 13),
+                                  decoration: InputDecoration(
+                                    hintText: '',
+                                    prefixIcon: Icon(Icons.phone_outlined, color: _green, size: 20),
+                                    filled: true, fillColor: _bg,
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Region & Division Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Region:' : 'Région :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: selectedRegion,
+                                dropdownColor: _card,
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                decoration: InputDecoration(
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                                items: ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'].map((r) {
+                                  return DropdownMenuItem(value: r, child: Text(r));
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedRegion = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Division:' : 'Département :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: divCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  hintText: '',
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // School Dropdown (For Principal, Teacher, Student)
+                    if (selectedRole != 'admin' && selectedRole != 'regional_delegate' && selectedRole != 'divisional_delegate') ...[
+                      Text(_isEn ? 'School:' : 'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<int>(
+                        value: selectedSchoolId,
+                        dropdownColor: _card,
+                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
+                        decoration: InputDecoration(
+                          filled: true, fillColor: _bg,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        ),
+                        items: _allSchoolsList.map<DropdownMenuItem<int>>((sc) {
+                          return DropdownMenuItem<int>(
+                            value: _parseInt(sc['id']),
+                            child: Text((sc['name'] ?? '').toString(), overflow: TextOverflow.ellipsis),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedSchoolId = val);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Class / Subject fields for Teacher/Student
+                    if (selectedRole == 'teacher' || selectedRole == 'student') ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_isEn ? 'Class Name:' : 'Classe :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                TextField(
+                                  controller: classCtrl,
+                                  style: TextStyle(color: _text, fontSize: 13),
+                                  decoration: InputDecoration(
+                                    hintText: '',
+                                    prefixIcon: Icon(Icons.bookmark_outline, color: _green, size: 20),
+                                    filled: true, fillColor: _bg,
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (selectedRole == 'teacher') ...[
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_isEn ? 'Subject:' : 'Matière :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  TextField(
+                                    controller: subjectCtrl,
+                                    style: TextStyle(color: _text, fontSize: 13),
+                                    decoration: InputDecoration(
+                                      hintText: '',
+                                      prefixIcon: Icon(Icons.book_outlined, color: _green, size: 20),
+                                      filled: true, fillColor: _bg,
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub))),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                icon: const Icon(Icons.check_circle_rounded, size: 18),
+                label: Text(_isEn ? 'Create User' : 'Créer l\'Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () async {
+                  if (nameCtrl.text.trim().isEmpty || matCtrl.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please fill required fields.' : 'Veuillez remplir les champs requis.'), backgroundColor: Colors.red));
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  try {
+                    final resp = await http.post(
+                      Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=create_user'),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'full_name': nameCtrl.text.trim(),
+                        'role': selectedRole,
+                        'matricule': matCtrl.text.trim(),
+                        'gender': selectedGender,
+                        'birth_date': birthDateCtrl.text.trim(),
+                        'email': emailCtrl.text.trim(),
+                        'phone': phoneCtrl.text.trim(),
+                        'region': selectedRegion,
+                        'division': divCtrl.text.trim(),
+                        'school_id': selectedSchoolId,
+                        'class_name': classCtrl.text.trim(),
+                        'subject': subjectCtrl.text.trim(),
+                      }),
+                    );
+                    final data = jsonDecode(resp.body);
+                    if (data['success'] == true) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(_isEn ? 'User created successfully!' : 'Utilisateur créé avec succès !'), backgroundColor: _green),
+                        );
+                        _fetchAllUsersAndSchools();
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Error creating user'), backgroundColor: Colors.red));
+                      }
+                    }
+                  } catch (err) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
+                    }
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _toggleUserStatus(int userId, int newStatus) async {
     try {
       final resp = await http.post(
@@ -314,322 +690,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         'ai_national_strategy_fr': '• Mettez en œuvre des modules nationaux de formation des enseignants à la pédagogie différenciée VARK.\n• Allouez le budget pour les infrastructures numériques d\'apprentissage selon la base de données.\n• Suivez le taux de couverture des évaluations diagnostiques à l\'échelle nationale.',
       };
     });
-  }
-
-  void _showAddUserDialog() {
-    final nameCtrl     = TextEditingController();
-    final matCtrl      = TextEditingController();
-    final passCtrl     = TextEditingController(text: '123456');
-    final secCtrl      = TextEditingController(text: '123456');
-    final classCtrl    = TextEditingController(text: '1ère TI');
-    final subjectCtrl  = TextEditingController(text: 'Informatique');
-
-    String selectedRole     = 'teacher';
-    String selectedRegion   = 'ADAMOUA';
-    String selectedDivision = 'DJEREM';
-    int selectedSchoolId    = _allSchoolsList.isNotEmpty ? _parseInt(_allSchoolsList.first['id']) : 1;
-    bool saving = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Container(
-            padding: EdgeInsets.only(
-              left: 22, right: 22, top: 22,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 22,
-            ),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: _border),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.person_add_rounded, color: _green, size: 24),
-                          const SizedBox(width: 10),
-                          Text(
-                            _isEn ? 'Create New System Account' : 'Créer un Compte Utilisateur',
-                            style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16.5),
-                          ),
-                        ],
-                      ),
-                      IconButton(icon: Icon(Icons.close, color: _sub), onPressed: () => Navigator.pop(ctx)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  Text(_isEn ? 'System Role:' : 'Rôle Système :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: selectedRole,
-                    decoration: InputDecoration(
-                      filled: true, fillColor: _bg,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                    dropdownColor: _card,
-                    style: TextStyle(color: _text, fontWeight: FontWeight.bold),
-                    items: [
-                      DropdownMenuItem(value: 'regional_delegate', child: Text(_isEn ? 'Regional Delegate' : 'Délégué Régional')),
-                      DropdownMenuItem(value: 'divisional_delegate', child: Text(_isEn ? 'Divisional Delegate' : 'Délégué Départemental')),
-                      DropdownMenuItem(value: 'principal', child: Text(_isEn ? 'Principal / Headmaster' : 'Proviseur / Chef d\'Établissement')),
-                      DropdownMenuItem(value: 'teacher', child: Text(_isEn ? 'Teacher' : 'Enseignant')),
-                      DropdownMenuItem(value: 'student', child: Text(_isEn ? 'Student' : 'Élève')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setModalState(() => selectedRole = val);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: nameCtrl,
-                    style: TextStyle(color: _text),
-                    decoration: InputDecoration(
-                      labelText: _isEn ? 'Full Name' : 'Nom Complet',
-                      labelStyle: TextStyle(color: _sub),
-                      filled: true, fillColor: _bg,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      prefixIcon: Icon(Icons.person_outline_rounded, color: _green),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: matCtrl,
-                    style: TextStyle(color: _text),
-                    decoration: InputDecoration(
-                      labelText: _isEn ? 'Matricule / Staff ID' : 'Matricule / Identifiant',
-                      labelStyle: TextStyle(color: _sub),
-                      filled: true, fillColor: _bg,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      prefixIcon: Icon(Icons.badge_outlined, color: _green),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: passCtrl,
-                          style: TextStyle(color: _text),
-                          decoration: InputDecoration(
-                            labelText: _isEn ? 'Password' : 'Mot de passe',
-                            labelStyle: TextStyle(color: _sub),
-                            filled: true, fillColor: _bg,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                            prefixIcon: Icon(Icons.lock_outline_rounded, color: _green),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: secCtrl,
-                          style: TextStyle(color: _text),
-                          decoration: InputDecoration(
-                            labelText: _isEn ? 'Security PIN' : 'Code PIN',
-                            labelStyle: TextStyle(color: _sub),
-                            filled: true, fillColor: _bg,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                            prefixIcon: Icon(Icons.pin_outlined, color: _green),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: selectedRegion,
-                          decoration: InputDecoration(
-                            labelText: _isEn ? 'Region' : 'Région',
-                            labelStyle: TextStyle(color: _sub),
-                            filled: true, fillColor: _bg,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                          ),
-                          dropdownColor: _card,
-                          style: TextStyle(color: _text, fontWeight: FontWeight.bold),
-                          items: ['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedRegion = val);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: selectedDivision,
-                          decoration: InputDecoration(
-                            labelText: _isEn ? 'Division' : 'Département',
-                            labelStyle: TextStyle(color: _sub),
-                            filled: true, fillColor: _bg,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                          ),
-                          dropdownColor: _card,
-                          style: TextStyle(color: _text, fontWeight: FontWeight.bold),
-                          items: ['DJEREM', 'VINA', 'MFOUNDI', 'WOURI', 'MAYO-BALEO', 'FARO-ET-DEO'].map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                          onChanged: (val) {
-                            if (val != null) setModalState(() => selectedDivision = val);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  if (_allSchoolsList.isNotEmpty) ...[
-                    Text(_isEn ? 'School:' : 'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      value: selectedSchoolId,
-                      decoration: InputDecoration(
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      ),
-                      dropdownColor: _card,
-                      style: TextStyle(color: _text, fontWeight: FontWeight.bold),
-                      items: _allSchoolsList.map<DropdownMenuItem<int>>((sc) {
-                        final id = _parseInt(sc['id']);
-                        final name = (sc['name'] ?? '').toString();
-                        return DropdownMenuItem<int>(value: id, child: Text(name, overflow: TextOverflow.ellipsis));
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => selectedSchoolId = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  if (selectedRole == 'student' || selectedRole == 'teacher') ...[
-                    TextField(
-                      controller: classCtrl,
-                      style: TextStyle(color: _text),
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Class Name' : 'Classe',
-                        labelStyle: TextStyle(color: _sub),
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                        prefixIcon: Icon(Icons.class_outlined, color: _green),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  if (selectedRole == 'teacher') ...[
-                    TextField(
-                      controller: subjectCtrl,
-                      style: TextStyle(color: _text),
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Subject' : 'Matière / Discipline',
-                        labelStyle: TextStyle(color: _sub),
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                        prefixIcon: Icon(Icons.book_outlined, color: _green),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  const SizedBox(height: 10),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      onPressed: saving ? null : () async {
-                        final name = nameCtrl.text.trim();
-                        final mat  = matCtrl.text.trim();
-                        final pass = passCtrl.text.trim();
-                        final sec  = secCtrl.text.trim();
-
-                        if (name.isEmpty || mat.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(_isEn ? 'Name and Matricule are required!' : 'Nom et Matricule requis !'), backgroundColor: Colors.red),
-                          );
-                          return;
-                        }
-
-                        setModalState(() => saving = true);
-
-                        try {
-                          final resp = await http.post(
-                            Uri.parse('http://localhost:8080/minesec_api/api/admin.php?action=create_user'),
-                            headers: {'Content-Type': 'application/json'},
-                            body: jsonEncode({
-                              'full_name': name,
-                              'role': selectedRole,
-                              'matricule': mat,
-                              'password': pass,
-                              'security_code': sec,
-                              'region': selectedRegion,
-                              'division': selectedDivision,
-                              'school_id': selectedSchoolId,
-                              'class_name': classCtrl.text.trim(),
-                              'subject': subjectCtrl.text.trim(),
-                            }),
-                          );
-                          final resData = jsonDecode(resp.body);
-
-                          if (mounted) {
-                            Navigator.pop(ctx);
-                            if (resData['success'] == true) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(resData['message'] ?? (_isEn ? 'User created successfully!' : 'Utilisateur créé avec succès !')), backgroundColor: _green),
-                              );
-                              _fetchAllUsersAndSchools();
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(resData['message'] ?? 'Error creating user.'), backgroundColor: Colors.red),
-                              );
-                            }
-                          }
-                        } catch (err) {
-                          if (mounted) {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red),
-                            );
-                          }
-                        }
-                      },
-                      icon: saving
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.check_circle_rounded, size: 20),
-                      label: Text(
-                        saving ? (_isEn ? 'Creating...' : 'Création...') : (_isEn ? 'Create User Account' : 'Créer l\'Utilisateur'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   void _showAdminProfileDialog() async {

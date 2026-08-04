@@ -57,8 +57,12 @@ switch ($action) {
         $fullName  = trim($body['full_name'] ?? '');
         $role      = trim($body['role'] ?? '');
         $matricule = trim($body['matricule'] ?? '');
-        $password  = trim($body['password'] ?? '123456');
-        $secCode   = trim($body['security_code'] ?? '123456');
+        $gender    = trim($body['gender'] ?? 'M');
+        $birthDate = trim($body['birth_date'] ?? '2008-01-01');
+        $email     = trim($body['email'] ?? '');
+        $phone     = trim($body['phone'] ?? '');
+        $password  = '123456';
+        $secCode   = '123456';
         $region    = trim($body['region'] ?? 'ADAMOUA');
         $division  = trim($body['division'] ?? 'DJEREM');
         $schoolId  = intval($body['school_id'] ?? 1);
@@ -77,35 +81,43 @@ switch ($action) {
         }
 
         $passHash = hash('sha256', $password);
+        if (empty($email)) {
+            $email = strtolower(str_replace(' ', '.', $fullName)) . '@minesec.cm';
+        }
 
         // Insert into users table
         $stmtIns = $pdo->prepare("
-            INSERT INTO users (full_name, matricule, email, password_hash, security_code, role, is_activated, region, division, school_id)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            INSERT INTO users (full_name, matricule, email, phone, password_hash, security_code, role, is_activated, region, division, school_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
         ");
-        $email = strtolower(str_replace(' ', '.', $fullName)) . '@minesec.cm';
-        $stmtIns->execute([$fullName, $matricule, $email, $passHash, $secCode, $role, $region, $division, $schoolId]);
+        $stmtIns->execute([$fullName, $matricule, $email, $phone, $passHash, $secCode, $role, $region, $division, $schoolId]);
         $newUserId = $pdo->lastInsertId();
+
+        // Fetch school name for school-level roles
+        $stmtSchool = $pdo->prepare("SELECT name FROM schools WHERE id = ?");
+        $stmtSchool->execute([$schoolId]);
+        $schoolRow = $stmtSchool->fetch(PDO::FETCH_ASSOC);
+        $schoolName = $schoolRow['name'] ?? 'LYCEE BILINGUE DE NGAOUNDAL';
 
         // Insert role-specific details
         if ($role === 'student') {
-            $stmtSt = $pdo->prepare("INSERT INTO students (user_id, mat_number, matricule, class_name) VALUES (?, ?, ?, ?)");
-            $stmtSt->execute([$newUserId, $matricule, $matricule, $className]);
+            $stmtSt = $pdo->prepare("INSERT INTO students (user_id, full_name, mat_number, matricule, class_name, gender, birth_date, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmtSt->execute([$newUserId, $fullName, $matricule, $matricule, $className, $gender, $birthDate, $region, $division, $schoolName]);
         } else if ($role === 'teacher') {
-            $stmtT = $pdo->prepare("INSERT INTO teachers (user_id, staff_id, matricule, subject, class_name) VALUES (?, ?, ?, ?, ?)");
-            $stmtT->execute([$newUserId, $matricule, $matricule, $subject, $className]);
+            $stmtT = $pdo->prepare("INSERT INTO teachers (user_id, full_name, staff_id, matricule, subject, class_name, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmtT->execute([$newUserId, $fullName, $matricule, $matricule, $subject, $className, $region, $division, $schoolName]);
             
             $stmtTc = $pdo->prepare("INSERT IGNORE INTO teacher_classes (teacher_id, class_name) VALUES (?, ?)");
             $stmtTc->execute([$newUserId, $className]);
         } else if ($role === 'principal') {
-            $stmtP = $pdo->prepare("INSERT INTO principals (user_id, staff_id, matricule, school_id) VALUES (?, ?, ?, ?)");
-            $stmtP->execute([$newUserId, $matricule, $matricule, $schoolId]);
+            $stmtP = $pdo->prepare("INSERT INTO principals (user_id, full_name, staff_id, matricule, school_id, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmtP->execute([$newUserId, $fullName, $matricule, $matricule, $schoolId, $region, $division, $schoolName]);
         } else if ($role === 'divisional_delegate') {
-            $stmtD = $pdo->prepare("INSERT INTO divisional_delegates (user_id, staff_id, matricule, delegation_name) VALUES (?, ?, ?, ?)");
-            $stmtD->execute([$newUserId, $matricule, $matricule, "DÉLÉGATION DÉPARTEMENTALE DU $division"]);
+            $stmtD = $pdo->prepare("INSERT INTO divisional_delegates (user_id, full_name, staff_id, matricule, delegation_name, region, division) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmtD->execute([$newUserId, $fullName, $matricule, $matricule, "DÉLÉGATION DÉPARTEMENTALE DU $division", $region, $division]);
         } else if ($role === 'regional_delegate') {
-            $stmtR = $pdo->prepare("INSERT INTO regional_delegates (user_id, staff_id, matricule, delegation_name) VALUES (?, ?, ?, ?)");
-            $stmtR->execute([$newUserId, $matricule, $matricule, "DÉLÉGATION RÉGIONALE DE L'$region"]);
+            $stmtR = $pdo->prepare("INSERT INTO regional_delegates (user_id, full_name, staff_id, matricule, delegation_name, region) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmtR->execute([$newUserId, $fullName, $matricule, $matricule, "DÉLÉGATION RÉGIONALE DE L'$region", $region]);
         }
 
         respond(true, "User '$fullName' created successfully as $role.", ['user_id' => $newUserId]);
