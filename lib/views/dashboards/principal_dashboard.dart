@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/api_config.dart';
 
 class PrincipalDashboard extends StatefulWidget {
   final UserModel user;
@@ -67,7 +68,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
     setState(() => _isLoading = true);
     try {
       final resp = await http.get(
-        Uri.parse('http://localhost:8080/minesec_api/api/dashboard.php?action=principal_school&principal_id=${_currentUser.id}'),
+        Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=principal_school&principal_id=${_currentUser.id}'),
       );
       final data = jsonDecode(resp.body);
       if (data['success'] == true) {
@@ -83,10 +84,344 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
     }
   }
 
+  List<String> _getDivisionsForRegion(String regionName) {
+    switch (regionName.toUpperCase()) {
+      case 'ADAMOUA': return ['DJEREM', 'VINA', 'MAYO-BANYO', 'FARO-ET-DEO', 'MBERE'];
+      case 'CENTRE': return ['MFOUNDI', 'NYONG-ET-SO\'O', 'NYONG-ET-MFOUMOU', 'NYONG-ET-KELLE', 'HAUTE-SANAGA', 'LEKIE', 'MBAM-ET-INOUBOU', 'MBAM-ET-KIM', 'MEFOU-ET-AFAMBA', 'MEFOU-ET-AKONO'];
+      case 'EST': return ['LOM-ET-DJEREM', 'KADEY', 'BOUMBA-ET-NGOKO', 'HAUT-NYONG'];
+      case 'EXTREME-NORD': return ['DIAMARE', 'MAYO-DANAY', 'MAYO-KANI', 'MAYO-SAVA', 'MAYO-TSANAGA', 'LOGONE-ET-CHARI'];
+      case 'LITTORAL': return ['WOURI', 'SANAGA-MARITIME', 'NKAM', 'MOUNGO'];
+      case 'NORD': return ['BENOUE', 'FARO', 'MAYO-LOUTI', 'MAYO-REY'];
+      case 'NORD-OUEST': return ['MEZAM', 'BOYO', 'BUI', 'DONGA-MANTUNG', 'MENCHUM', 'MOMO', 'NGO-KETUNJIA'];
+      case 'OUEST': return ['BAMBOUTOS', 'HAUT-NKAM', 'HAUTS-PLATEAUX', 'KOUNG-KHI', 'MENOUA', 'MIFI', 'NDE', 'NOUN'];
+      case 'SUD': return ['OCEAN', 'MVILA', 'DJA-ET-LOBO', 'VALLEE-DU-NTEM'];
+      case 'SUD-OUEST': return ['FAKO', 'MEME', 'NDIAN', 'LEBIALEM', 'MANYU', 'KUPE-MANENGUBA'];
+      default: return ['DJEREM', 'VINA', 'MAYO-BANYO', 'FARO-ET-DEO', 'MBERE'];
+    }
+  }
+
+  void _showAddStudentDialog() {
+    final nameCtrl = TextEditingController();
+    final matCtrl = TextEditingController();
+    final classCtrl = TextEditingController(text: '1ère TI');
+    final birthDateCtrl = TextEditingController(text: '2008-01-01');
+    final schoolCtrl = TextEditingController(text: _schoolData?['school_name']?.toString() ?? 'LYCEE BILINGUE DE NGAOUNDAL');
+
+    String selectedGender = 'M';
+    String selectedRegion = _currentUser.region ?? 'ADAMOUA';
+    List<String> currentDivisions = _getDivisionsForRegion(selectedRegion);
+    String selectedDivision = currentDivisions.contains(_currentUser.division) ? (_currentUser.division!) : currentDivisions.first;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: _card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            title: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  color: _sub,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: _isEn ? 'Back' : 'Retour',
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.person_add_rounded, color: _green, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _isEn ? 'Add Student' : 'Ajouter un Élève',
+                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Full Name
+                    Text(_isEn ? 'Full Name:' : 'Nom Complet :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: nameCtrl,
+                      style: TextStyle(color: _text, fontSize: 13),
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.person_outline, color: _green, size: 18),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Matricule & Gender (Row)
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Matricule / Student ID:' : 'Matricule :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: matCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(Icons.badge_outlined, color: _green, size: 18),
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Gender:' : 'Genre :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: selectedGender,
+                                isExpanded: true,
+                                dropdownColor: _card,
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                decoration: InputDecoration(
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                ),
+                                items: [
+                                  DropdownMenuItem(value: 'M', child: Text(_isEn ? 'Male (M)' : 'Masculin (M)')),
+                                  DropdownMenuItem(value: 'F', child: Text(_isEn ? 'Female (F)' : 'Féminin (F)')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedGender = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Region & Division Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Region:' : 'Région :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: selectedRegion,
+                                isExpanded: true,
+                                dropdownColor: _card,
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12),
+                                decoration: InputDecoration(
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                ),
+                                items: ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'].map((r) {
+                                  return DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis));
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setModalState(() {
+                                      selectedRegion = val;
+                                      currentDivisions = _getDivisionsForRegion(selectedRegion);
+                                      selectedDivision = currentDivisions.contains(selectedDivision) ? selectedDivision : currentDivisions.first;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Division:' : 'Département :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: currentDivisions.contains(selectedDivision) ? selectedDivision : currentDivisions.first,
+                                isExpanded: true,
+                                dropdownColor: _card,
+                                style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12),
+                                decoration: InputDecoration(
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                ),
+                                items: currentDivisions.map((d) {
+                                  return DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis));
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setModalState(() => selectedDivision = val);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // School Name Field
+                    Text(_isEn ? 'School Name:' : 'Établissement :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: schoolCtrl,
+                      style: TextStyle(color: _text, fontSize: 13),
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.school_outlined, color: _green, size: 18),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Date of Birth & Class (Row)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Class Name:' : 'Classe :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: classCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(Icons.bookmark_outline, color: _green, size: 18),
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_isEn ? 'Date of Birth:' : 'Date de Naissance :', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: birthDateCtrl,
+                                style: TextStyle(color: _text, fontSize: 13),
+                                decoration: InputDecoration(
+                                  hintText: 'YYYY-MM-DD',
+                                  prefixIcon: Icon(Icons.cake_outlined, color: _green, size: 18),
+                                  filled: true, fillColor: _bg,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub))),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                icon: const Icon(Icons.check_circle_rounded, size: 18),
+                label: Text(_isEn ? 'Create Student' : 'Créer l\'Élève', style: const TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () async {
+                  if (nameCtrl.text.trim().isEmpty || matCtrl.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please fill required fields.' : 'Veuillez remplir les champs requis.'), backgroundColor: Colors.red));
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  try {
+                    final resp = await http.post(
+                      Uri.parse('${ApiConfig.baseUrl}/admin.php?action=create_user'),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'full_name': nameCtrl.text.trim(),
+                        'role': 'student',
+                        'matricule': matCtrl.text.trim(),
+                        'gender': selectedGender,
+                        'birth_date': birthDateCtrl.text.trim(),
+                        'region': selectedRegion,
+                        'division': selectedDivision,
+                        'school_id': _currentUser.schoolId ?? 1,
+                        'school_name': schoolCtrl.text.trim(),
+                        'class_name': classCtrl.text.trim(),
+                      }),
+                    );
+                    final data = jsonDecode(resp.body);
+                    if (data['success'] == true) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(_isEn ? 'Student created successfully!' : 'Élève créé avec succès !'), backgroundColor: _green),
+                        );
+                        _fetchSchoolData();
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(data['message'] ?? (_isEn ? 'Failed to create student.' : 'Échec de la création de l\'élève.')), backgroundColor: Colors.red),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(_isEn ? 'Network error: $e' : 'Erreur réseau : $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void _downloadPrincipalReport() {
     final schoolName = _schoolData?['school_name'] ?? 'LYCEE TECHNIQUE DE NGAOUNDAL';
     final principal  = _currentUser.fullName;
-    final stats      = _schoolData?['summary'] as Map<String, dynamic>? ?? {};
+
+    final totalStudents = _parseInt(_schoolData?['total_students'] ?? 0);
+    final assessedStudents = _parseInt(_schoolData?['assessed_students'] ?? 0);
+    final totalTeachers = _parseInt(_schoolData?['total_teachers'] ?? 0);
+    final visualCount = _parseInt(_schoolData?['visual_count'] ?? 0);
+    final auditoryCount = _parseInt(_schoolData?['auditory_count'] ?? 0);
+    final kinestheticCount = _parseInt(_schoolData?['kinesthetic_count'] ?? 0);
+    final readWriteCount = _parseInt(_schoolData?['read_write_count'] ?? 0);
 
     final csvContent = '''MINESEC LST — Principal School VARK Summary Report
 "Field","Value"
@@ -94,13 +429,13 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
 "Principal Name","$principal"
 "Region","${_currentUser.region ?? "ADAMOUA"}"
 "Division","${_currentUser.division ?? "DJEREM"}"
-"Total Students","${_parseInt(_schoolData?['total_students'] ?? 450)}"
-"Assessed Students","${_parseInt(stats['assessed'] ?? 380)}"
-"Total Teachers","${_parseInt(_schoolData?['total_teachers'] ?? 28)}"
-"Visual Count","${_parseInt(stats['visual'] ?? 160)}"
-"Auditory Count","${_parseInt(stats['auditory'] ?? 120)}"
-"Kinesthetic Count","${_parseInt(stats['kinesthetic'] ?? 60)}"
-"Read/Write Count","${_parseInt(stats['read_write'] ?? 40)}"
+"Total Students","$totalStudents"
+"Assessed Students","$assessedStudents"
+"Total Teachers","$totalTeachers"
+"Visual Count","$visualCount"
+"Auditory Count","$auditoryCount"
+"Kinesthetic Count","$kinestheticCount"
+"Read/Write Count","$readWriteCount"
 ''';
 
     showDialog(
@@ -234,7 +569,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
         builder: (ctx, setModalState) {
           if (loading) {
             http.get(
-              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=get_profile&user_id=${_currentUser.id}'),
+              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=get_profile&user_id=${_currentUser.id}'),
             ).then((res) {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
@@ -416,7 +751,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
 
                           try {
                             await http.post(
-                              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
+                              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=update_profile'),
                               headers: {'Content-Type': 'application/json'},
                               body: jsonEncode({
                                 'user_id': _currentUser.id,
@@ -557,21 +892,18 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
       key: _scaffoldKey,
       backgroundColor: _bg,
       drawer: isWide ? null : sidebarWidget,
-      body: Row(
-        children: [
-          if (isWide) sidebarWidget,
-          Expanded(
-            child: Column(
-              children: [
-                // ── TOP NAVIGATION BAR (SLEEK DARK NAVBAR) ──────────────────
-                Container(
-                  height: 68,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
+      body: SafeArea(
+        child: Row(
+          children: [
+            if (isWide) sidebarWidget,
+            Expanded(
+              child: Column(
+                children: [
+                  // ── TOP NAVIGATION BAR (UNIFORM & SEAMLESS) ──────────────────
+                  Container(
+                    height: 68,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     color: const Color(0xFF0F172A),
-                    border: const Border(bottom: BorderSide(color: Color(0x22FFFFFF))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 2))],
-                  ),
                   child: Row(
                     children: [
                       if (!isWide) ...[
@@ -706,7 +1038,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(_isEn ? 'Welcome Principal,' : 'Bienvenue Proviseur,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
+                                           Text(_isEn ? 'Welcome Back,' : 'Bienvenue,', style: const TextStyle(color: Colors.white70, fontSize: 13.5)),
                                           Text(_currentUser.fullName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
                                         ],
                                       ),
@@ -734,17 +1066,40 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(_isEn ? 'School Executive Overview' : 'Aperçu Général de l\'Établissement', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16)),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _green,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                Expanded(
+                                  child: Text(
+                                    _isEn ? 'School Executive Overview' : 'Aperçu Général de l\'Établissement',
+                                    style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  onPressed: _downloadPrincipalReport,
-                                  icon: const Icon(Icons.download_rounded, size: 18),
-                                  label: Text(_isEn ? 'Download Results' : 'Télécharger Résultats', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                ),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: _showAddStudentDialog,
+                                      icon: const Icon(Icons.person_add_rounded, size: 18),
+                                      label: Text(_isEn ? 'Add Student' : 'Ajouter Élève', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                    ),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: _green,
+                                        side: BorderSide(color: _green),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: _downloadPrincipalReport,
+                                      icon: const Icon(Icons.download_rounded, size: 18),
+                                      label: Text(_isEn ? 'Download Report' : 'Télécharger Rapport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1080,7 +1435,8 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _overviewStatCard({required IconData icon, required String label, required String value, required Color color}) {

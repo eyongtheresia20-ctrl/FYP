@@ -67,6 +67,9 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 500;
+
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -82,10 +85,10 @@ class _LoginViewState extends State<LoginView> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20, vertical: isCompact ? 10 : 24),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 480),
-              padding: const EdgeInsets.all(28),
+              padding: EdgeInsets.all(isCompact ? 18 : 28),
               decoration: BoxDecoration(
                 color: widget.isDarkMode ? const Color(0xFF162032) : Colors.white,
                 borderRadius: BorderRadius.circular(24),

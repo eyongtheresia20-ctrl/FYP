@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/api_config.dart';
 
 class DelegateDashboard extends StatefulWidget {
   final UserModel user;
@@ -70,7 +71,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     final action = _currentUser.isRegionalDelegate ? 'regional_analytics' : 'divisional_analytics';
     try {
       final resp = await http.get(
-        Uri.parse('http://localhost:8080/minesec_api/api/dashboard.php?action=$action&user_id=${_currentUser.id}'),
+        Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=$action&user_id=${_currentUser.id}'),
       );
       final data = jsonDecode(resp.body);
       if (data['success'] == true) {
@@ -89,7 +90,15 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
   void _downloadDelegateReport() {
     final title     = _delegateData?['title'] ?? 'MINESEC DELEGATION REPORT';
     final delegate  = _currentUser.fullName;
-    final stats     = _delegateData?['summary'] as Map<String, dynamic>? ?? {};
+
+    final totalSchools = _parseInt(_delegateData?['total_schools'] ?? 0);
+    final totalStudents = _parseInt(_delegateData?['total_students'] ?? 0);
+    final assessedStudents = _parseInt(_delegateData?['assessed_students'] ?? 0);
+    final totalTeachers = _parseInt(_delegateData?['total_teachers'] ?? 0);
+    final visualCount = _parseInt(_delegateData?['visual_count'] ?? 0);
+    final auditoryCount = _parseInt(_delegateData?['auditory_count'] ?? 0);
+    final kinestheticCount = _parseInt(_delegateData?['kinesthetic_count'] ?? 0);
+    final readWriteCount = _parseInt(_delegateData?['read_write_count'] ?? 0);
 
     final csvContent = '''MINESEC LST — Territorial Delegation VARK Report
 "Field","Value"
@@ -97,14 +106,14 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
 "Delegate Name","$delegate"
 "Region","${_currentUser.region ?? "ADAMOUA"}"
 "Division","${_currentUser.division ?? "DJEREM"}"
-"Total Schools","${_parseInt(_delegateData?['total_schools'] ?? 12)}"
-"Total Students","${_parseInt(_delegateData?['total_students'] ?? 4200)}"
-"Assessed Students","${_parseInt(stats['assessed'] ?? 3600)}"
-"Total Teachers","${_parseInt(_delegateData?['total_teachers'] ?? 180)}"
-"Visual Count","${_parseInt(stats['visual'] ?? 1400)}"
-"Auditory Count","${_parseInt(stats['auditory'] ?? 1100)}"
-"Kinesthetic Count","${_parseInt(stats['kinesthetic'] ?? 600)}"
-"Read/Write Count","${_parseInt(stats['read_write'] ?? 500)}"
+"Total Schools","$totalSchools"
+"Total Students","$totalStudents"
+"Assessed Students","$assessedStudents"
+"Total Teachers","$totalTeachers"
+"Visual Count","$visualCount"
+"Auditory Count","$auditoryCount"
+"Kinesthetic Count","$kinestheticCount"
+"Read/Write Count","$readWriteCount"
 ''';
 
     showDialog(
@@ -326,7 +335,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
         builder: (ctx, setModalState) {
           if (loading) {
             http.get(
-              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=get_profile&user_id=${_currentUser.id}'),
+              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=get_profile&user_id=${_currentUser.id}'),
             ).then((res) {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
@@ -510,7 +519,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
 
                           try {
                             await http.post(
-                              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
+                              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=update_profile'),
                               headers: {'Content-Type': 'application/json'},
                               body: jsonEncode({
                                 'user_id': _currentUser.id,
@@ -637,21 +646,18 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
       key: _scaffoldKey,
       backgroundColor: _bg,
       drawer: isWide ? null : sidebarWidget,
-      body: Row(
-        children: [
-          if (isWide) sidebarWidget,
-          Expanded(
-            child: Column(
-              children: [
-                // TOP NAVIGATION BAR (SLEEK DARK NAVBAR)
-                Container(
-                  height: 68,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
+      body: SafeArea(
+        child: Row(
+          children: [
+            if (isWide) sidebarWidget,
+            Expanded(
+              child: Column(
+                children: [
+                  // TOP NAVIGATION BAR (UNIFORM & SEAMLESS)
+                  Container(
+                    height: 68,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     color: const Color(0xFF0F172A),
-                    border: const Border(bottom: BorderSide(color: Color(0x22FFFFFF))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 2))],
-                  ),
                   child: Row(
                     children: [
                       if (!isWide) ...[
@@ -787,7 +793,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            isReg ? (_isEn ? 'Welcome Regional Delegate,' : 'Bienvenue Délégué Régional,') : (_isEn ? 'Welcome Divisional Delegate,' : 'Bienvenue Délégué Départemental,'),
+                                            _isEn ? 'Welcome Back,' : 'Bienvenue,',
                                             style: const TextStyle(color: Colors.white70, fontSize: 13.5),
                                           ),
                                           Text(_currentUser.fullName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
@@ -1194,7 +1200,8 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _overviewStatCard({required IconData icon, required String label, required String value, required Color color}) {

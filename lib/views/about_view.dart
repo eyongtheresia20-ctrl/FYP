@@ -93,6 +93,7 @@ class _AboutViewState extends State<AboutView> {
                       child: Image.asset(
                         'assets/images/minesec_logo.png',
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
                       ),
                     ),
                   ),

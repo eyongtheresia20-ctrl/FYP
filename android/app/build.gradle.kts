@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "gov.cm.minesec.minesec_lst"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

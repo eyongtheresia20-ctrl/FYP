@@ -94,10 +94,13 @@ switch ($action) {
         $newUserId = $pdo->lastInsertId();
 
         // Fetch school name for school-level roles
-        $stmtSchool = $pdo->prepare("SELECT name FROM schools WHERE id = ?");
-        $stmtSchool->execute([$schoolId]);
-        $schoolRow = $stmtSchool->fetch(PDO::FETCH_ASSOC);
-        $schoolName = $schoolRow['name'] ?? 'LYCEE BILINGUE DE NGAOUNDAL';
+        $schoolName = trim($body['school_name'] ?? '');
+        if (empty($schoolName)) {
+            $stmtSchool = $pdo->prepare("SELECT name FROM schools WHERE id = ?");
+            $stmtSchool->execute([$schoolId]);
+            $schoolRow = $stmtSchool->fetch(PDO::FETCH_ASSOC);
+            $schoolName = $schoolRow['name'] ?? 'LYCEE BILINGUE DE NGAOUNDAL';
+        }
 
         // Insert role-specific details
         if ($role === 'student') {

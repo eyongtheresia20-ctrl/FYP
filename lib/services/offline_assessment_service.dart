@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../core/api_config.dart';
 
 class OfflineAssessmentService {
   // ── 1. LOCAL EVALUATION ENGINE (OFFLINE FIRST) ──────────────────────────────
@@ -90,7 +91,7 @@ class OfflineAssessmentService {
   ) async {
     try {
       await http.post(
-        Uri.parse('http://localhost:8080/minesec_api/api/assessment.php?action=submit_assessment'),
+        Uri.parse('${ApiConfig.assessmentUrl}?action=submit_assessment'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': userId,

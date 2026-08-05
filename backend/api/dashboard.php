@@ -58,7 +58,7 @@ switch ($action) {
         // Count Assessed & VARK Breakdown from Database
         $stmtVark = $pdo->prepare("
             SELECT 
-                COUNT(a.id) AS assessed,
+                COUNT(DISTINCT a.student_id) AS assessed,
                 SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
                 SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
                 SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
@@ -103,7 +103,7 @@ switch ($action) {
             $stmtClsVark = $pdo->prepare("
                 SELECT 
                     COUNT(st.id) AS total_students,
-                    COUNT(a.id) AS assessed,
+                    COUNT(DISTINCT a.student_id) AS assessed,
                     SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
                     SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
                     SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
@@ -223,7 +223,7 @@ switch ($action) {
                 $stmtClsVark = $pdo->prepare("
                     SELECT 
                         COUNT(st.id) AS total_students,
-                        COUNT(a.id) AS assessed,
+                        COUNT(DISTINCT a.student_id) AS assessed,
                         SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
                         SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
                         SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
@@ -366,7 +366,7 @@ switch ($action) {
                 $stmtClsVark = $pdo->prepare("
                     SELECT 
                         COUNT(st.id) AS total_students,
-                        COUNT(a.id) AS assessed,
+                        COUNT(DISTINCT a.student_id) AS assessed,
                         SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
                         SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
                         SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
@@ -495,7 +495,7 @@ switch ($action) {
 
         $stmtVark = $pdo->query("
             SELECT 
-                COUNT(a.id) AS assessed,
+                COUNT(DISTINCT a.student_id) AS assessed,
                 SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
                 SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
                 SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
@@ -509,7 +509,7 @@ switch ($action) {
                 sc.region AS name,
                 COUNT(DISTINCT sc.id) AS schools,
                 COUNT(DISTINCT st.id) AS students,
-                COUNT(DISTINCT a.id) AS assessed
+                COUNT(DISTINCT a.student_id) AS assessed
             FROM schools sc
             LEFT JOIN users u ON u.school_id = sc.id AND u.role = 'student'
             LEFT JOIN students st ON st.user_id = u.id
@@ -519,32 +519,42 @@ switch ($action) {
         ");
         $regRows = $stmtReg->fetchAll(PDO::FETCH_ASSOC);
 
-        $regAnalytics = [];
+        $allCameroonRegions = [
+            'ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 
+            'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'
+        ];
+
+        $regRowsMap = [];
         foreach ($regRows as $r) {
-            $stCount = intval($r['students']);
-            $assCount = intval($r['assessed']);
-            $pct = $stCount > 0 ? round(($assCount / $stCount) * 100) . '%' : '0%';
-            $regAnalytics[] = [
-                'name' => $r['name'],
-                'schools' => intval($r['schools']),
-                'students' => $stCount,
-                'assessed_pct' => $pct,
-            ];
-        }
-        if (empty($regAnalytics)) {
-            $regAnalytics = [
-                ['name' => 'ADAMOUA', 'schools' => 4, 'students' => 2, 'assessed_pct' => '50%'],
-                ['name' => 'CENTRE', 'schools' => 1, 'students' => 0, 'assessed_pct' => '0%'],
-                ['name' => 'LITTORAL', 'schools' => 1, 'students' => 0, 'assessed_pct' => '0%'],
-            ];
+            $regRowsMap[$r['name']] = $r;
         }
 
-        // Build full national hierarchy: Region -> Division -> School -> Class
-        $stmtAllReg = $pdo->query("SELECT DISTINCT region FROM schools WHERE region IS NOT NULL AND region != '' ORDER BY region");
-        $allRegions = $stmtAllReg->fetchAll(PDO::FETCH_COLUMN);
+        $regAnalytics = [];
+        foreach ($allCameroonRegions as $regName) {
+            if (isset($regRowsMap[$regName])) {
+                $r = $regRowsMap[$regName];
+                $stCount = intval($r['students']);
+                $assCount = intval($r['assessed']);
+                $pct = $stCount > 0 ? round(($assCount / $stCount) * 100) . '%' : '0%';
+                $regAnalytics[] = [
+                    'name' => $regName,
+                    'schools' => intval($r['schools']),
+                    'students' => $stCount,
+                    'assessed_pct' => $pct,
+                ];
+            } else {
+                $regAnalytics[] = [
+                    'name' => $regName,
+                    'schools' => 0,
+                    'students' => 0,
+                    'assessed_pct' => '0%',
+                ];
+            }
+        }
 
+        // Build full national hierarchy for all 10 Regions: Region -> Division -> School -> Class
         $nationalItems = [];
-        foreach ($allRegions as $regName) {
+        foreach ($allCameroonRegions as $regName) {
             $stmtDivs = $pdo->prepare("SELECT DISTINCT division FROM schools WHERE region = ? AND division IS NOT NULL AND division != '' ORDER BY division");
             $stmtDivs->execute([$regName]);
             $divList = $stmtDivs->fetchAll(PDO::FETCH_COLUMN);
@@ -587,7 +597,7 @@ switch ($action) {
         }
 
         respond(true, 'Admin analytics fetched from live database.', [
-            'admin_name' => $authUser['full_name'] ?? 'MINESEC Inspector General',
+            'admin_name' => $authUser['full_name'] ?? 'Dr. Tchatchouang Paul',
             'title' => 'MINISTÈRE DE L\'ENSEIGNEMENT SECONDAIRE — DIRECTION GÉNÉRALE',
             'total_regions' => $totalRegions,
             'total_schools' => $totalSchools,

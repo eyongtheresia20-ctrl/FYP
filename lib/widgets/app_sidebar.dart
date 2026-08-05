@@ -38,7 +38,14 @@ class AppSidebar extends StatelessWidget {
     this.adminItems,
   });
 
+  void _closeDrawerIfOpen(BuildContext context) {
+    if (Scaffold.maybeOf(context)?.isDrawerOpen == true) {
+      Navigator.of(context).pop();
+    }
+  }
+
   Widget _navTile({
+    required BuildContext context,
     required int index,
     required IconData icon,
     required String label,
@@ -46,30 +53,47 @@ class AppSidebar extends StatelessWidget {
     Color? textColor,
     Color? iconColor,
   }) {
-    final effectiveTextColor = textColor ?? (isDarkMode ? Colors.white70 : const Color(0xFF475569));
-    final effectiveIconColor = iconColor ?? (isDarkMode ? Colors.white70 : const Color(0xFF475569));
     final isSelected = selectedIndex == index;
+    final effectiveTextColor = isSelected
+        ? Colors.white
+        : (textColor ?? (isDarkMode ? Colors.white70 : const Color(0xFF0F172A)));
+    final effectiveIconColor = isSelected
+        ? const Color(0xFF34D399)
+        : (iconColor ?? (isDarkMode ? Colors.white70 : const Color(0xFF475569)));
+
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF006A4E) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isSelected
+            ? [BoxShadow(color: const Color(0xFF006A4E).withValues(alpha: 0.25), blurRadius: 6, offset: const Offset(0, 2))]
+            : null,
+      ),
       child: ListTile(
         dense: true,
-        selected: isSelected,
-        selectedTileColor: const Color(0xFF006A4E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         leading: Icon(
           icon,
-          color: isSelected ? const Color(0xFF34D399) : effectiveIconColor,
+          color: effectiveIconColor,
           size: 20,
         ),
         title: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : effectiveTextColor,
+            color: effectiveTextColor,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             fontSize: 13.5,
           ),
         ),
-        onTap: onTap ?? () => onItemSelected(index),
+        onTap: () {
+          _closeDrawerIfOpen(context);
+          if (onTap != null) {
+            onTap();
+          } else {
+            onItemSelected(index);
+          }
+        },
       ),
     );
   }
@@ -97,20 +121,22 @@ class AppSidebar extends StatelessWidget {
     final Color _textColor   = isDarkMode ? Colors.white : const Color(0xFF0F172A);
     final Color _subTextColor= isDarkMode ? Colors.white70 : const Color(0xFF475569);
     final Color _borderColor = isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFFE2E8F0);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sidebarWidth = screenWidth < 380 ? screenWidth * 0.82 : 270.0;
 
     return Container(
-      width: 260,
+      width: sidebarWidth,
       color: _sidebarBg,
-      child: Column(
-        children: [
-          // 1. BRANDING HEADER (LOGO + APP NAME) — LOCKED DARK
-          Container(
-            height: 68,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
-              border: Border(bottom: BorderSide(color: Color(0x22FFFFFF))),
-            ),
+      child: SafeArea(
+        top: true,
+        bottom: true,
+        child: Column(
+          children: [
+            // 1. BRANDING HEADER (LOGO + APP NAME) — UNIFORM SEAMLESS
+            Container(
+              height: 68,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: const Color(0xFF0F172A),
             child: Row(
               children: [
                 Container(
@@ -165,16 +191,19 @@ class AppSidebar extends StatelessWidget {
                 // STUDENT SPECIFIC LINKS
                 if (user.isStudent) ...[
                   _navTile(
+                    context: context,
                     index: 0,
                     icon: Icons.dashboard_rounded,
                     label: isEn ? 'Dashboard Overview' : 'Tableau de Bord',
                   ),
                   _navTile(
+                    context: context,
                     index: 1,
                     icon: Icons.assignment_turned_in_rounded,
                     label: isEn ? 'Take Assessment' : 'Passer l\'Évaluation',
                   ),
                   _navTile(
+                    context: context,
                     index: 2,
                     icon: Icons.analytics_rounded,
                     label: isEn ? 'My Diagnostic Results' : 'Mes Résultats Diagnostics',
@@ -184,6 +213,7 @@ class AppSidebar extends StatelessWidget {
                 // TEACHER SPECIFIC LINKS
                 if (user.isTeacher) ...[
                   _navTile(
+                    context: context,
                     index: 0,
                     icon: Icons.dashboard_rounded,
                     label: isEn ? 'Dashboard Overview' : 'Tableau de Bord',
@@ -224,6 +254,7 @@ class AppSidebar extends StatelessWidget {
                               ),
                             ),
                             onTap: () {
+                              _closeDrawerIfOpen(context);
                               onItemSelected(1);
                               if (onClassSelected != null) onClassSelected!(cls);
                             },
@@ -237,11 +268,13 @@ class AppSidebar extends StatelessWidget {
                 // PRINCIPAL SPECIFIC LINKS
                 if (user.isPrincipal) ...[
                   _navTile(
+                    context: context,
                     index: 0,
                     icon: Icons.dashboard_rounded,
                     label: isEn ? 'Dashboard Overview' : 'Tableau de Bord',
                   ),
                   _navTile(
+                    context: context,
                     index: 1,
                     icon: Icons.school_rounded,
                     label: isEn ? 'School VARK Analytics' : 'Analyses VARK Établissement',
@@ -286,6 +319,7 @@ class AppSidebar extends StatelessWidget {
                               ),
                             ),
                             onTap: () {
+                              _closeDrawerIfOpen(context);
                               onItemSelected(2);
                               if (onClassSelected != null) onClassSelected!(cls);
                             },
@@ -299,11 +333,13 @@ class AppSidebar extends StatelessWidget {
                 // DELEGATE SPECIFIC LINKS (REGIONAL OR DIVISIONAL)
                 if (user.isRegionalDelegate || user.isDivisionalDelegate) ...[
                   _navTile(
+                    context: context,
                     index: 0,
                     icon: Icons.dashboard_rounded,
                     label: isEn ? 'Dashboard Overview' : 'Tableau de Bord',
                   ),
                   _navTile(
+                    context: context,
                     index: 1,
                     icon: Icons.map_rounded,
                     label: user.isRegionalDelegate
@@ -337,11 +373,13 @@ class AppSidebar extends StatelessWidget {
                 // ADMIN SPECIFIC LINKS
                 if (user.isAdmin) ...[
                   _navTile(
+                    context: context,
                     index: 0,
                     icon: Icons.dashboard_rounded,
                     label: isEn ? 'Dashboard Overview' : 'Tableau de Bord',
                   ),
                   _navTile(
+                    context: context,
                     index: 1,
                     icon: Icons.public_rounded,
                     label: isEn ? 'National VARK Overview' : 'Aperçu National VARK',
@@ -367,6 +405,7 @@ class AppSidebar extends StatelessWidget {
                     ),
                   ),
                   _navTile(
+                    context: context,
                     index: 3,
                     icon: Icons.manage_accounts_rounded,
                     label: isEn ? 'User & Security Admin' : 'Gestion Utilisateurs & Sécurité',
@@ -378,7 +417,10 @@ class AppSidebar extends StatelessWidget {
 
           // 3. BOTTOM USER PROFILE CARD (CLEAN)
           InkWell(
-            onTap: onOpenProfile,
+            onTap: () {
+              _closeDrawerIfOpen(context);
+              if (onOpenProfile != null) onOpenProfile!();
+            },
             borderRadius: BorderRadius.circular(16),
             child: Container(
               margin: const EdgeInsets.all(14),
@@ -421,6 +463,7 @@ class AppSidebar extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -496,6 +539,7 @@ class AppSidebar extends StatelessWidget {
                                 ),
                               ),
                               onTap: () {
+                                _closeDrawerIfOpen(context);
                                 onItemSelected(2);
                                 if (onClassSelected != null) {
                                   onClassSelected!('$scName::$clsName');
@@ -560,6 +604,7 @@ class AppSidebar extends StatelessWidget {
                         ),
                       ),
                       onTap: () {
+                        _closeDrawerIfOpen(context);
                         onItemSelected(2);
                         if (onClassSelected != null) onClassSelected!('$scItem::$clsName');
                       },
@@ -674,6 +719,7 @@ class AppSidebar extends StatelessWidget {
                                                   ),
                                                 ),
                                                 onTap: () {
+                                                  _closeDrawerIfOpen(context);
                                                   onItemSelected(2);
                                                   if (onClassSelected != null) {
                                                     onClassSelected!('$scName::$clsName');
@@ -720,7 +766,7 @@ class AppSidebar extends StatelessWidget {
       }).toList();
     }
 
-    return (tickedClasses.isNotEmpty ? tickedClasses : ['ADAMOUA', 'CENTRE', 'LITTORAL']).map((reg) {
+    return (tickedClasses.isNotEmpty ? tickedClasses : ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST']).map((reg) {
       final isSelected = selectedIndex == 2 && selectedClass == reg;
       return Container(
         margin: const EdgeInsets.only(bottom: 4),
@@ -743,6 +789,7 @@ class AppSidebar extends StatelessWidget {
             ),
           ),
           onTap: () {
+            _closeDrawerIfOpen(context);
             onItemSelected(2);
             if (onClassSelected != null) onClassSelected!(reg);
           },

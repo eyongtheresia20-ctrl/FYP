@@ -92,6 +92,7 @@ class _WelcomeViewState extends State<WelcomeView>
                   fit: BoxFit.cover,
                   color: const Color(0xF4050810),
                   colorBlendMode: BlendMode.darken,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                 ),
               ),
 
@@ -287,6 +288,7 @@ class _WelcomeViewState extends State<WelcomeView>
                           child: Image.asset(
                             'assets/images/minesec_logo.png',
                             fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
                           ),
                         ),
                       ),

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/offline_assessment_service.dart';
 import '../assessment/assessment_view.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/api_config.dart';
 
 class StudentDashboard extends StatefulWidget {
   final UserModel user;
@@ -30,6 +32,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   bool _isLoading = true;
   Map<String, dynamic>? _resultData;
   int _currentNavIndex = 0; // 0 = Dashboard Overview, 1 = Take Assessment, 2 = My Diagnostic Results
+  int _selectedViewTab = 0; // 0 = Latest Attempt, 1 = Multi-Test Cumulative Synthesis
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _scrollController = ScrollController();
@@ -40,6 +43,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Color get _text   => _isDarkMode ? Colors.white : const Color(0xFF0F172A);
   Color get _sub    => _isDarkMode ? Colors.white60 : const Color(0xFF64748B);
   Color get _border => _isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
+  int _parseInt(dynamic val) {
+    if (val is int) return val;
+    if (val is double) return val.toInt();
+    if (val is String) return double.tryParse(val)?.toInt() ?? 0;
+    return 0;
+  }
 
   @override
   void initState() {
@@ -63,7 +73,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     try {
       final resp = await http.get(
-        Uri.parse('http://localhost:8080/minesec_api/api/assessment.php?action=get_student_result&user_id=${_currentUser.id}'),
+        Uri.parse('${ApiConfig.baseUrl}/assessment.php?action=get_student_result&user_id=${_currentUser.id}'),
       );
       final data = jsonDecode(resp.body);
 
@@ -72,10 +82,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _resultData = data['data'];
           _isLoading = false;
         });
-      } else {
-        _useFallbackResult();
+        return;
       }
     } catch (e) {
+      // Fallback to local storage if API call fails
+    }
+
+    final offlineData = await OfflineAssessmentService.getStoredResult(_currentUser.id);
+    if (offlineData != null) {
+      setState(() {
+        _resultData = offlineData;
+        _isLoading = false;
+      });
+    } else {
       _useFallbackResult();
     }
   }
@@ -85,97 +104,208 @@ class _StudentDashboardState extends State<StudentDashboard> {
       _isLoading = false;
       _resultData = {
         'completed': true,
+        'attempt_count': 2,
         'learning_style': 'Auditory-Visual (Dual Style)',
         'scores': {
-          'visual': 30,
-          'auditory': 30,
-          'kinesthetic': 20,
-          'read_write': 20,
+          'visual': 30.0,
+          'auditory': 30.0,
+          'kinesthetic': 20.0,
+          'read_write': 20.0,
         },
         'summary_en': '• Listen to recorded lectures and podcasts.\n• Read your notes aloud or explain concepts to a study partner.\n• Use rhythmic memory devices and rhymes to remember formulas.\n\n• Use color-coded highlighters, mind maps, and diagrams.\n• Watch educational video tutorials and visual demonstrations.\n• Visualize concepts in your mind when recalling notebook pages.',
         'summary_fr': '• Écoutez des cours enregistrés et des podcasts.\n• Lisez vos notes à voix haute ou expliquez les concepts à un camarade.\n• Utilisez des moyens mnémotechniques rythmiques pour retenir les formules.\n\n• Utilisez des surligneurs de couleur, des cartes mentales et des schémas.\n• Regardez des tutoriels vidéo éducatifs et des démonstrations visuelles.\n• Visualisez les concepts dans votre esprit lorsque vous vous remémorez vos cours.',
+        'completed_at': DateTime.now().toString().split('.')[0],
+        'composite': {
+          'learning_style': 'Auditory-Visual (Dual Style)',
+          'scores': {
+            'visual': 35.0,
+            'auditory': 35.0,
+            'kinesthetic': 15.0,
+            'read_write': 15.0,
+          },
+          'recommendations': {
+            'en': '• Multi-Test AI Strategy: Combine auditory discussions with visual color-coded mind maps.\n• Listen to recorded lectures while creating visual diagrams and summary notes.',
+            'fr': '• Stratégie IA Multi-Tests : Combinez les discussions auditives avec des cartes mentales visuelles colorées.\n• Écoutez des cours enregistrés tout en créant des schémas visuels et fiches de synthèse.',
+          },
+          'trend_en': 'Across your 2 test attempts, your Auditory preference increased (+10%) while Visual preference remained strong. You benefit most from dual-modal auditory and visual learning techniques.',
+          'trend_fr': 'Sur l\'ensemble de vos 2 tentatives, votre préférence auditive a augmenté (+10%) tandis que votre préférence visuelle reste forte. Vous bénéficiez d\'une approche bimodal auditive et visuelle.',
+        },
+        'history': [
+          {
+            'id': 2,
+            'learning_style': 'Auditory-Visual (Dual Style)',
+            'scores': {'visual': 30.0, 'auditory': 30.0, 'kinesthetic': 20.0, 'read_write': 20.0},
+            'summary_en': '• Listen to recorded lectures and podcasts.\n• Read notes aloud with a study partner.\n• Use color-coded highlighters, mind maps, and diagrams.',
+            'summary_fr': '• Écoutez des cours enregistrés et podcasts.\n• Lisez des notes à voix haute avec un camarade.\n• Utilisez des surligneurs de couleur, cartes mentales et diagrammes.',
+            'completed_at': DateTime.now().subtract(const Duration(days: 2)).toString().split('.')[0],
+          },
+          {
+            'id': 1,
+            'learning_style': 'Visual Dominant',
+            'scores': {'visual': 40.0, 'auditory': 20.0, 'kinesthetic': 20.0, 'read_write': 20.0},
+            'summary_en': '• Use visual mind maps, diagrams, and color-coded notes.\n• Watch educational videos and visual demonstrations.',
+            'summary_fr': '• Utilisez des cartes mentales visuelles, schémas et notes colorées.\n• Regardez des vidéos éducatives et démonstrations visuelles.',
+            'completed_at': DateTime.now().subtract(const Duration(days: 7)).toString().split('.')[0],
+          }
+        ]
       };
     });
   }
 
   void _downloadStudentReport() {
-    final name = _currentUser.fullName;
-    final mat = _currentUser.matNumber ?? 'AD2026001';
-    final style = _resultData?['learning_style'] ?? 'Auditory-Visual (Dual Style)';
-    final scores = _resultData?['scores'] as Map<String, dynamic>? ?? {};
+    if (_resultData != null) {
+      OfflineAssessmentService.downloadPdfReport(
+        user: _currentUser,
+        resultData: _resultData!,
+        isEn: _isEn,
+      );
+    }
+  }
 
-    final csvContent = '''MINESEC LST — Student VARK Diagnostic Report
-"Field","Value"
-"Student Name","$name"
-"Matricule","$mat"
-"Class","1ère TI"
-"School","LYCEE TECHNIQUE DE NGAOUNDAL"
-"Dominant Style","$style"
-"Visual Score","${scores['visual'] ?? 30}%"
-"Auditory Score","${scores['auditory'] ?? 30}%"
-"Kinesthetic Score","${scores['kinesthetic'] ?? 20}%"
-"Read/Write Score","${scores['read_write'] ?? 20}%"
-''';
+  void _showAttemptDetailsModal(Map<String, dynamic> item, int attemptNum) {
+    final style = item['learning_style'] ?? 'VARK';
+    final dateStr = item['completed_at'] ?? 'N/A';
+    final sc = item['scores'] as Map<String, dynamic>? ?? {};
+    final summary = _isEn ? (item['summary_en'] ?? '') : (item['summary_fr'] ?? '');
 
-    showDialog(
+    final v = _parseInt(sc['visual']);
+    final a = _parseInt(sc['auditory']);
+    final k = _parseInt(sc['kinesthetic']);
+    final r = _parseInt(sc['read_write']);
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            Icon(Icons.download_rounded, color: _green),
-            const SizedBox(width: 10),
-            Text(
-              _isEn ? 'Download Diagnostic Report' : 'Télécharger le Rapport Diagnostic',
-              style: TextStyle(color: _text, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(top: BorderSide(color: _border)),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _isEn
-                  ? 'Your VARK Diagnostic Results report has been generated for $name ($mat).'
-                  : 'Votre rapport d\'évaluation VARK a été généré pour $name ($mat).',
-              style: TextStyle(color: _sub, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-              child: SelectableText(
-                csvContent,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(_isEn ? 'Close' : 'Fermer', style: TextStyle(color: _sub)),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white),
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(_isEn ? 'Diagnostic Report Downloaded Successfully!' : 'Rapport Diagnostic Téléchargé avec Succès !'),
-                  backgroundColor: _green,
+        padding: const EdgeInsets.all(22),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(2)),
                 ),
-              );
-            },
-            icon: const Icon(Icons.download_done_rounded, size: 18),
-            label: Text(_isEn ? 'Confirm Download' : 'Confirmer Téléchargement'),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                    child: Text('#$attemptNum', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_isEn ? "Test Attempt" : "Tentative de Test"} #$attemptNum',
+                          style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
+                        Text(
+                          '${_isEn ? "Completed on" : "Complété le"} $dateStr',
+                          style: TextStyle(color: _sub, fontSize: 11.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: _sub),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Dominant Style Badge
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _green.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology_rounded, color: _green, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${_isEn ? "Dominant Learning Style" : "Style Dominant"}: $style',
+                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Scores breakdown
+              Text(_isEn ? 'VARK Score Breakdown' : 'Répartition des Scores VARK', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: _scoreTile(_isEn ? 'Visual' : 'Visuel', '$v%', const Color(0xFF3B82F6))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _scoreTile(_isEn ? 'Auditory' : 'Auditif', '$a%', const Color(0xFF8B5CF6))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _scoreTile(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$k%', const Color(0xFF10B981))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _scoreTile(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$r%', const Color(0xFFF59E0B))),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // AI Recommendation for this test attempt
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isEn ? 'AI Recommendation for Test #$attemptNum' : 'Recommandation IA pour Test #$attemptNum',
+                          style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      summary.isNotEmpty
+                          ? summary
+                          : (_isEn ? 'No detailed summary available.' : 'Aucun résumé disponible.'),
+                      style: TextStyle(color: _text, fontSize: 12.5, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+
 
   void _showModifyProfileDialog() async {
     final passCtrl    = TextEditingController();
@@ -193,7 +323,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         builder: (ctx, setModalState) {
           if (loading) {
             http.get(
-              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=get_profile&user_id=${_currentUser.id}'),
+              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=get_profile&user_id=${_currentUser.id}'),
             ).then((res) {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
@@ -387,7 +517,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
                           try {
                             await http.post(
-                              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
+                              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=update_profile'),
                               headers: {'Content-Type': 'application/json'},
                               body: jsonEncode({
                                 'user_id': _currentUser.id,
@@ -473,13 +603,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
-  int _parseInt(dynamic val) {
-    if (val is int) return val;
-    if (val is double) return val.toInt();
-    if (val is String) return double.tryParse(val)?.toInt() ?? 0;
-    return 0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final scores = _resultData?['scores'] as Map<String, dynamic>? ?? {};
@@ -517,21 +640,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
       key: _scaffoldKey,
       backgroundColor: _bg,
       drawer: isWide ? null : sidebarWidget,
-      body: Row(
-        children: [
-          if (isWide) sidebarWidget,
-          Expanded(
-            child: Column(
-              children: [
-                // ── TOP HEADER BAR ─────────────────────────────────────────────
-                Container(
-                  height: 68,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFF0B132B),
-                    border: Border(bottom: BorderSide(color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFF1E293B))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))],
-                  ),
+      body: SafeArea(
+        child: Row(
+          children: [
+            if (isWide) sidebarWidget,
+            Expanded(
+              child: Column(
+                children: [
+                  // ── TOP HEADER BAR (UNIFORM & SEAMLESS) ──────────────────────
+                  Container(
+                    height: 68,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    color: const Color(0xFF0F172A),
                   child: Row(
                     children: [
                       if (!isWide) ...[
@@ -540,52 +660,67 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                         ),
                         const SizedBox(width: 6),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 34, height: 34,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
+                              ),
+                              padding: const EdgeInsets.all(2),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/minesec_logo.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 18),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'EDU PROFILE',
+                                  style: TextStyle(
+                                    color: Color(0xFFFCD116),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                Text(
+                                  _isEn ? 'Student Portal' : 'Portail Élève',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            const Icon(Icons.school_rounded, color: Color(0xFF34D399), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              _isEn ? 'Student Learning Portal' : 'Portail d\'Apprentissage Élève',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 38, height: 38,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/minesec_logo.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'EDU PROFILE',
-                                style: TextStyle(
-                                  color: Color(0xFFFCD116),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 15,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                              Text(
-                                _isEn ? 'Student Learning Portal' : 'Portail d\'Apprentissage Élève',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10.5,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                       const Spacer(),
 
                       Row(
@@ -822,120 +957,324 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
                         // ── TAB INDEX 2: MY DIAGNOSTIC RESULTS ────────────────────────
                         if (_currentNavIndex == 2) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _isEn ? 'My VARK Diagnostic Results' : 'Mes Résultats Diagnostics VARK',
-                                style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
-                              ),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _green,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                onPressed: _downloadStudentReport,
-                                icon: const Icon(Icons.download_rounded, size: 18),
-                                label: Text(
-                                  _isEn ? 'Download Results' : 'Télécharger Résultats',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: _card,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          if (_isLoading)
+                            Padding(
+                              padding: const EdgeInsets.all(40.0),
+                              child: Center(child: CircularProgressIndicator(color: _green)),
+                            )
+                          else ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                Text(
+                                  _isEn ? 'My VARK Diagnostic Results' : 'Mes Résultats Diagnostics VARK',
+                                  style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: _downloadStudentReport,
+                                  icon: const Icon(Icons.download_rounded, size: 18),
+                                  label: Text(
+                                    _isEn ? 'PDF Report' : 'Rapport PDF',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+
+                            // Segmented View Selector (If 2+ attempts exist)
+                            if (((_parseInt(_resultData?['attempt_count'])) > 1 || ((_resultData?['history'] as List?)?.length ?? 0) > 1) && _resultData?['composite'] != null) ...[
+                              Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: _card,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: _border),
+                                ),
+                                padding: const EdgeInsets.all(3),
+                                child: Row(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.stars_rounded, color: _green, size: 24),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          '${_isEn ? "Dominant Style" : "Style Dominant"}: $learningStyle',
-                                          style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => setState(() => _selectedViewTab = 0),
+                                        borderRadius: BorderRadius.circular(11),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedViewTab == 0 ? _green : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(11),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            _isEn ? '🌟 Latest Test Attempt' : '🌟 Dernière Tentative',
+                                            style: TextStyle(
+                                              color: _selectedViewTab == 0 ? Colors.white : _sub,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
                                         ),
-                                      ],
-                                    ),
-                                    OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: _green,
-                                        side: BorderSide(color: _green),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                       ),
-                                      onPressed: _downloadStudentReport,
-                                      icon: const Icon(Icons.file_download_outlined, size: 16),
-                                      label: Text(
-                                        _isEn ? 'Export CSV' : 'Exporter CSV',
-                                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                                    ),
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => setState(() => _selectedViewTab = 1),
+                                        borderRadius: BorderRadius.circular(11),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedViewTab == 1 ? _green : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(11),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            '${_isEn ? "🧠 Multi-Test Synthesis" : "🧠 Synthèse Multi-Tests"} (${_resultData?['attempt_count'] ?? 2})',
+                                            style: TextStyle(
+                                              color: _selectedViewTab == 1 ? Colors.white : _sub,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
 
-                                // Scores Grid
-                                Row(
-                                  children: [
-                                    Expanded(child: _scoreTile(_isEn ? 'Visual' : 'Visuel', '$vScore', const Color(0xFF3B82F6))),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: _scoreTile(_isEn ? 'Auditory' : 'Auditif', '$aScore', const Color(0xFF8B5CF6))),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: _scoreTile(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$kScore', const Color(0xFF10B981))),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: _scoreTile(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$rScore', const Color(0xFFF59E0B))),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
+                            // SINGLE UNIFIED RESULTS CARD
+                            Builder(
+                              builder: (context) {
+                                final isCompositeMode = _selectedViewTab == 1 && _resultData?['composite'] != null;
+                                final currentStyle = isCompositeMode
+                                    ? (_resultData!['composite']['learning_style'] ?? 'VARK')
+                                    : (learningStyle);
 
-                                // AI Summary Box
-                                Container(
-                                  padding: const EdgeInsets.all(16),
+                                final scMap = isCompositeMode
+                                    ? (_resultData!['composite']['scores'] as Map<String, dynamic>? ?? {})
+                                    : (_resultData?['scores'] as Map<String, dynamic>? ?? {});
+
+                                final vVal = isCompositeMode ? '${scMap['visual']}%' : '$vScore%';
+                                final aVal = isCompositeMode ? '${scMap['auditory']}%' : '$aScore%';
+                                final kVal = isCompositeMode ? '${scMap['kinesthetic']}%' : '$kScore%';
+                                final rVal = isCompositeMode ? '${scMap['read_write']}%' : '$rScore%';
+
+                                final aiRecText = isCompositeMode
+                                    ? (_isEn
+                                        ? (_resultData!['composite']['recommendations']['en'] ?? '')
+                                        : (_resultData!['composite']['recommendations']['fr'] ?? ''))
+                                    : (_isEn ? (_resultData?['summary_en'] ?? '') : (_resultData?['summary_fr'] ?? ''));
+
+                                final trendText = isCompositeMode
+                                    ? (_isEn ? (_resultData!['composite']['trend_en'] ?? '') : (_resultData!['composite']['trend_fr'] ?? ''))
+                                    : '';
+
+                                return Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: _bg,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: _border),
+                                    color: _card,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(Icons.auto_awesome_rounded, color: _green, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _isEn ? 'AI Learning Recommendations' : 'Recommandations d\'Apprentissage IA',
-                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14),
+                                          Icon(isCompositeMode ? Icons.psychology_rounded : Icons.stars_rounded, color: _green, size: 24),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              '${isCompositeMode ? (_isEn ? "Combined Dominant Style" : "Style Dominant Combiné") : (_isEn ? "Latest Attempt Style" : "Style Dernière Tentative")}: $currentStyle',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15.5),
+                                            ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        _isEn ? (_resultData?['summary_en'] ?? '') : (_resultData?['summary_fr'] ?? ''),
-                                        style: TextStyle(color: _text, fontSize: 13, height: 1.6, fontWeight: FontWeight.w500),
+                                      const SizedBox(height: 16),
+
+                                      // 4-Tile Scores Grid
+                                      Row(
+                                        children: [
+                                          Expanded(child: _scoreTile(_isEn ? 'Visual' : 'Visuel', vVal, const Color(0xFF3B82F6))),
+                                          const SizedBox(width: 8),
+                                          Expanded(child: _scoreTile(_isEn ? 'Auditory' : 'Auditif', aVal, const Color(0xFF8B5CF6))),
+                                          const SizedBox(width: 8),
+                                          Expanded(child: _scoreTile(_isEn ? 'Kinesthetic' : 'Kinesthésique', kVal, const Color(0xFF10B981))),
+                                          const SizedBox(width: 8),
+                                          Expanded(child: _scoreTile(_isEn ? 'Read/Write' : 'Lecture/Écriture', rVal, const Color(0xFFF59E0B))),
+                                        ],
+                                      ),
+
+                                      // Multi-Test Evolution Trend Banner (If composite mode)
+                                      if (isCompositeMode && trendText.isNotEmpty) ...[
+                                        const SizedBox(height: 14),
+                                        Container(
+                                          padding: const EdgeInsets.all(14),
+                                          decoration: BoxDecoration(
+                                            color: _green.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: _green.withValues(alpha: 0.2)),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(Icons.trending_up_rounded, color: _green, size: 20),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _isEn ? 'Learning Evolution Insights' : 'Analyse de l\'Évolution d\'Apprentissage',
+                                                      style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      trendText,
+                                                      style: TextStyle(color: _text, fontSize: 12, height: 1.4),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+
+                                      const SizedBox(height: 16),
+
+                                      // AI Recommendation Box
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: _bg,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: _border),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.auto_awesome_rounded, color: _green, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  _isEn ? 'AI Learning Recommendations' : 'Recommandations d\'Apprentissage IA',
+                                                  style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              aiRecText,
+                                              style: TextStyle(color: _text, fontSize: 13, height: 1.6, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
+                                );
+                              },
                             ),
-                          ),
+
+                            // Test Attempt History Timeline
+                            if (_resultData?['history'] != null && (_resultData!['history'] as List).isNotEmpty) ...[
+                              const SizedBox(height: 22),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _isEn ? 'Test Attempt History' : 'Historique des Tentatives de Test',
+                                    style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                    child: Text(
+                                      '${(_resultData!['history'] as List).length} ${_isEn ? "Attempts" : "Tentatives"}',
+                                      style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              ...(_resultData!['history'] as List).asMap().entries.map((entry) {
+                                final index = entry.key;
+                                final item = entry.value;
+                                final attemptNum = (_resultData!['history'] as List).length - index;
+                                final dateStr = item['completed_at'] ?? 'N/A';
+                                final style = item['learning_style'] ?? 'VARK';
+                                final sc = item['scores'] as Map<String, dynamic>? ?? {};
+
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showAttemptDetailsModal(item, attemptNum),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: _card,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: _border),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 38, height: 38,
+                                            decoration: BoxDecoration(color: _green.withValues(alpha: 0.15), shape: BoxShape.circle),
+                                            alignment: Alignment.center,
+                                            child: Text('#$attemptNum', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  '${_isEn ? "Attempt" : "Tentative"} #$attemptNum — $style',
+                                                  style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  '${_isEn ? "Date" : "Date"} : $dateStr | V: ${sc['visual']}% A: ${sc['auditory']}% K: ${sc['kinesthetic']}% R: ${sc['read_write']}%',
+                                                  style: TextStyle(color: _sub, fontSize: 11.5),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.touch_app_rounded, color: _green, size: 12),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      _isEn ? 'Tap to view full AI recommendation' : 'Appuyez pour voir la recommandation IA',
+                                                      style: TextStyle(color: _green, fontSize: 10.5, fontWeight: FontWeight.w600),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Icon(Icons.chevron_right_rounded, color: _sub, size: 22),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ],
                         ],
-                      ],
+                    ],
                     ),
                   ),
                 ),
@@ -944,7 +1283,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _overviewPill(IconData icon, String label, String value) {

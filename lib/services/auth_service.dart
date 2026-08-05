@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api_config.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost:8080/minesec_api/api/auth.php';
+  static String get _baseUrl => ApiConfig.authUrl;
 
   static const String _keyToken    = 'auth_token';
   static const String _keyUserId   = 'user_id';
@@ -16,6 +17,7 @@ class AuthService {
 
   // ── Check if matricule exists in DB ───────────────────────────
   static Future<Map<String, dynamic>> checkMatricule(String matricule) async {
+    await ApiConfig.getWorkingHost();
     final res = await http.post(
       Uri.parse('$_baseUrl?action=check_matricule'),
       headers: {'Content-Type': 'application/json'},
@@ -32,6 +34,7 @@ class AuthService {
     required String password,
     required String securityCode,
   }) async {
+    await ApiConfig.getWorkingHost();
     final res = await http.post(
       Uri.parse('$_baseUrl?action=activate'),
       headers: {'Content-Type': 'application/json'},
@@ -56,6 +59,7 @@ class AuthService {
     required String password,
     required String securityCode,
   }) async {
+    await ApiConfig.getWorkingHost();
     final res = await http.post(
       Uri.parse('$_baseUrl?action=matricule_login'),
       headers: {'Content-Type': 'application/json'},

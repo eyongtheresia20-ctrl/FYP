@@ -150,40 +150,131 @@ if ($action === 'submit_assessment') {
 
     if (!$studentId) respondError('Student profile not found.', 404);
 
-    $stmt = $pdo->prepare("
-        SELECT a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score, 
+    // Fetch ALL assessments for this student
+    $stmtAll = $pdo->prepare("
+        SELECT a.id, a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score, 
                a.learning_style, r.summary_en, r.summary_fr, a.completed_at
         FROM assessments a
         LEFT JOIN results r ON r.assessment_id = a.id
         WHERE a.student_id = ?
-        ORDER BY a.id DESC LIMIT 1
+        ORDER BY a.completed_at DESC, a.id DESC
     ");
-    $stmt->execute([$studentId]);
-    $result = $stmt->fetch();
+    $stmtAll->execute([$studentId]);
+    $allAssessments = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
 
-    if (!$result) {
-        respond(true, 'No assessment completed yet.', ['completed' => false]);
+    if (empty($allAssessments)) {
+        respond(true, 'No assessment completed yet.', ['completed' => false, 'history' => []]);
     }
 
-    respond(true, 'Assessment result fetched successfully.', [
+    // Calculate COMPOSITE (Average across all attempts)
+    $totalAttempts = count($allAssessments);
+    $sumV = 0; $sumA = 0; $sumK = 0; $sumR = 0;
+    $historyList = [];
+
+    foreach ($allAssessments as $ass) {
+        $v = floatval($ass['visual_score']);
+        $a = floatval($ass['auditory_score']);
+        $k = floatval($ass['kinesthetic_score']);
+        $r = floatval($ass['read_write_score']);
+
+        $sumV += $v;
+        $sumA += $a;
+        $sumK += $k;
+        $sumR += $r;
+
+        $historyList[] = [
+            'id'             => intval($ass['id']),
+            'learning_style' => $ass['learning_style'],
+            'scores'         => ['visual' => $v, 'auditory' => $a, 'kinesthetic' => $k, 'read_write' => $r],
+            'summary_en'     => $ass['summary_en'] ?? '',
+            'summary_fr'     => $ass['summary_fr'] ?? '',
+            'completed_at'   => $ass['completed_at'],
+        ];
+    }
+
+    $avgV = round($sumV / $totalAttempts, 1);
+    $avgA = round($sumA / $totalAttempts, 1);
+    $avgK = round($sumK / $totalAttempts, 1);
+    $avgR = round($sumR / $totalAttempts, 1);
+
+    // Determine composite primary learning style from averaged percentages
+    $avgScores = [
+        'Auditory'    => $avgA,
+        'Visual'      => $avgV,
+        'Kinesthetic' => $avgK,
+        'Read/Write'  => $avgR,
+    ];
+    arsort($avgScores);
+    $topAvgScore = reset($avgScores);
+    $topAvgStyles = [];
+    foreach ($avgScores as $stName => $stScore) {
+        if ($stScore === $topAvgScore) {
+            $topAvgStyles[] = $stName;
+        }
+    }
+    $compositeStyle = (count($topAvgStyles) > 1)
+        ? implode('-', $topAvgStyles) . ' (Dual Style)'
+        : $topAvgStyles[0];
+
+    $compositeRec = generateAIRecommendations($compositeStyle, $avgV, $avgA, $avgK, $avgR);
+
+    // Trend analysis across multiple test attempts
+    $trendEn = "";
+    $trendFr = "";
+    if ($totalAttempts > 1) {
+        $firstAttempt  = $allAssessments[$totalAttempts - 1];
+        $latestAttempt = $allAssessments[0];
+        $latestStyle   = $latestAttempt['learning_style'];
+        $firstStyle    = $firstAttempt['learning_style'];
+
+        if ($latestStyle === $firstStyle) {
+            $trendEn = "Over your $totalAttempts test attempts, your dominant learning style has remained consistently $latestStyle. You demonstrate a clear and well-established learning preference.";
+            $trendFr = "Au fil de vos $totalAttempts tentatives, votre style d'apprentissage dominant est resté constamment $latestStyle. Vous présentez une préférence d'apprentissage claire et affirmée.";
+        } else {
+            $trendEn = "Across your $totalAttempts test attempts, your dominant learning style evolved from $firstStyle to $latestStyle. This indicates developing versatility and adapting your study habits to new subject demands.";
+            $trendFr = "Au cours de vos $totalAttempts tentatives, votre style d'apprentissage dominant a évolué de $firstStyle à $latestStyle. Cela indique une grande adaptabilité de vos méthodes d'étude.";
+        }
+    }
+
+    $latest = $allAssessments[0];
+
+    respond(true, 'Assessment results fetched successfully.', [
         'completed'      => true,
-        'learning_style' => $result['learning_style'],
+        'attempt_count'  => $totalAttempts,
+        'learning_style' => $latest['learning_style'],
         'scores' => [
-            'visual'      => floatval($result['visual_score']),
-            'auditory'    => floatval($result['auditory_score']),
-            'kinesthetic' => floatval($result['kinesthetic_score']),
-            'read_write'  => floatval($result['read_write_score']),
+            'visual'      => floatval($latest['visual_score']),
+            'auditory'    => floatval($latest['auditory_score']),
+            'kinesthetic' => floatval($latest['kinesthetic_score']),
+            'read_write'  => floatval($latest['read_write_score']),
         ],
-        'summary_en'     => $result['summary_en'],
-        'summary_fr'     => $result['summary_fr'],
-        'completed_at'   => $result['completed_at']
+        'summary_en'     => $latest['summary_en'] ?? '',
+        'summary_fr'     => $latest['summary_fr'] ?? '',
+        'completed_at'   => $latest['completed_at'],
+
+        // Composite multi-attempt recommendation & averages
+        'composite' => [
+            'learning_style'  => $compositeStyle,
+            'scores' => [
+                'visual'      => $avgV,
+                'auditory'    => $avgA,
+                'kinesthetic' => $avgK,
+                'read_write'  => $avgR,
+            ],
+            'recommendations' => $compositeRec,
+            'trend_en'        => $trendEn,
+            'trend_fr'        => $trendFr,
+        ],
+
+        // Full history of all attempts
+        'history' => $historyList
     ]);
 
 } else {
     respondError('Invalid action.', 404);
 }
 
-function generateAIRecommendations($style, $v, $a, $k, $r) {
+function generateAIRecommendations($style, $v = 0, $a = 0, $k = 0, $r = 0) {
     $recEn = "";
     $recFr = "";
 
@@ -209,3 +300,4 @@ function generateAIRecommendations($style, $v, $a, $k, $r) {
 
     return ['en' => $recEn, 'fr' => $recFr];
 }
+

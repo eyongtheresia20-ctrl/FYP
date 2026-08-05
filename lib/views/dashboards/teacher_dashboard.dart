@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/app_sidebar.dart';
+import '../../core/api_config.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final UserModel user;
@@ -74,7 +75,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
     try {
       final resp = await http.post(
-        Uri.parse('http://localhost:8080/minesec_api/api/dashboard.php?action=teacher_class'),
+        Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=teacher_class'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'user_id': _currentUser.id,
@@ -250,7 +251,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         builder: (ctx, setModalState) {
           if (loading) {
             http.get(
-              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=get_profile&user_id=${_currentUser.id}'),
+              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=get_profile&user_id=${_currentUser.id}'),
             ).then((res) {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
@@ -439,7 +440,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
                           try {
                             await http.post(
-                              Uri.parse('http://localhost:8080/minesec_api/api/auth.php?action=update_profile'),
+                              Uri.parse('${ApiConfig.baseUrl}/auth.php?action=update_profile'),
                               headers: {'Content-Type': 'application/json'},
                               body: jsonEncode({
                                 'user_id': _currentUser.id,
@@ -558,21 +559,18 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
       key: _scaffoldKey,
       backgroundColor: _bg,
       drawer: isWide ? null : sidebarWidget,
-      body: Row(
-        children: [
-          if (isWide) sidebarWidget,
-          Expanded(
-            child: Column(
-              children: [
-                // ── TOP NAVIGATION BAR ──────────────────────────────────────
-                Container(
-                  height: 68,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFF0B132B),
-                    border: Border(bottom: BorderSide(color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFF1E293B))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2))],
-                  ),
+      body: SafeArea(
+        child: Row(
+          children: [
+            if (isWide) sidebarWidget,
+            Expanded(
+              child: Column(
+                children: [
+                  // ── TOP NAVIGATION BAR (UNIFORM & SEAMLESS) ──────────────────
+                  Container(
+                    height: 68,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    color: const Color(0xFF0F172A),
                   child: Row(
                     children: [
                       if (!isWide) ...[
@@ -1056,7 +1054,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _pieLegendItem(String label, int count, Color color) {
