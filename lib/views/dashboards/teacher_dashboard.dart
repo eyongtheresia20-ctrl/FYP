@@ -74,6 +74,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     });
 
     try {
+      await ApiConfig.getWorkingHost();
       final resp = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=teacher_class'),
         headers: {'Content-Type': 'application/json'},

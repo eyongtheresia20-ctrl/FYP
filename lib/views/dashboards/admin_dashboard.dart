@@ -82,6 +82,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> _fetchAdminData() async {
     setState(() => _isLoading = true);
     try {
+      await ApiConfig.getWorkingHost();
       final resp = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=admin_analytics&user_id=${_currentUser.id}'),
       );

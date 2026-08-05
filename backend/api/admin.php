@@ -167,14 +167,20 @@ switch ($action) {
 
         $schoolId = $school['id'] ?? 1;
 
-        // Fetch students in this class
+        // Fetch students in this class (LATEST attempt per unique student)
         $stmtSt = $pdo->prepare("
-            SELECT st.id AS student_id, st.mat_number, u.full_name, st.class_name, a.learning_style
+            SELECT st.id AS student_id, st.mat_number, u.full_name, st.class_name,
+                   COALESCE(
+                       (SELECT a.learning_style 
+                        FROM assessments a 
+                        WHERE a.student_id = st.id 
+                        ORDER BY a.id DESC LIMIT 1),
+                       'Not Assessed'
+                   ) AS learning_style
             FROM students st
             JOIN users u ON u.id = st.user_id
-            LEFT JOIN assessments a ON a.student_id = st.id
             WHERE u.school_id = ? AND st.class_name = ?
-            ORDER BY u.full_name
+            ORDER BY u.full_name ASC
         ");
         $stmtSt->execute([$schoolId, $className]);
         $students = $stmtSt->fetchAll(PDO::FETCH_ASSOC);

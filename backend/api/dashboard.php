@@ -10,6 +10,54 @@ $action = $_GET['action'] ?? '';
 $body   = getBody();
 $pdo    = getDB();
 
+function getSchoolClassBreakdownAndRoster($pdo, $schoolId, $clsName) {
+    $stmtStList = $pdo->prepare("
+        SELECT 
+            st.id AS student_id,
+            u.full_name,
+            st.mat_number,
+            st.class_name,
+            COALESCE(
+                (SELECT a.learning_style 
+                 FROM assessments a 
+                 WHERE a.student_id = st.id 
+                 ORDER BY a.id DESC LIMIT 1),
+                'Not Assessed'
+            ) AS learning_style
+        FROM students st
+        JOIN users u ON u.id = st.user_id
+        WHERE u.school_id = ? AND st.class_name = ?
+        ORDER BY u.full_name ASC
+    ");
+    $stmtStList->execute([$schoolId, $clsName]);
+    $stRows = $stmtStList->fetchAll(PDO::FETCH_ASSOC);
+
+    $tot = count($stRows);
+    $ass = 0;
+    $vis = 0; $aud = 0; $kin = 0; $rw = 0;
+
+    foreach ($stRows as $st) {
+        $style = $st['learning_style'];
+        if ($style !== 'Not Assessed') {
+            $ass++;
+            if (strpos($style, 'Visual') !== false) $vis++;
+            if (strpos($style, 'Auditory') !== false) $aud++;
+            if (strpos($style, 'Kinesthetic') !== false) $kin++;
+            if (strpos($style, 'Read') !== false) $rw++;
+        }
+    }
+
+    return [
+        'total_students' => $tot,
+        'assessed'       => $ass,
+        'visual'         => $vis,
+        'auditory'       => $aud,
+        'kinesthetic'   => $kin,
+        'read_write'     => $rw,
+        'students'       => $stRows,
+    ];
+}
+
 $userId = intval($body['user_id'] ?? $_GET['user_id'] ?? $_GET['principal_id'] ?? 0);
 
 // If user_id provided, fetch user details
@@ -99,56 +147,41 @@ switch ($action) {
         $classList = $stmtClasses->fetchAll(PDO::FETCH_COLUMN);
 
         $classBreakdown = [];
-        foreach ($classList as $cls) {
-            $stmtClsVark = $pdo->prepare("
-                SELECT 
-                    COUNT(st.id) AS total_students,
-                    COUNT(DISTINCT a.student_id) AS assessed,
-                    SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
-                    SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
-                    SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
-                    SUM(CASE WHEN a.learning_style LIKE '%Read%' THEN 1 ELSE 0 END) AS rw_count
-                FROM students st
-                JOIN users u ON u.id = st.user_id
-                LEFT JOIN assessments a ON a.student_id = st.id
-                WHERE u.school_id = ? AND st.class_name = ?
-            ");
-            $stmtClsVark->execute([$schoolId, $cls]);
-            $cRow = $stmtClsVark->fetch(PDO::FETCH_ASSOC);
+        $scAssessed = 0;
+        $scVis = 0; $scAud = 0; $scKin = 0; $scRw = 0;
 
-            $vis = intval($cRow['visual'] ?? 0);
-            $aud = intval($cRow['auditory'] ?? 0);
-            $kin = intval($cRow['kinesthetic'] ?? 0);
-            $rw  = intval($cRow['rw_count'] ?? 0);
+        foreach ($classList as $cls) {
+            $cData = getSchoolClassBreakdownAndRoster($pdo, $schoolId, $cls);
+            $scAssessed += $cData['assessed'];
+            $scVis += $cData['visual'];
+            $scAud += $cData['auditory'];
+            $scKin += $cData['kinesthetic'];
+            $scRw += $cData['read_write'];
 
             $recEn = "• Integrate visual mind maps, flowchart diagrams, and auditory lectures tailored for $cls.\n• Encourage interactive peer discussions and practical lab sessions.";
             $recFr = "• Intégrez des cartes mentales visuelles, des schémas et des cours auditifs adaptés pour la classe de $cls.\n• Encouragez les discussions interactives entre pairs et les séances de travaux pratiques.";
 
-            // Fetch student roster with learning styles for this class from Database
-            $stmtStList = $pdo->prepare("
-                SELECT u.full_name, st.mat_number, st.class_name, COALESCE(a.learning_style, 'Not Assessed') AS learning_style
-                FROM students st
-                JOIN users u ON u.id = st.user_id
-                LEFT JOIN assessments a ON a.student_id = st.id
-                WHERE u.school_id = ? AND st.class_name = ?
-                ORDER BY u.full_name ASC
-            ");
-            $stmtStList->execute([$schoolId, $cls]);
-            $stRows = $stmtStList->fetchAll(PDO::FETCH_ASSOC);
-
             $classBreakdown[] = [
                 'class_name' => $cls,
-                'total_students' => intval($cRow['total_students'] ?? 0),
-                'assessed' => intval($cRow['assessed'] ?? 0),
-                'visual' => $vis,
-                'auditory' => $aud,
-                'kinesthetic' => $kin,
-                'read_write' => $rw,
-                'students' => $stRows,
+                'total_students' => $cData['total_students'],
+                'assessed' => $cData['assessed'],
+                'visual' => $cData['visual'],
+                'auditory' => $cData['auditory'],
+                'kinesthetic' => $cData['kinesthetic'],
+                'read_write' => $cData['read_write'],
+                'students' => $cData['students'],
                 'ai_recommendation_en' => $recEn,
                 'ai_recommendation_fr' => $recFr,
             ];
         }
+
+        $vark = [
+            'assessed' => $scAssessed,
+            'visual' => $scVis,
+            'auditory' => $scAud,
+            'kinesthetic' => $scKin,
+            'rw_count' => $scRw,
+        ];
 
         respond(true, 'Principal school data fetched from existing database.', [
             'school_name' => $schoolName,
@@ -220,53 +253,19 @@ switch ($action) {
             $scVis = 0; $scAud = 0; $scKin = 0; $scRw = 0;
 
             foreach ($clsList as $clsName) {
-                $stmtClsVark = $pdo->prepare("
-                    SELECT 
-                        COUNT(st.id) AS total_students,
-                        COUNT(DISTINCT a.student_id) AS assessed,
-                        SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
-                        SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
-                        SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
-                        SUM(CASE WHEN a.learning_style LIKE '%Read%' THEN 1 ELSE 0 END) AS rw_count
-                    FROM students st
-                    JOIN users u ON u.id = st.user_id
-                    LEFT JOIN assessments a ON a.student_id = st.id
-                    WHERE u.school_id = ? AND st.class_name = ?
-                ");
-                $stmtClsVark->execute([$scId, $clsName]);
-                $cRow = $stmtClsVark->fetch(PDO::FETCH_ASSOC);
-
-                $tot = intval($cRow['total_students'] ?? 0);
-                $ass = intval($cRow['assessed'] ?? 0);
-                $vis = intval($cRow['visual'] ?? 0);
-                $aud = intval($cRow['auditory'] ?? 0);
-                $kin = intval($cRow['kinesthetic'] ?? 0);
-                $rw  = intval($cRow['rw_count'] ?? 0);
-
-                $scAssessed += $ass;
-                $scVis += $vis; $scAud += $aud; $scKin += $kin; $scRw += $rw;
-
-                // Student roster from Database
-                $stmtStList = $pdo->prepare("
-                    SELECT u.full_name, st.mat_number, st.class_name, COALESCE(a.learning_style, 'Not Assessed') AS learning_style
-                    FROM students st
-                    JOIN users u ON u.id = st.user_id
-                    LEFT JOIN assessments a ON a.student_id = st.id
-                    WHERE u.school_id = ? AND st.class_name = ?
-                    ORDER BY u.full_name ASC
-                ");
-                $stmtStList->execute([$scId, $clsName]);
-                $stRows = $stmtStList->fetchAll(PDO::FETCH_ASSOC);
+                $cData = getSchoolClassBreakdownAndRoster($pdo, $scId, $clsName);
+                $scAssessed += $cData['assessed'];
+                $scVis += $cData['visual']; $scAud += $cData['auditory']; $scKin += $cData['kinesthetic']; $scRw += $cData['read_write'];
 
                 $scClassesData[] = [
                     'class_name' => $clsName,
-                    'total_students' => $tot,
-                    'assessed' => $ass,
-                    'visual' => $vis,
-                    'auditory' => $aud,
-                    'kinesthetic' => $kin,
-                    'read_write' => $rw,
-                    'students' => $stRows,
+                    'total_students' => $cData['total_students'],
+                    'assessed' => $cData['assessed'],
+                    'visual' => $cData['visual'],
+                    'auditory' => $cData['auditory'],
+                    'kinesthetic' => $cData['kinesthetic'],
+                    'read_write' => $cData['read_write'],
+                    'students' => $cData['students'],
                     'ai_recommendation_en' => "• Prioritize interactive VARK workshops and visual flowcharts for $clsName at $scName.",
                     'ai_recommendation_fr' => "• Priorisez les ateliers VARK interactifs et les organigrammes visuels pour la classe de $clsName à $scName.",
                 ];
@@ -363,54 +362,21 @@ switch ($action) {
             $scVis = 0; $scAud = 0; $scKin = 0; $scRw = 0;
 
             foreach ($clsList as $clsName) {
-                $stmtClsVark = $pdo->prepare("
-                    SELECT 
-                        COUNT(st.id) AS total_students,
-                        COUNT(DISTINCT a.student_id) AS assessed,
-                        SUM(CASE WHEN a.learning_style LIKE '%Visual%' THEN 1 ELSE 0 END) AS visual,
-                        SUM(CASE WHEN a.learning_style LIKE '%Auditory%' THEN 1 ELSE 0 END) AS auditory,
-                        SUM(CASE WHEN a.learning_style LIKE '%Kinesthetic%' THEN 1 ELSE 0 END) AS kinesthetic,
-                        SUM(CASE WHEN a.learning_style LIKE '%Read%' THEN 1 ELSE 0 END) AS rw_count
-                    FROM students st
-                    JOIN users u ON u.id = st.user_id
-                    LEFT JOIN assessments a ON a.student_id = st.id
-                    WHERE u.school_id = ? AND st.class_name = ?
-                ");
-                $stmtClsVark->execute([$scId, $clsName]);
-                $cRow = $stmtClsVark->fetch(PDO::FETCH_ASSOC);
-
-                $tot = intval($cRow['total_students'] ?? 0);
-                $ass = intval($cRow['assessed'] ?? 0);
-                $vis = intval($cRow['visual'] ?? 0);
-                $aud = intval($cRow['auditory'] ?? 0);
-                $kin = intval($cRow['kinesthetic'] ?? 0);
-                $rw  = intval($cRow['rw_count'] ?? 0);
-
-                $scAssessed += $ass;
-                $scVis += $vis; $scAud += $aud; $scKin += $kin; $scRw += $rw;
-
-                $stmtStList = $pdo->prepare("
-                    SELECT u.full_name, st.mat_number, st.class_name, COALESCE(a.learning_style, 'Not Assessed') AS learning_style
-                    FROM students st
-                    JOIN users u ON u.id = st.user_id
-                    LEFT JOIN assessments a ON a.student_id = st.id
-                    WHERE u.school_id = ? AND st.class_name = ?
-                    ORDER BY u.full_name ASC
-                ");
-                $stmtStList->execute([$scId, $clsName]);
-                $stRows = $stmtStList->fetchAll(PDO::FETCH_ASSOC);
+                $cData = getSchoolClassBreakdownAndRoster($pdo, $scId, $clsName);
+                $scAssessed += $cData['assessed'];
+                $scVis += $cData['visual']; $scAud += $cData['auditory']; $scKin += $cData['kinesthetic']; $scRw += $cData['read_write'];
 
                 $scClassesData[] = [
                     'class_name' => $clsName,
-                    'total_students' => $tot,
-                    'assessed' => $ass,
-                    'visual' => $vis,
-                    'auditory' => $aud,
-                    'kinesthetic' => $kin,
-                    'read_write' => $rw,
-                    'students' => $stRows,
-                    'ai_recommendation_en' => "• VARK Analysis for $clsName at $scName: " . ($ass > 0 ? "Visual: $vis, Auditory: $aud, Kinesthetic: $kin, Read/Write: $rw." : "Assessments pending."),
-                    'ai_recommendation_fr' => "• Analyse VARK pour la classe $clsName à $scName : " . ($ass > 0 ? "Visuel: $vis, Auditif: $aud, Kinesthésique: $kin, Lecture/Écriture: $rw." : "Évaluations en attente."),
+                    'total_students' => $cData['total_students'],
+                    'assessed' => $cData['assessed'],
+                    'visual' => $cData['visual'],
+                    'auditory' => $cData['auditory'],
+                    'kinesthetic' => $cData['kinesthetic'],
+                    'read_write' => $cData['read_write'],
+                    'students' => $cData['students'],
+                    'ai_recommendation_en' => "• VARK Analysis for $clsName at $scName: " . ($cData['assessed'] > 0 ? "Visual: {$cData['visual']}, Auditory: {$cData['auditory']}, Kinesthetic: {$cData['kinesthetic']}, Read/Write: {$cData['read_write']}." : "Assessments pending."),
+                    'ai_recommendation_fr' => "• Analyse VARK pour la classe $clsName à $scName : " . ($cData['assessed'] > 0 ? "Visuel: {$cData['visual']}, Auditif: {$cData['auditory']}, Kinesthésique: {$cData['kinesthetic']}, Lecture/Écriture: {$cData['read_write']}." : "Évaluations en attente."),
                 ];
             }
 
@@ -658,17 +624,20 @@ switch ($action) {
             ];
         }
 
-        // 2. Fetch student roster strictly for targetClass
+        // 2. Fetch student roster strictly for targetClass (LATEST attempt per unique student)
         $stmtSt = $pdo->prepare("
             SELECT u.full_name, s.class_name, s.mat_number,
+                   COALESCE(a.learning_style, 'Not Assessed') AS learning_style,
                    a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score,
-                   a.learning_style, r.summary_en, r.summary_fr
+                   r.summary_en, r.summary_fr
             FROM students s
             JOIN users u ON u.id = s.user_id
-            LEFT JOIN assessments a ON a.student_id = s.id
+            LEFT JOIN assessments a ON a.id = (
+                SELECT id FROM assessments WHERE student_id = s.id ORDER BY id DESC LIMIT 1
+            )
             LEFT JOIN results r ON r.student_id = s.id
             WHERE s.class_name = ?
-            ORDER BY u.full_name
+            ORDER BY u.full_name ASC
         ");
         $stmtSt->execute([$targetClass]);
         $rows = $stmtSt->fetchAll();

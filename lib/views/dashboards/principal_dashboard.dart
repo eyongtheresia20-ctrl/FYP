@@ -67,6 +67,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
   Future<void> _fetchSchoolData() async {
     setState(() => _isLoading = true);
     try {
+      await ApiConfig.getWorkingHost();
       final resp = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=principal_school&principal_id=${_currentUser.id}'),
       );
@@ -1062,60 +1063,126 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                             ),
                             const SizedBox(height: 20),
 
-                            // Stat Cards Grid
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _isEn ? 'School Executive Overview' : 'Aperçu Général de l\'Établissement',
-                                    style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: _green,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                      onPressed: _showAddStudentDialog,
-                                      icon: const Icon(Icons.person_add_rounded, size: 18),
-                                      label: Text(_isEn ? 'Add Student' : 'Ajouter Élève', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                                    ),
-                                    OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: _green,
-                                        side: BorderSide(color: _green),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      ),
-                                      onPressed: _downloadPrincipalReport,
-                                      icon: const Icon(Icons.download_rounded, size: 18),
-                                      label: Text(_isEn ? 'Download Report' : 'Télécharger Rapport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
+                             // Stat Cards Grid (Responsive 2x2 on Mobile, 4-in-a-row on Desktop)
+                             LayoutBuilder(
+                               builder: (context, constraints) {
+                                 final isMobile = constraints.maxWidth < 600;
+                                 return Column(
+                                   children: [
+                                     isMobile
+                                         ? Column(
+                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                             children: [
+                                               Text(
+                                                 _isEn ? 'School Executive Overview' : 'Aperçu Général de l\'Établissement',
+                                                 style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                                               ),
+                                               const SizedBox(height: 10),
+                                               Wrap(
+                                                 spacing: 8,
+                                                 runSpacing: 8,
+                                                 children: [
+                                                   ElevatedButton.icon(
+                                                     style: ElevatedButton.styleFrom(
+                                                       backgroundColor: _green,
+                                                       foregroundColor: Colors.white,
+                                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                     ),
+                                                     onPressed: _showAddStudentDialog,
+                                                     icon: const Icon(Icons.person_add_rounded, size: 16),
+                                                     label: Text(_isEn ? 'Add Student' : 'Ajouter Élève', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                                   ),
+                                                   OutlinedButton.icon(
+                                                     style: OutlinedButton.styleFrom(
+                                                       foregroundColor: _green,
+                                                       side: BorderSide(color: _green),
+                                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                     ),
+                                                     onPressed: _downloadPrincipalReport,
+                                                     icon: const Icon(Icons.download_rounded, size: 16),
+                                                     label: Text(_isEn ? 'Download Report' : 'Télécharger Rapport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                                   ),
+                                                 ],
+                                               ),
+                                             ],
+                                           )
+                                         : Row(
+                                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                             children: [
+                                               Expanded(
+                                                 child: Text(
+                                                   _isEn ? 'School Executive Overview' : 'Aperçu Général de l\'Établissement',
+                                                   style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                                                   overflow: TextOverflow.ellipsis,
+                                                 ),
+                                               ),
+                                               Wrap(
+                                                 spacing: 8,
+                                                 runSpacing: 8,
+                                                 children: [
+                                                   ElevatedButton.icon(
+                                                     style: ElevatedButton.styleFrom(
+                                                       backgroundColor: _green,
+                                                       foregroundColor: Colors.white,
+                                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                     ),
+                                                     onPressed: _showAddStudentDialog,
+                                                     icon: const Icon(Icons.person_add_rounded, size: 18),
+                                                     label: Text(_isEn ? 'Add Student' : 'Ajouter Élève', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                                   ),
+                                                   OutlinedButton.icon(
+                                                     style: OutlinedButton.styleFrom(
+                                                       foregroundColor: _green,
+                                                       side: BorderSide(color: _green),
+                                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                     ),
+                                                     onPressed: _downloadPrincipalReport,
+                                                     icon: const Icon(Icons.download_rounded, size: 18),
+                                                     label: Text(_isEn ? 'Download Report' : 'Télécharger Rapport', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                                   ),
+                                                 ],
+                                               ),
+                                             ],
+                                           ),
+                                     const SizedBox(height: 14),
 
-                            Row(
-                              children: [
-                                Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Total Students' : 'Total Élèves', value: '$totalStudents', color: const Color(0xFF006A4E))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed Students' : 'Élèves Évalués', value: '$assessedStudents', color: const Color(0xFF10B981))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.badge_rounded, label: _isEn ? 'Total Teachers' : 'Total Enseignants', value: '$totalTeachers', color: const Color(0xFF3B82F6))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _overviewStatCard(icon: Icons.psychology_rounded, label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique', value: _isEn ? 'Optimal' : 'Optimal', color: const Color(0xFF8B5CF6))),
-                              ],
-                            ),
+                                     if (isMobile) ...[
+                                       Row(
+                                         children: [
+                                           Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Total Students' : 'Total Élèves', value: '$totalStudents', color: const Color(0xFF006A4E))),
+                                           const SizedBox(width: 8),
+                                           Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed Students' : 'Élèves Évalués', value: '$assessedStudents', color: const Color(0xFF10B981))),
+                                         ],
+                                       ),
+                                       const SizedBox(height: 8),
+                                       Row(
+                                         children: [
+                                           Expanded(child: _overviewStatCard(icon: Icons.badge_rounded, label: _isEn ? 'Total Teachers' : 'Total Enseignants', value: '$totalTeachers', color: const Color(0xFF3B82F6))),
+                                           const SizedBox(width: 8),
+                                           Expanded(child: _overviewStatCard(icon: Icons.psychology_rounded, label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique', value: _isEn ? 'Optimal' : 'Optimal', color: const Color(0xFF8B5CF6))),
+                                         ],
+                                       ),
+                                     ] else ...[
+                                       Row(
+                                         children: [
+                                           Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Total Students' : 'Total Élèves', value: '$totalStudents', color: const Color(0xFF006A4E))),
+                                           const SizedBox(width: 10),
+                                           Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed Students' : 'Élèves Évalués', value: '$assessedStudents', color: const Color(0xFF10B981))),
+                                           const SizedBox(width: 10),
+                                           Expanded(child: _overviewStatCard(icon: Icons.badge_rounded, label: _isEn ? 'Total Teachers' : 'Total Enseignants', value: '$totalTeachers', color: const Color(0xFF3B82F6))),
+                                           const SizedBox(width: 10),
+                                           Expanded(child: _overviewStatCard(icon: Icons.psychology_rounded, label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique', value: _isEn ? 'Optimal' : 'Optimal', color: const Color(0xFF8B5CF6))),
+                                         ],
+                                       ),
+                                     ],
+                                   ],
+                                 );
+                               },
+                             ),
                             const SizedBox(height: 20),
 
                             // VARK Pie Chart Card
@@ -1130,7 +1197,9 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                                     children: [
                                       Icon(Icons.pie_chart_rounded, color: _green, size: 24),
                                       const SizedBox(width: 10),
-                                      Text(_isEn ? 'School VARK Learning Styles Distribution' : 'Répartition VARK Globale de l\'Établissement', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Expanded(
+                                        child: Text(_isEn ? 'School VARK Learning Styles Distribution' : 'Répartition VARK Globale de l\'Établissement', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 20),
@@ -1233,155 +1302,170 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
 
                                 final List stList = selectedCb['students'] as List? ?? [];
 
-                                return Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: _card,
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(color: _border),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(Icons.school_rounded, color: _green, size: 24),
-                                              const SizedBox(width: 10),
-                                              Text(
-                                                'Class: $cName',
-                                                style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18),
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-                                            child: Text(
-                                              '${_isEn ? "Students" : "Élèves"}: $totSt ($assSt ${_isEn ? "Assessed" : "Évalués"})',
-                                              style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12.5),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
+                                 return Container(
+                                   padding: const EdgeInsets.all(20),
+                                   decoration: BoxDecoration(
+                                     color: _card,
+                                     borderRadius: BorderRadius.circular(18),
+                                     border: Border.all(color: _border),
+                                   ),
+                                   child: Column(
+                                     crossAxisAlignment: CrossAxisAlignment.start,
+                                     children: [
+                                       Wrap(
+                                         alignment: WrapAlignment.spaceBetween,
+                                         crossAxisAlignment: WrapCrossAlignment.center,
+                                         spacing: 10,
+                                         runSpacing: 8,
+                                         children: [
+                                           Row(
+                                             mainAxisSize: MainAxisSize.min,
+                                             children: [
+                                               Icon(Icons.school_rounded, color: _green, size: 24),
+                                               const SizedBox(width: 10),
+                                               Text(
+                                                 'Class: $cName',
+                                                 style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18),
+                                               ),
+                                             ],
+                                           ),
+                                           Container(
+                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                             decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                             child: Text(
+                                               '${_isEn ? "Students" : "Élèves"}: $totSt ($assSt ${_isEn ? "Assessed" : "Évalués"})',
+                                               style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                             ),
+                                           ),
+                                         ],
+                                       ),
+                                       const SizedBox(height: 16),
 
-                                      // VARK Badges
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
-                                          _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
-                                          _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
-                                          _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 18),
+                                       // VARK Badges
+                                       Wrap(
+                                         spacing: 8,
+                                         runSpacing: 8,
+                                         children: [
+                                           _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
+                                           _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
+                                           _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
+                                           _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
+                                         ],
+                                       ),
+                                       const SizedBox(height: 18),
 
-                                      // Students Roster Table for this Class
-                                      Text(
-                                        _isEn ? 'Students & Dominant Learning Styles:' : 'Élèves de la Classe & Styles d\'Apprentissage Dominants :',
-                                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 14),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      if (stList.isEmpty)
-                                        Container(
-                                          padding: const EdgeInsets.all(14),
-                                          decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10)),
-                                          child: Text(_isEn ? 'No students registered for this class.' : 'Aucun élève inscrit pour cette classe.', style: TextStyle(color: _sub, fontSize: 12.5)),
-                                        )
-                                      else
-                                        Column(
-                                          children: stList.map<Widget>((st) {
-                                            final sMap = st as Map<String, dynamic>;
-                                            final sName = sMap['full_name'] ?? 'Élève';
-                                            final sMat = sMap['mat_number'] ?? '';
-                                            final sStyle = sMap['learning_style'] ?? 'Not Assessed';
+                                       // Students Roster Table for this Class
+                                       Text(
+                                         _isEn ? 'Students & Dominant Learning Styles:' : 'Élèves de la Classe & Styles d\'Apprentissage Dominants :',
+                                         style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 14),
+                                       ),
+                                       const SizedBox(height: 10),
+                                       if (stList.isEmpty)
+                                         Container(
+                                           padding: const EdgeInsets.all(14),
+                                           decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10)),
+                                           child: Text(_isEn ? 'No students registered for this class.' : 'Aucun élève inscrit pour cette classe.', style: TextStyle(color: _sub, fontSize: 12.5)),
+                                         )
+                                       else
+                                         Column(
+                                           children: stList.map<Widget>((st) {
+                                             final sMap = st as Map<String, dynamic>;
+                                             final sName = sMap['full_name'] ?? 'Élève';
+                                             final sMat = sMap['mat_number'] ?? '';
+                                             final sStyle = sMap['learning_style'] ?? 'Not Assessed';
 
-                                            Color badgeCol = const Color(0xFF3B82F6);
-                                            if (sStyle.contains('Auditory')) badgeCol = const Color(0xFFEC4899);
-                                            if (sStyle.contains('Kinesthetic')) badgeCol = const Color(0xFF10B981);
-                                            if (sStyle.contains('Read')) badgeCol = const Color(0xFFF59E0B);
+                                             Color badgeCol = const Color(0xFF3B82F6);
+                                             if (sStyle.contains('Auditory')) badgeCol = const Color(0xFFEC4899);
+                                             if (sStyle.contains('Kinesthetic')) badgeCol = const Color(0xFF10B981);
+                                             if (sStyle.contains('Read')) badgeCol = const Color(0xFFF59E0B);
 
-                                            return Container(
-                                              margin: const EdgeInsets.only(bottom: 8),
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: _bg,
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(color: _border),
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      CircleAvatar(
-                                                        radius: 15,
-                                                        backgroundColor: _green.withValues(alpha: 0.15),
-                                                        child: Icon(Icons.person_rounded, color: _green, size: 16),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                                        children: [
-                                                          Text(sName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
-                                                          Text('${_isEn ? "Matricule" : "Matricule"}: $sMat', style: TextStyle(color: _sub, fontSize: 11.5)),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                                    decoration: BoxDecoration(color: badgeCol.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: badgeCol.withValues(alpha: 0.3))),
-                                                    child: Text(
-                                                      sStyle,
-                                                      style: TextStyle(color: badgeCol, fontWeight: FontWeight.bold, fontSize: 11.5),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ),
-                                      const SizedBox(height: 18),
+                                             return Container(
+                                               margin: const EdgeInsets.only(bottom: 8),
+                                               padding: const EdgeInsets.all(12),
+                                               decoration: BoxDecoration(
+                                                 color: _bg,
+                                                 borderRadius: BorderRadius.circular(12),
+                                                 border: Border.all(color: _border),
+                                               ),
+                                               child: Row(
+                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                 children: [
+                                                   Expanded(
+                                                     child: Row(
+                                                       children: [
+                                                         CircleAvatar(
+                                                           radius: 15,
+                                                           backgroundColor: _green.withValues(alpha: 0.15),
+                                                           child: Icon(Icons.person_rounded, color: _green, size: 16),
+                                                         ),
+                                                         const SizedBox(width: 10),
+                                                         Expanded(
+                                                           child: Column(
+                                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                                             children: [
+                                                               Text(sName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5), overflow: TextOverflow.ellipsis),
+                                                               Text('${_isEn ? "Matricule" : "Matricule"}: $sMat', style: TextStyle(color: _sub, fontSize: 11.5), overflow: TextOverflow.ellipsis),
+                                                             ],
+                                                           ),
+                                                         ),
+                                                       ],
+                                                     ),
+                                                   ),
+                                                   const SizedBox(width: 8),
+                                                   Flexible(
+                                                     child: Container(
+                                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                                       decoration: BoxDecoration(color: badgeCol.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: badgeCol.withValues(alpha: 0.3))),
+                                                       child: Text(
+                                                         sStyle,
+                                                         style: TextStyle(color: badgeCol, fontWeight: FontWeight.bold, fontSize: 11.5),
+                                                         overflow: TextOverflow.ellipsis,
+                                                         maxLines: 1,
+                                                       ),
+                                                     ),
+                                                   ),
+                                                 ],
+                                               ),
+                                             );
+                                           }).toList(),
+                                         ),
+                                       const SizedBox(height: 18),
 
-                                      // Final AI Recommendation Box for Class
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: _bg,
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(color: _green.withValues(alpha: 0.3)),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.psychology_rounded, color: _green, size: 20),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '${_isEn ? "Final AI Recommendation for" : "Recommandation Finale IA pour"} $cName:',
-                                                  style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 14),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              cRec,
-                                              style: TextStyle(color: _text, fontSize: 13, height: 1.5, fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
+                                       // Final AI Recommendation Box for Class
+                                       Container(
+                                         width: double.infinity,
+                                         padding: const EdgeInsets.all(16),
+                                         decoration: BoxDecoration(
+                                           color: _bg,
+                                           borderRadius: BorderRadius.circular(14),
+                                           border: Border.all(color: _green.withValues(alpha: 0.3)),
+                                         ),
+                                         child: Column(
+                                           crossAxisAlignment: CrossAxisAlignment.start,
+                                           children: [
+                                             Row(
+                                               children: [
+                                                 Icon(Icons.psychology_rounded, color: _green, size: 20),
+                                                 const SizedBox(width: 8),
+                                                 Expanded(
+                                                   child: Text(
+                                                     '${_isEn ? "Final AI Recommendation for" : "Recommandation Finale IA pour"} $cName:',
+                                                     style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 14),
+                                                   ),
+                                                 ),
+                                               ],
+                                             ),
+                                             const SizedBox(height: 8),
+                                             Text(
+                                               cRec,
+                                               style: TextStyle(color: _text, fontSize: 13, height: 1.5, fontWeight: FontWeight.w500),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 );
                               },
                             ),
                             const SizedBox(height: 22),

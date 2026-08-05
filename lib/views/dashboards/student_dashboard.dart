@@ -72,6 +72,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     });
 
     try {
+      await ApiConfig.getWorkingHost();
       final resp = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/assessment.php?action=get_student_result&user_id=${_currentUser.id}'),
       );

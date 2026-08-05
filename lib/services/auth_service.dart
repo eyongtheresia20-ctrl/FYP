@@ -60,22 +60,46 @@ class AuthService {
     required String securityCode,
   }) async {
     await ApiConfig.getWorkingHost();
-    final res = await http.post(
-      Uri.parse('$_baseUrl?action=matricule_login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'matricule':     matricule,
-        'password':      password,
-        'security_code': securityCode,
-      }),
-    );
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode != 200) throw data['message'] ?? 'Login failed';
+    try {
+      final res = await http.post(
+        Uri.parse('$_baseUrl?action=matricule_login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'matricule':     matricule,
+          'password':      password,
+          'security_code': securityCode,
+        }),
+      );
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) throw data['message'] ?? 'Login failed';
 
-    final payload = data['data'] as Map<String, dynamic>;
-    final user = UserModel.fromJson(payload, payload['token'] as String);
-    await _saveSession(user);
-    return user;
+      final payload = data['data'] as Map<String, dynamic>;
+      final user = UserModel.fromJson(payload, payload['token'] as String);
+      await _saveSession(user);
+      return user;
+    } catch (e) {
+      if (e is Exception && (e.toString().contains('Connection reset') || e.toString().contains('SocketException') || e.toString().contains('ClientException'))) {
+        // Force retest host IP and retry once!
+        await ApiConfig.getWorkingHost(forceRetest: true);
+        final res = await http.post(
+          Uri.parse('$_baseUrl?action=matricule_login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'matricule':     matricule,
+            'password':      password,
+            'security_code': securityCode,
+          }),
+        );
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (res.statusCode != 200) throw data['message'] ?? 'Login failed';
+
+        final payload = data['data'] as Map<String, dynamic>;
+        final user = UserModel.fromJson(payload, payload['token'] as String);
+        await _saveSession(user);
+        return user;
+      }
+      rethrow;
+    }
   }
 
   // ── Save session to local storage ────────────────────────────

@@ -70,6 +70,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     setState(() => _isLoading = true);
     final action = _currentUser.isRegionalDelegate ? 'regional_analytics' : 'divisional_analytics';
     try {
+      await ApiConfig.getWorkingHost();
       final resp = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/dashboard.php?action=$action&user_id=${_currentUser.id}'),
       );
@@ -864,7 +865,9 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                     children: [
                                       Icon(Icons.pie_chart_rounded, color: _green, size: 24),
                                       const SizedBox(width: 10),
-                                      Text(isReg ? (_isEn ? 'Regional VARK Learning Styles Breakdown' : 'Répartition VARK Régionale') : (_isEn ? 'Divisional VARK Learning Styles Breakdown' : 'Répartition VARK Départementale'), style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Expanded(
+                                        child: Text(isReg ? (_isEn ? 'Regional VARK Learning Styles Breakdown' : 'Répartition VARK Régionale') : (_isEn ? 'Divisional VARK Learning Styles Breakdown' : 'Répartition VARK Départementale'), style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 20),
