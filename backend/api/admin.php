@@ -17,16 +17,25 @@ $pdo    = getDB();
 
 switch ($action) {
 
-    // ── 1. GET ALL USERS IN SYSTEM ──────────────────────────────
+    // ── 1. GET ALL USERS IN SYSTEM (Or filtered by school_id) ────
     case 'get_all_users':
-        $stmt = $pdo->query("
+        $schoolIdParam = intval($_GET['school_id'] ?? 0);
+        $whereClause = "";
+        $params = [];
+
+        if ($schoolIdParam > 0) {
+            $whereClause = "WHERE u.school_id = ?";
+            $params = [$schoolIdParam];
+        }
+
+        $stmt = $pdo->prepare("
             SELECT 
                 u.id,
                 u.full_name,
                 COALESCE(NULLIF(u.matricule, ''), st.matricule, st.mat_number, t.matricule, t.staff_id, pr.matricule, pr.staff_id, 'N/A') AS matricule,
                 u.email,
                 u.role,
-                u.is_activated,
+                COALESCE(u.is_activated, 1) AS is_activated,
                 u.region,
                 u.division,
                 u.security_code,
@@ -38,6 +47,8 @@ switch ($action) {
                     ELSE COALESCE(sc.name, st.school_name, t.school_name, pr.school_name, 'N/A')
                 END AS school_name,
                 st.class_name AS student_class,
+                st.gender AS student_gender,
+                st.birth_date AS student_birth_date,
                 t.class_name AS teacher_class,
                 t.subject AS teacher_subject
             FROM users u
@@ -45,11 +56,13 @@ switch ($action) {
             LEFT JOIN students st ON st.user_id = u.id
             LEFT JOIN teachers t ON t.user_id = u.id
             LEFT JOIN principals pr ON pr.user_id = u.id
+            $whereClause
             ORDER BY u.role, u.full_name
         ");
+        $stmt->execute($params);
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        respond(true, 'All users fetched successfully.', $users);
+        respond(true, 'Users fetched successfully.', $users);
         break;
 
     // ── 2. CREATE NEW USER (REGIONAL DELEGATE, DIVISIONAL DELEGATE, PRINCIPAL, TEACHER, STUDENT) ──
@@ -93,13 +106,16 @@ switch ($action) {
         $stmtIns->execute([$fullName, $matricule, $email, $phone, $passHash, $secCode, $role, $region, $division, $schoolId]);
         $newUserId = $pdo->lastInsertId();
 
-        // Fetch school name for school-level roles
-        $schoolName = trim($body['school_name'] ?? '');
-        if (empty($schoolName)) {
-            $stmtSchool = $pdo->prepare("SELECT name FROM schools WHERE id = ?");
-            $stmtSchool->execute([$schoolId]);
-            $schoolRow = $stmtSchool->fetch(PDO::FETCH_ASSOC);
-            $schoolName = $schoolRow['name'] ?? 'LYCEE BILINGUE DE NGAOUNDAL';
+        // Fetch school name for school-level roles based on schoolId
+        $stmtSchool = $pdo->prepare("SELECT name, region, division FROM schools WHERE id = ?");
+        $stmtSchool->execute([$schoolId]);
+        $schoolRow = $stmtSchool->fetch(PDO::FETCH_ASSOC);
+        if ($schoolRow) {
+            $schoolName = $schoolRow['name'];
+            if (empty($region)) $region = $schoolRow['region'];
+            if (empty($division)) $division = $schoolRow['division'];
+        } else {
+            $schoolName = trim($body['school_name'] ?? 'LYCEE TECHNIQUE DE NGAOUNDAL');
         }
 
         // Insert role-specific details
@@ -282,6 +298,28 @@ switch ($action) {
         $stmt->execute([$userId]);
 
         respond(true, "User account deleted successfully.", ['deleted_user_id' => $userId]);
+        break;
+
+    // ── 8. UPDATE STUDENT DETAILS ───────────────────────────────
+    case 'update_student':
+        $userId    = intval($body['user_id'] ?? $_GET['user_id'] ?? 0);
+        $fullName  = trim($body['full_name'] ?? '');
+        $matricule = trim($body['matricule'] ?? '');
+        $className = trim($body['class_name'] ?? '');
+        $gender    = trim($body['gender'] ?? 'M');
+        $birthDate = trim($body['birth_date'] ?? '2008-01-01');
+
+        if ($userId <= 0 || empty($fullName)) respondError('User ID and Full Name are required.');
+
+        // Update users table
+        $stmtU = $pdo->prepare("UPDATE users SET full_name = ?, matricule = ? WHERE id = ?");
+        $stmtU->execute([$fullName, $matricule, $userId]);
+
+        // Update students table
+        $stmtS = $pdo->prepare("UPDATE students SET full_name = ?, matricule = ?, mat_number = ?, class_name = ?, gender = ?, birth_date = ? WHERE user_id = ?");
+        $stmtS->execute([$fullName, $matricule, $matricule, $className, $gender, $birthDate, $userId]);
+
+        respond(true, "Student '$fullName' updated successfully.", ['user_id' => $userId]);
         break;
 
     default:

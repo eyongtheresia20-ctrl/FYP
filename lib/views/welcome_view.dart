@@ -18,6 +18,7 @@ class _WelcomeViewState extends State<WelcomeView>
   late Animation<Offset> _slideAnim;
   bool _isDarkMode = true; // Theme mode state
   String _currentPage = 'home'; // 'home' | 'about' | 'help' | 'settings'
+  int _mobileFeatureCardIndex = 0; // Mobile carousel active card index
 
   void _changeLanguage(String langCode) {
     setState(() {
@@ -152,7 +153,7 @@ class _WelcomeViewState extends State<WelcomeView>
                                     children: [
                                       _buildHeroSection(context, isEn, isWide, textColor, subTextColor),
                                       _buildBriefSection(isEn, isWide, textColor, subTextColor, cardBgColor, cardBorderColor),
-                                      _buildFooter(isEn, subTextColor),
+                                      if (isWide) _buildFooter(isEn, subTextColor),
                                     ],
                                   ),
                                 ),
@@ -173,7 +174,6 @@ class _WelcomeViewState extends State<WelcomeView>
 
     final items = [
       {'page': 'home',     'icon': Icons.home_outlined,     'activeIcon': Icons.home_rounded,         'label': isEn ? 'Home'     : 'Accueil'},
-      {'page': 'about',    'icon': Icons.info_outline,      'activeIcon': Icons.info_rounded,          'label': isEn ? 'About'    : 'À propos'},
       {'page': 'help',     'icon': Icons.help_outline,      'activeIcon': Icons.help_rounded,          'label': isEn ? 'Help'     : 'Aide'},
       {'page': 'settings', 'icon': Icons.settings_outlined, 'activeIcon': Icons.settings_rounded,      'label': isEn ? 'Settings' : 'Paramètres'},
     ];
@@ -974,12 +974,140 @@ class _WelcomeViewState extends State<WelcomeView>
                       .toList(),
                 )
               : Column(
-                  children: items
-                      .map((e) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: e,
-                          ))
-                      .toList()),
+                  children: [
+                    // Interactive Card Carousel Display
+                    GestureDetector(
+                      onHorizontalDragEnd: (details) {
+                        if (details.primaryVelocity != null) {
+                          if (details.primaryVelocity! < 0 && _mobileFeatureCardIndex < items.length - 1) {
+                            // Swipe Left -> Next
+                            setState(() => _mobileFeatureCardIndex++);
+                          } else if (details.primaryVelocity! > 0 && _mobileFeatureCardIndex > 0) {
+                            // Swipe Right -> Previous
+                            setState(() => _mobileFeatureCardIndex--);
+                          }
+                        }
+                      },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.1, 0),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          key: ValueKey<int>(_mobileFeatureCardIndex),
+                          child: items[_mobileFeatureCardIndex % items.length],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Interactive Navigation Bar with Previous/Next Buttons & Indicator Dots
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: cardBgColor,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: cardBorderColor),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Previous Button
+                          InkWell(
+                            onTap: _mobileFeatureCardIndex > 0
+                                ? () => setState(() => _mobileFeatureCardIndex--)
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _mobileFeatureCardIndex > 0 ? const Color(0xFF006A4E) : Colors.grey.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.arrow_back_rounded, size: 16, color: _mobileFeatureCardIndex > 0 ? Colors.white : subTextColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isEn ? 'Prev' : 'Préc',
+                                    style: TextStyle(
+                                      color: _mobileFeatureCardIndex > 0 ? Colors.white : subTextColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Step Indicator Dots
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(items.length, (idx) {
+                              final isSelected = idx == _mobileFeatureCardIndex;
+                              return GestureDetector(
+                                onTap: () => setState(() => _mobileFeatureCardIndex = idx),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  width: isSelected ? 22 : 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? const Color(0xFF006A4E) : subTextColor.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // Next Button
+                          InkWell(
+                            onTap: _mobileFeatureCardIndex < items.length - 1
+                                ? () => setState(() => _mobileFeatureCardIndex++)
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: _mobileFeatureCardIndex < items.length - 1 ? const Color(0xFF006A4E) : Colors.grey.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    isEn ? 'Next' : 'Suiv',
+                                    style: TextStyle(
+                                      color: _mobileFeatureCardIndex < items.length - 1 ? Colors.white : subTextColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_rounded, size: 16, color: _mobileFeatureCardIndex < items.length - 1 ? Colors.white : subTextColor),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
           const SizedBox(height: 40),
         ],
       ),

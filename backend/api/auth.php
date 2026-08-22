@@ -270,45 +270,61 @@ switch ($action) {
 
         $user = null;
 
-        $stmt = $pdo->prepare("SELECT u.* FROM students s JOIN users u ON u.id = s.user_id WHERE s.mat_number = ? OR s.matricule = ?");
-        $stmt->execute([$matricule, $matricule]);
+        // 1. Direct search in users table by matricule
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE matricule = ?");
+        $stmt->execute([$matricule]);
         $user = $stmt->fetch();
 
+        // 2. Search in students table
+        if (!$user) {
+            $stmt = $pdo->prepare("SELECT u.* FROM students s JOIN users u ON u.id = s.user_id WHERE s.mat_number = ? OR s.matricule = ?");
+            $stmt->execute([$matricule, $matricule]);
+            $user = $stmt->fetch();
+        }
+
+        // 3. Search in teachers table
         if (!$user) {
             $stmt = $pdo->prepare("SELECT u.* FROM teachers t JOIN users u ON u.id = t.user_id WHERE t.staff_id = ? OR t.matricule = ?");
             $stmt->execute([$matricule, $matricule]);
             $user = $stmt->fetch();
         }
 
+        // 4. Search in principals table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT u.* FROM principals p JOIN users u ON u.id = p.user_id WHERE p.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.* FROM principals p JOIN users u ON u.id = p.user_id WHERE p.staff_id = ? OR p.matricule = ?");
+            $stmt->execute([$matricule, $matricule]);
             $user = $stmt->fetch();
         }
 
+        // 5. Search in divisional delegates table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT u.* FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.* FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ? OR d.matricule = ?");
+            $stmt->execute([$matricule, $matricule]);
             $user = $stmt->fetch();
         }
 
+        // 6. Search in regional delegates table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT u.* FROM regional_delegates r JOIN users u ON u.id = r.user_id WHERE r.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.* FROM regional_delegates r JOIN users u ON u.id = r.user_id WHERE r.staff_id = ? OR r.matricule = ?");
+            $stmt->execute([$matricule, $matricule]);
             $user = $stmt->fetch();
         }
 
+        // 7. Search in admins table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT u.* FROM admins a JOIN users u ON u.id = a.user_id WHERE a.staff_id = ?");
-            $stmt->execute([$matricule]);
+            $stmt = $pdo->prepare("SELECT u.* FROM admins a JOIN users u ON u.id = a.user_id WHERE a.staff_id = ? OR a.matricule = ?");
+            $stmt->execute([$matricule, $matricule]);
             $user = $stmt->fetch();
         }
 
+        // 8. Search by phone number
         if (!$user) {
             $stmt = $pdo->prepare("SELECT * FROM users WHERE phone = ?");
             $stmt->execute([$matricule]);
             $user = $stmt->fetch();
         }
+
+        if (!$user) respondError('Matricule not found.', 404);
 
         $inputPass     = trim($body['password']);
         $inputSec      = trim($body['security_code']);
@@ -503,6 +519,28 @@ switch ($action) {
             $pdo->prepare($sqlStu)->execute($stuParams);
         }
 
+        // Sync password and security code across all role sub-tables
+        if (!empty($body['password']) || !empty($body['security_code'])) {
+            $syncUpdates = [];
+            $syncParams  = [];
+            if (!empty($body['password'])) {
+                $syncUpdates[] = "password_hash = ?";
+                $syncParams[]  = hash('sha256', trim($body['password']));
+            }
+            if (!empty($body['security_code'])) {
+                $syncUpdates[] = "security_code = ?";
+                $syncParams[]  = trim($body['security_code']);
+            }
+            if (!empty($syncUpdates)) {
+                $syncSql = implode(', ', $syncUpdates);
+                $pdo->prepare("UPDATE teachers SET $syncSql WHERE user_id = ?")->execute(array_merge($syncParams, [$userId]));
+                $pdo->prepare("UPDATE principals SET $syncSql WHERE user_id = ?")->execute(array_merge($syncParams, [$userId]));
+                $pdo->prepare("UPDATE divisional_delegates SET $syncSql WHERE user_id = ?")->execute(array_merge($syncParams, [$userId]));
+                $pdo->prepare("UPDATE regional_delegates SET $syncSql WHERE user_id = ?")->execute(array_merge($syncParams, [$userId]));
+                $pdo->prepare("UPDATE admins SET $syncSql WHERE user_id = ?")->execute(array_merge($syncParams, [$userId]));
+            }
+        }
+
         $stmt = $pdo->prepare("
             SELECT u.id, u.full_name, u.role, u.school_id, u.region, u.division, u.password_raw as password, u.security_code,
                    s.name as school_name, st.class_name, st.mat_number, st.birth_date, st.gender
@@ -538,8 +576,8 @@ switch ($action) {
 
         if (!$profile) respondError('Profile not found.', 404);
 
-        if (empty($profile['password'])) $profile['password'] = 'password123';
-        if (empty($profile['security_code'])) $profile['security_code'] = '1234';
+        if (empty($profile['password'])) $profile['password'] = '';
+        if (empty($profile['security_code'])) $profile['security_code'] = '';
 
         respond(true, 'Profile fetched successfully.', $profile);
         break;

@@ -257,16 +257,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
                 final profile = pData['data'];
-                passCtrl.text    = (profile['password'] ?? 'teacher1').toString();
-                secCodeCtrl.text = (profile['security_code'] ?? '1234@').toString();
+                passCtrl.text    = (profile['password'] ?? '').toString();
+                secCodeCtrl.text = (profile['security_code'] ?? '').toString();
               } else {
-                passCtrl.text    = 'teacher1';
-                secCodeCtrl.text = '1234@';
+                passCtrl.text    = '';
+                secCodeCtrl.text = '';
               }
               if (ctx.mounted) setModalState(() => loading = false);
             }).catchError((_) {
-              passCtrl.text    = 'teacher1';
-              secCodeCtrl.text = '1234@';
+              passCtrl.text    = '';
+              secCodeCtrl.text = '';
               if (ctx.mounted) setModalState(() => loading = false);
             });
           }
@@ -383,44 +383,25 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       child: CircularProgressIndicator(),
                     )
                   else ...[
-                    // 1. PRESENT PASSWORD INPUT (FETCHED FROM DB)
-                    TextField(
+                    // 1. PASSWORD CARD ROW (LABEL TOP, VALUE BELOW)
+                    _profileEditableRow(
+                      icon: Icons.lock_outline_rounded,
+                      label: _isEn ? 'Password' : 'Mot de Passe',
                       controller: passCtrl,
                       obscureText: obscurePass,
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Password (Loaded from DB)' : 'Mot de Passe Présent (Base de Données)',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.lock_outline_rounded, color: _green, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                          onPressed: () => setModalState(() => obscurePass = !obscurePass),
-                        ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      ),
+                      onToggleObscure: () => setModalState(() => obscurePass = !obscurePass),
+                      hintText: '••••••••',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
-                    // 2. PRESENT SECURITY CODE INPUT (FETCHED FROM DB)
-                    TextField(
+                    // 2. SECURITY CODE CARD ROW (LABEL TOP, VALUE BELOW)
+                    _profileEditableRow(
+                      icon: Icons.security_rounded,
+                      label: _isEn ? 'Security Code' : 'Code de Sécurité',
                       controller: secCodeCtrl,
                       obscureText: obscureSec,
-                      keyboardType: TextInputType.visiblePassword,
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Security Code (Loaded from DB)' : 'Code de Sécurité Présent (Base de Données)',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.security_rounded, color: _green, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                          onPressed: () => setModalState(() => obscureSec = !obscureSec),
-                        ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      ),
+                      onToggleObscure: () => setModalState(() => obscureSec = !obscureSec),
+                      hintText: '1234@',
                     ),
                     const SizedBox(height: 20),
 
@@ -509,6 +490,346 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
+  Widget _profileEditableRow({
+    required IconData icon,
+    required String label,
+    required TextEditingController controller,
+    required bool obscureText,
+    required VoidCallback onToggleObscure,
+    String? hintText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: _green, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 1),
+                TextField(
+                  controller: controller,
+                  obscureText: obscureText,
+                  style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    hintStyle: TextStyle(color: _sub.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.normal),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 3),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+            onPressed: onToggleObscure,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSettingsModalDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _border),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: _sub.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: _buildSettingsInlineView(() => setModalState(() {}))),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSettingsInlineView([VoidCallback? onModalRefresh]) {
+    return StatefulBuilder(
+      builder: (ctx, setSt) => SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.settings_rounded, color: _green, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEn ? 'Settings' : 'Paramètres',
+                        style: TextStyle(color: _text, fontSize: 22, fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEn ? 'Customise your experience' : 'Personnalisez votre expérience',
+                        style: TextStyle(color: _sub, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(_isEn ? 'APPEARANCE' : 'APPARENCE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(_isDarkMode ? Icons.nightlight_round_outlined : Icons.wb_sunny_outlined, color: _isDarkMode ? const Color(0xFF818CF8) : const Color(0xFFFCD116), size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_isEn ? 'Display Theme' : 'Thème d\'affichage', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                        Text(_isDarkMode ? (_isEn ? 'Dark Mode' : 'Mode Sombre') : (_isEn ? 'Light Mode' : 'Mode Clair'), style: TextStyle(color: _sub, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isDarkMode,
+                    onChanged: (val) {
+                      setState(() => _isDarkMode = val);
+                      if (onModalRefresh != null) onModalRefresh();
+                      setSt(() {});
+                    },
+                    activeColor: const Color(0xFF34D399),
+                    activeTrackColor: _green.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'LANGUAGE' : 'LANGUE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.language_rounded, color: Colors.blueAccent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_isEn ? 'App Language' : 'Langue de l\'application', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = true);
+                            if (onModalRefresh != null) onModalRefresh();
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _isEn ? _green : _border, width: _isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇬🇧', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('English', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = false);
+                            if (onModalRefresh != null) onModalRefresh();
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: !_isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: !_isEn ? _green : _border, width: !_isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇫🇷', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('Français', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (!_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'ACCOUNT PROFILE' : 'PROFIL DU COMPTE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: _green,
+                        child: Text(
+                          _currentUser.fullName.isNotEmpty ? _currentUser.fullName[0].toUpperCase() : 'U',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_currentUser.fullName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 2),
+                            Text('${_currentUser.role.toUpperCase()} | ${_currentUser.matNumber ?? "TCH2026"}', style: TextStyle(color: _sub, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showTeacherProfileDialog();
+                      },
+                      icon: const Icon(Icons.person_rounded, size: 18),
+                      label: Text(_isEn ? 'Profile' : 'Profil', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5252).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.25)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5252),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+                  },
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text(_isEn ? 'Logout' : 'Déconnexion', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final className = _selectedClass ?? (_classData?['class_name'] ?? '1ère TI');
@@ -551,7 +872,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
           _fetchClassData(_selectedClass, _selectedSubject);
         }
       },
-      onOpenProfile: _showTeacherProfileDialog,
+      onOpenProfile: _showSettingsModalDialog,
       onToggleTheme: () => setState(() => _isDarkMode = !_isDarkMode),
       onToggleLanguage: () => setState(() => _isEn = !_isEn),
     );
@@ -567,153 +888,43 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             Expanded(
               child: Column(
                 children: [
-                  // ── TOP NAVIGATION BAR (UNIFORM & SEAMLESS) ──────────────────
-                  Container(
-                    height: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: const Color(0xFF0F172A),
-                  child: Row(
-                    children: [
-                      if (!isWide) ...[
-                        IconButton(
-                          icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-
-                      const Spacer(),
-
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                  // ── TOP NAVIGATION BAR (MOBILE ONLY) ──────────────────
+                  if (!isWide)
+                    Container(
+                      height: 54,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      color: _bg,
+                      child: Row(
                         children: [
-                          // 1. Circular Theme Switcher Button
+                          IconButton(
+                            icon: Icon(Icons.menu_rounded, color: _text, size: 24),
+                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(_isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined, color: _isDarkMode ? const Color(0xFFFCD116) : _green, size: 20),
+                            onPressed: () => setState(() => _isDarkMode = !_isDarkMode),
+                            tooltip: _isEn ? 'Toggle Theme' : 'Changer de Thème',
+                          ),
                           InkWell(
-                            onTap: () => setState(() => _isDarkMode = !_isDarkMode),
-                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => setState(() => _isEn = !_isEn),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              width: 38,
-                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white24, width: 1.5),
+                                color: _green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _green.withValues(alpha: 0.3)),
                               ),
-                              child: Icon(
-                                _isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                                color: const Color(0xFFFCD116),
-                                size: 18,
+                              child: Text(
+                                _isEn ? 'FR' : 'EN',
+                                style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-
-                          // 2. Segmented Capsule Button for Language [ EN | FR ]
-                          Container(
-                            height: 36,
-                            width: 100,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.white24, width: 1.5),
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () { if (!_isEn) setState(() => _isEn = true); },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: _isEn ? const Color(0xFF006A4E) : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'EN',
-                                        style: TextStyle(
-                                          color: _isEn ? Colors.white : Colors.white54,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () { if (_isEn) setState(() => _isEn = false); },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: !_isEn ? const Color(0xFF006A4E) : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'FR',
-                                        style: TextStyle(
-                                          color: !_isEn ? Colors.white : Colors.white54,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-
-                          // Account Profile Button with Popup Menu
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 22),
-                            color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            onSelected: (value) async {
-                              if (value == 'profile') {
-                                _showTeacherProfileDialog();
-                              } else if (value == 'logout') {
-                                await AuthService.logout();
-                                if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'profile',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.person_rounded, color: Color(0xFF34D399), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _isEn ? 'Profile' : 'Profil',
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'logout',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _isEn ? 'Logout' : 'Déconnexion',
-                                      style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.w600, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
                 // Main Scrollable Body Content
                 Expanded(
@@ -778,45 +989,100 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             ),
                             const SizedBox(height: 14),
 
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _overviewStatCard(
-                                    icon: Icons.class_rounded,
-                                    label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
-                                    value: '$overallClasses',
-                                    color: const Color(0xFF3B82F6),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _overviewStatCard(
-                                    icon: Icons.people_alt_rounded,
-                                    label: _isEn ? 'Total Students' : 'Total Élèves',
-                                    value: '$overallStudents',
-                                    color: const Color(0xFF006A4E),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _overviewStatCard(
-                                    icon: Icons.assignment_turned_in_rounded,
-                                    label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
-                                    value: '$overallAssessed',
-                                    color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _overviewStatCard(
-                                    icon: Icons.psychology_rounded,
-                                    label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
-                                    value: _isEn ? 'Optimal' : 'Optimal',
-                                    color: const Color(0xFF8B5CF6),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            LayoutBuilder(
+                               builder: (ctx, constraints) {
+                                 final isNarrow = constraints.maxWidth < 600;
+                                 if (isNarrow) {
+                                   return Column(
+                                     children: [
+                                       Row(
+                                         children: [
+                                           Expanded(
+                                             child: _overviewStatCard(
+                                               icon: Icons.class_rounded,
+                                               label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
+                                               value: '$overallClasses',
+                                               color: const Color(0xFF3B82F6),
+                                             ),
+                                           ),
+                                           const SizedBox(width: 10),
+                                           Expanded(
+                                             child: _overviewStatCard(
+                                               icon: Icons.people_alt_rounded,
+                                               label: _isEn ? 'Total Students' : 'Total Élèves',
+                                               value: '$overallStudents',
+                                               color: const Color(0xFF006A4E),
+                                             ),
+                                           ),
+                                         ],
+                                       ),
+                                       const SizedBox(height: 10),
+                                       Row(
+                                         children: [
+                                           Expanded(
+                                             child: _overviewStatCard(
+                                               icon: Icons.assignment_turned_in_rounded,
+                                               label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
+                                               value: '$overallAssessed',
+                                               color: const Color(0xFF10B981),
+                                             ),
+                                           ),
+                                           const SizedBox(width: 10),
+                                           Expanded(
+                                             child: _overviewStatCard(
+                                               icon: Icons.psychology_rounded,
+                                               label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
+                                               value: _isEn ? 'Optimal' : 'Optimal',
+                                               color: const Color(0xFF8B5CF6),
+                                             ),
+                                           ),
+                                         ],
+                                       ),
+                                     ],
+                                   );
+                                 } else {
+                                   return Row(
+                                     children: [
+                                       Expanded(
+                                         child: _overviewStatCard(
+                                           icon: Icons.class_rounded,
+                                           label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
+                                           value: '$overallClasses',
+                                           color: const Color(0xFF3B82F6),
+                                         ),
+                                       ),
+                                       const SizedBox(width: 10),
+                                       Expanded(
+                                         child: _overviewStatCard(
+                                           icon: Icons.people_alt_rounded,
+                                           label: _isEn ? 'Total Students' : 'Total Élèves',
+                                           value: '$overallStudents',
+                                           color: const Color(0xFF006A4E),
+                                         ),
+                                       ),
+                                       const SizedBox(width: 10),
+                                       Expanded(
+                                         child: _overviewStatCard(
+                                           icon: Icons.assignment_turned_in_rounded,
+                                           label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
+                                           value: '$overallAssessed',
+                                           color: const Color(0xFF10B981),
+                                         ),
+                                       ),
+                                       const SizedBox(width: 10),
+                                       Expanded(
+                                         child: _overviewStatCard(
+                                           icon: Icons.psychology_rounded,
+                                           label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
+                                           value: _isEn ? 'Optimal' : 'Optimal',
+                                           color: const Color(0xFF8B5CF6),
+                                         ),
+                                       ),
+                                     ],
+                                   );
+                                 }
+                               },
+                             ),
                           ],
 
                           // ── TAB INDEX 1: CLASS DETAILS VIEW (WELCOME BANNER REMOVED AS REQUESTED) ──
@@ -824,19 +1090,21 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '$className — $subject',
-                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 20),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _isEn ? 'Class Diagnostic Results & Student Roster' : 'Résultats Diagnostics de Classe & Liste des Élèves',
-                                      style: TextStyle(color: _sub, fontSize: 12.5),
-                                    ),
-                                  ],
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$className — $subject',
+                                        style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 20),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _isEn ? 'Class Diagnostic Results & Student Roster' : 'Résultats Diagnostics de Classe & Liste des Élèves',
+                                        style: TextStyle(color: _sub, fontSize: 12.5),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -851,197 +1119,235 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             const SizedBox(height: 18),
 
                             // VARK Cards Grid
-                            Text(
-                              _isEn ? 'Class Learning Styles Breakdown' : 'Répartition des Styles d\'Apprentissage de la Classe',
-                              style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
-                            ),
-                            const SizedBox(height: 14),
+                             // VARK Cards Grid (Responsive Grid on Mobile vs Row on Desktop)
+                             Text(
+                               _isEn ? 'Class Learning Styles Breakdown' : 'Répartition des Styles d\'Apprentissage de la Classe',
+                               style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+                             ),
+                             const SizedBox(height: 14),
 
-                            Row(
-                              children: [
-                                Expanded(child: _varkStatCard(_isEn ? 'Visual' : 'Visuel', '$visSt', Icons.visibility_rounded, const Color(0xFF3B82F6))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _varkStatCard(_isEn ? 'Auditory' : 'Auditif', '$audSt', Icons.record_voice_over_rounded, const Color(0xFFEC4899))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _varkStatCard(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$kinesSt', Icons.directions_run_rounded, const Color(0xFF10B981))),
-                                const SizedBox(width: 10),
-                                Expanded(child: _varkStatCard(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$readWriteSt', Icons.menu_book_rounded, const Color(0xFFF59E0B))),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
+                             LayoutBuilder(
+                               builder: (ctx, constraints) {
+                                 final isNarrow = constraints.maxWidth < 600;
+                                 if (isNarrow) {
+                                   return Column(
+                                     children: [
+                                       Row(
+                                         children: [
+                                           Expanded(child: _varkStatCard(_isEn ? 'Visual' : 'Visuel', '$visSt', Icons.visibility_rounded, const Color(0xFF3B82F6))),
+                                           const SizedBox(width: 10),
+                                           Expanded(child: _varkStatCard(_isEn ? 'Auditory' : 'Auditif', '$audSt', Icons.record_voice_over_rounded, const Color(0xFFEC4899))),
+                                         ],
+                                       ),
+                                       const SizedBox(height: 10),
+                                       Row(
+                                         children: [
+                                           Expanded(child: _varkStatCard(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$kinesSt', Icons.directions_run_rounded, const Color(0xFF10B981))),
+                                           const SizedBox(width: 10),
+                                           Expanded(child: _varkStatCard(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$readWriteSt', Icons.menu_book_rounded, const Color(0xFFF59E0B))),
+                                         ],
+                                       ),
+                                     ],
+                                   );
+                                 } else {
+                                   return Row(
+                                     children: [
+                                       Expanded(child: _varkStatCard(_isEn ? 'Visual' : 'Visuel', '$visSt', Icons.visibility_rounded, const Color(0xFF3B82F6))),
+                                       const SizedBox(width: 10),
+                                       Expanded(child: _varkStatCard(_isEn ? 'Auditory' : 'Auditif', '$audSt', Icons.record_voice_over_rounded, const Color(0xFFEC4899))),
+                                       const SizedBox(width: 10),
+                                       Expanded(child: _varkStatCard(_isEn ? 'Kinesthetic' : 'Kinesthésique', '$kinesSt', Icons.directions_run_rounded, const Color(0xFF10B981))),
+                                       const SizedBox(width: 10),
+                                       Expanded(child: _varkStatCard(_isEn ? 'Read/Write' : 'Lecture/Écriture', '$readWriteSt', Icons.menu_book_rounded, const Color(0xFFF59E0B))),
+                                     ],
+                                   );
+                                 }
+                               },
+                             ),
+                             const SizedBox(height: 20),
 
-                            // AI Recommendation Card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: _card,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _isEn ? 'AI Pedagogical Teaching Recommendations' : 'Recommandations Pédagogiques IA',
-                                        style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    aiRec,
-                                    style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 22),
+                             // AI Recommendation Card
+                             Container(
+                               width: double.infinity,
+                               padding: const EdgeInsets.all(18),
+                               decoration: BoxDecoration(
+                                 color: _card,
+                                 borderRadius: BorderRadius.circular(16),
+                                 border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
+                               ),
+                               child: Column(
+                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                 children: [
+                                   Row(
+                                     children: [
+                                       Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
+                                       const SizedBox(width: 8),
+                                       Expanded(
+                                         child: Text(
+                                           _isEn ? 'AI Pedagogical Teaching Recommendations' : 'Recommandations Pédagogiques IA',
+                                           style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                   const SizedBox(height: 10),
+                                   Text(
+                                     aiRec,
+                                     style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500),
+                                   ),
+                                 ],
+                               ),
+                             ),
+                             const SizedBox(height: 22),
 
-                            // STUDENT ROSTER & RESULTS SECTION
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.people_alt_rounded, color: _green, size: 22),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isEn ? 'Student Roster & Assessment Results' : 'Liste des Élèves & Résultats VARK',
-                                      style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
-                                    ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: _green,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                      ),
-                                      onPressed: _downloadTeacherReport,
-                                      icon: const Icon(Icons.download_rounded, size: 16),
-                                      label: Text(
-                                        _isEn ? 'Download Results' : 'Télécharger Résultats',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-                                      child: Text(
-                                        '${_isEn ? "Total" : "Total"}: ${students.length}',
-                                        style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
+                             // STUDENT ROSTER & RESULTS SECTION (RESPONSIVE WRAP)
+                             Wrap(
+                               alignment: WrapAlignment.spaceBetween,
+                               crossAxisAlignment: WrapCrossAlignment.center,
+                               spacing: 12,
+                               runSpacing: 10,
+                               children: [
+                                 Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     Icon(Icons.people_alt_rounded, color: _green, size: 22),
+                                     const SizedBox(width: 8),
+                                     Text(
+                                       _isEn ? 'Student Roster & Assessment Results' : 'Liste des Élèves & Résultats VARK',
+                                       style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
+                                     ),
+                                   ],
+                                 ),
+                                 Row(
+                                   mainAxisSize: MainAxisSize.min,
+                                   children: [
+                                     ElevatedButton.icon(
+                                       style: ElevatedButton.styleFrom(
+                                         backgroundColor: _green,
+                                         foregroundColor: Colors.white,
+                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                       ),
+                                       onPressed: _downloadTeacherReport,
+                                       icon: const Icon(Icons.download_rounded, size: 16),
+                                       label: Text(
+                                         _isEn ? 'Download Results' : 'Télécharger Résultats',
+                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 10),
+                                     Container(
+                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                       decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                                       child: Text(
+                                         '${_isEn ? "Total" : "Total"}: ${students.length}',
+                                         style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
+                               ],
+                             ),
+                             const SizedBox(height: 14),
 
-                            if (students.isEmpty)
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(24),
-                                decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                child: Center(
-                                  child: Text(
-                                    _isEn ? 'No students found in the database for this class.' : 'Aucun élève trouvé dans la base de données pour cette classe.',
-                                    style: TextStyle(color: _sub, fontSize: 13),
-                                  ),
-                                ),
-                              )
-                            else
-                              ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: students.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                itemBuilder: (ctx, idx) {
-                                  final st = students[idx] as Map<String, dynamic>;
-                                  final stName = st['full_name'] ?? 'Élève';
-                                  final stMat  = st['mat_number'] ?? 'AD2026001';
-                                  final style  = st['learning_style'] ?? (_isEn ? 'Not Assessed Yet' : 'Pas encore évalué');
+                             if (students.isEmpty)
+                               Container(
+                                 width: double.infinity,
+                                 padding: const EdgeInsets.all(24),
+                                 decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                 child: Center(
+                                   child: Text(
+                                     _isEn ? 'No students found in the database for this class.' : 'Aucun élève trouvé dans la base de données pour cette classe.',
+                                     style: TextStyle(color: _sub, fontSize: 13),
+                                   ),
+                                 ),
+                               )
+                             else
+                               ListView.separated(
+                                 shrinkWrap: true,
+                                 physics: const NeverScrollableScrollPhysics(),
+                                 itemCount: students.length,
+                                 separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                 itemBuilder: (ctx, idx) {
+                                   final st = students[idx] as Map<String, dynamic>;
+                                   final stName = st['full_name'] ?? 'Élève';
+                                   final stMat  = st['mat_number'] ?? 'AD2026001';
+                                   final style  = st['learning_style'] ?? (_isEn ? 'Not Assessed Yet' : 'Pas encore évalué');
 
-                                  final int vScore = _parseInt(st['visual_score']);
-                                  final int aScore = _parseInt(st['auditory_score']);
-                                  final int kScore = _parseInt(st['kinesthetic_score']);
-                                  final int rScore = _parseInt(st['read_write_score']);
+                                   final int vScore = _parseInt(st['visual_score']);
+                                   final int aScore = _parseInt(st['auditory_score']);
+                                   final int kScore = _parseInt(st['kinesthetic_score']);
+                                   final int rScore = _parseInt(st['read_write_score']);
 
-                                  Color styleColor = const Color(0xFF64748B);
-                                  if (style.contains('Visual')) styleColor = const Color(0xFF3B82F6);
-                                  if (style.contains('Auditory')) styleColor = const Color(0xFFEC4899);
-                                  if (style.contains('Kinesthetic')) styleColor = const Color(0xFF10B981);
-                                  if (style.contains('Read/Write')) styleColor = const Color(0xFFF59E0B);
+                                   Color styleColor = const Color(0xFF64748B);
+                                   if (style.contains('Visual')) styleColor = const Color(0xFF3B82F6);
+                                   if (style.contains('Auditory')) styleColor = const Color(0xFFEC4899);
+                                   if (style.contains('Kinesthetic')) styleColor = const Color(0xFF10B981);
+                                   if (style.contains('Read/Write')) styleColor = const Color(0xFFF59E0B);
 
-                                  return Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: _card,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: _border),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            CircleAvatar(
-                                              backgroundColor: _green.withValues(alpha: 0.12),
-                                              child: Icon(Icons.person_rounded, color: _green, size: 22),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(stName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    'Matricule: $stMat | ${st['class_name'] ?? className}',
-                                                    style: TextStyle(color: _sub, fontSize: 12),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                              decoration: BoxDecoration(color: styleColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                              child: Text(style, style: TextStyle(color: styleColor, fontSize: 11.5, fontWeight: FontWeight.bold)),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
+                                   return Container(
+                                     padding: const EdgeInsets.all(16),
+                                     decoration: BoxDecoration(
+                                       color: _card,
+                                       borderRadius: BorderRadius.circular(16),
+                                       border: Border.all(color: _border),
+                                     ),
+                                     child: Column(
+                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                       children: [
+                                         Row(
+                                           children: [
+                                             CircleAvatar(
+                                               backgroundColor: _green.withValues(alpha: 0.12),
+                                               child: Icon(Icons.person_rounded, color: _green, size: 22),
+                                             ),
+                                             const SizedBox(width: 14),
+                                             Expanded(
+                                               child: Column(
+                                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                                 children: [
+                                                   Text(stName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                                                   const SizedBox(height: 2),
+                                                   Text(
+                                                     'Matricule: $stMat | ${st['class_name'] ?? className}',
+                                                     style: TextStyle(color: _sub, fontSize: 12),
+                                                   ),
+                                                 ],
+                                               ),
+                                             ),
+                                             Container(
+                                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                               decoration: BoxDecoration(color: styleColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                                               child: Text(style, style: TextStyle(color: styleColor, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                             ),
+                                           ],
+                                         ),
+                                         const SizedBox(height: 12),
 
-                                        // Scores Breakdown Row
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: _bg,
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: _border.withValues(alpha: 0.5)),
-                                          ),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                            children: [
-                                              _studentScoreBadge(_isEn ? 'Visual' : 'Visuel', vScore, const Color(0xFF3B82F6)),
-                                              _studentScoreBadge(_isEn ? 'Auditory' : 'Auditif', aScore, const Color(0xFFEC4899)),
-                                              _studentScoreBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kScore, const Color(0xFF10B981)),
-                                              _studentScoreBadge(_isEn ? 'Read/Write' : 'Lecture', rScore, const Color(0xFFF59E0B)),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                         // Scores Breakdown Row (Responsive Wrap)
+                                         Container(
+                                           width: double.infinity,
+                                           padding: const EdgeInsets.all(10),
+                                           decoration: BoxDecoration(
+                                             color: _bg,
+                                             borderRadius: BorderRadius.circular(10),
+                                             border: Border.all(color: _border.withValues(alpha: 0.5)),
+                                           ),
+                                           child: Wrap(
+                                             alignment: WrapAlignment.spaceAround,
+                                             spacing: 8,
+                                             runSpacing: 8,
+                                             children: [
+                                               _studentScoreBadge(_isEn ? 'Visual' : 'Visuel', vScore, const Color(0xFF3B82F6)),
+                                               _studentScoreBadge(_isEn ? 'Auditory' : 'Auditif', aScore, const Color(0xFFEC4899)),
+                                               _studentScoreBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kScore, const Color(0xFF10B981)),
+                                               _studentScoreBadge(_isEn ? 'Read/Write' : 'Lecture', rScore, const Color(0xFFF59E0B)),
+                                             ],
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   );
                                 },
                               ),
                           ],

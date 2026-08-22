@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../services/auth_service.dart';
 
 class AppSidebar extends StatelessWidget {
   final UserModel user;
@@ -116,11 +117,11 @@ class AppSidebar extends StatelessWidget {
     final initials = user.fullName.trim().split(' ')
         .take(2).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join();
 
-    final Color _sidebarBg   = isDarkMode ? const Color(0xFF0B132B) : Colors.white;
+    final Color _sidebarBg   = isDarkMode ? const Color(0xFF0F172A) : Colors.white;
     final Color _cardBg      = isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
     final Color _textColor   = isDarkMode ? Colors.white : const Color(0xFF0F172A);
-    final Color _subTextColor= isDarkMode ? Colors.white70 : const Color(0xFF475569);
-    final Color _borderColor = isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFFE2E8F0);
+    final Color _subTextColor= isDarkMode ? Colors.white70 : const Color(0xFF64748B);
+    final Color _borderColor = isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth < 380 ? screenWidth * 0.82 : 270.0;
 
@@ -134,54 +135,54 @@ class AppSidebar extends StatelessWidget {
           children: [
             // 1. BRANDING HEADER (LOGO + APP NAME) — UNIFORM SEAMLESS
             Container(
-              height: 68,
+              height: 64,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: const Color(0xFF0F172A),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-                  ),
-                  padding: const EdgeInsets.all(2),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/minesec_logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
+              color: _sidebarBg,
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/minesec_logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'EDU PROFILE',
-                        style: TextStyle(
-                          color: Color(0xFFFCD116),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                          letterSpacing: 1.1,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'EDU PROFILE',
+                          style: TextStyle(
+                            color: isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF006A4E),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            letterSpacing: 1.1,
+                          ),
                         ),
-                      ),
-                      Text(
-                        isEn ? 'MINESEC Cameroon' : 'MINESEC Cameroun',
-                        style: const TextStyle(color: Colors.white70, fontSize: 10.5),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                        Text(
+                          isEn ? 'MINESEC Cameroon' : 'MINESEC Cameroun',
+                          style: TextStyle(color: _subTextColor, fontSize: 10.5),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
           // 2. NAVIGATION MENU LINKS
           Expanded(
@@ -235,10 +236,13 @@ class AppSidebar extends StatelessWidget {
                         final isSelected = selectedClass == cls;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF006A4E) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: ListTile(
                             dense: true,
                             selected: isSelected,
-                            selectedTileColor: const Color(0xFF006A4E),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             leading: Icon(
                               isSelected ? Icons.check_circle_rounded : Icons.check_box_outlined,
@@ -300,10 +304,13 @@ class AppSidebar extends StatelessWidget {
                         final isSelected = selectedIndex == 2 && selectedClass == cls;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF006A4E) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: ListTile(
                             dense: true,
                             selected: isSelected,
-                            selectedTileColor: const Color(0xFF006A4E),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             leading: Icon(
                               isSelected ? Icons.check_circle_rounded : Icons.school_rounded,
@@ -327,6 +334,12 @@ class AppSidebar extends StatelessWidget {
                         );
                       }).toList(),
                     ),
+                  ),
+                  _navTile(
+                    context: context,
+                    index: 4,
+                    icon: Icons.manage_accounts_rounded,
+                    label: isEn ? 'Manage Students' : 'Gestion des Élèves',
                   ),
                 ],
 
@@ -411,55 +424,108 @@ class AppSidebar extends StatelessWidget {
                     label: isEn ? 'User & Security Admin' : 'Gestion Utilisateurs & Sécurité',
                   ),
                 ],
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                  child: Divider(height: 1, thickness: 0.8),
+                ),
+                ListTile(
+                  dense: true,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.settings_rounded, color: Color(0xFF34D399), size: 20),
+                  title: Text(
+                    isEn ? 'Settings' : 'Paramètres',
+                    style: TextStyle(
+                      color: _textColor,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    _closeDrawerIfOpen(context);
+                    onOpenProfile();
+                  },
+                ),
               ],
             ),
           ),
 
-          // 3. BOTTOM USER PROFILE CARD (CLEAN)
-          InkWell(
-            onTap: () {
-              _closeDrawerIfOpen(context);
-              if (onOpenProfile != null) onOpenProfile!();
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.all(14),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: _cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _borderColor),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
+          // 3. BOTTOM USER PROFILE CARD (INTEGRATED LOGOUT)
+          Container(
+            margin: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: _cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _borderColor),
+            ),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () {
+                    _closeDrawerIfOpen(context);
+                    onOpenProfile();
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: CircleAvatar(
+                    radius: 19,
                     backgroundColor: const Color(0xFF006A4E),
                     child: Text(
                       initials.isEmpty ? 'U' : initials,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      _closeDrawerIfOpen(context);
+                      onOpenProfile();
+                    },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           user.fullName,
-                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 12.5),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           roleLabel,
-                          style: TextStyle(color: _subTextColor, fontSize: 10.5),
+                          style: TextStyle(color: _subTextColor, fontSize: 10.0),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: isEn ? 'Logout' : 'Déconnexion',
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                    icon: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5252).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.35)),
+                      ),
+                      child: const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 16),
+                    ),
+                    onPressed: () async {
+                      _closeDrawerIfOpen(context);
+                      await AuthService.logout();
+                      if (context.mounted) {
+                        Navigator.of(context).popUntil((r) => r.isFirst);
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],

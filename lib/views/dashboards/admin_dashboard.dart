@@ -606,19 +606,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       final data = jsonDecode(resp.body);
       if (data['success'] == true) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(newStatus == 1 ? (_isEn ? 'User unblocked & activated!' : 'Utilisateur débloqué et activé !') : (_isEn ? 'User blocked!' : 'Utilisateur bloqué !')),
-              backgroundColor: newStatus == 1 ? _green : Colors.orange,
-            ),
-          );
           _fetchAllUsersAndSchools();
         }
       }
     } catch (err) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
-      }
+      // silent catch
     }
   }
 
@@ -663,16 +655,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         final data = jsonDecode(resp.body);
         if (data['success'] == true) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(_isEn ? 'User deleted successfully.' : 'Utilisateur supprimé avec succès.'), backgroundColor: _green),
-            );
             _fetchAllUsersAndSchools();
           }
         }
       } catch (err) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
-        }
+        // silent catch
       }
     }
   }
@@ -974,6 +961,291 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  void _showSettingsModalDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _border),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: _sub.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: _buildSettingsInlineView()),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSettingsInlineView() {
+    return StatefulBuilder(
+      builder: (ctx, setSt) => SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.settings_rounded, color: _green, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEn ? 'Settings' : 'Paramètres',
+                        style: TextStyle(color: _text, fontSize: 22, fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEn ? 'Customise your experience' : 'Personnalisez votre expérience',
+                        style: TextStyle(color: _sub, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(_isEn ? 'APPEARANCE' : 'APPARENCE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(_isDarkMode ? Icons.nightlight_round_outlined : Icons.wb_sunny_outlined, color: _isDarkMode ? const Color(0xFF818CF8) : const Color(0xFFFCD116), size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_isEn ? 'Display Theme' : 'Thème d\'affichage', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                        Text(_isDarkMode ? (_isEn ? 'Dark Mode' : 'Mode Sombre') : (_isEn ? 'Light Mode' : 'Mode Clair'), style: TextStyle(color: _sub, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isDarkMode,
+                    onChanged: (val) {
+                      setState(() => _isDarkMode = val);
+                      setSt(() {});
+                    },
+                    activeColor: const Color(0xFF34D399),
+                    activeTrackColor: _green.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'LANGUAGE' : 'LANGUE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.language_rounded, color: Colors.blueAccent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_isEn ? 'App Language' : 'Langue de l\'application', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = true);
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _isEn ? _green : _border, width: _isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇬🇧', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('English', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = false);
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: !_isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: !_isEn ? _green : _border, width: !_isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇫🇷', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('Français', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (!_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'ACCOUNT PROFILE' : 'PROFIL DU COMPTE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: _green,
+                        child: Text(
+                          _currentUser.fullName.isNotEmpty ? _currentUser.fullName[0].toUpperCase() : 'U',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_currentUser.fullName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 2),
+                            Text('${_currentUser.role.toUpperCase()} | ${_currentUser.matNumber ?? "MINESEC2026"}', style: TextStyle(color: _sub, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showAdminProfileDialog();
+                      },
+                      icon: const Icon(Icons.person_rounded, size: 18),
+                      label: Text(_isEn ? 'Profile' : 'Profil', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5252).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.25)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5252),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+                  },
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text(_isEn ? 'Logout' : 'Déconnexion', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final int totalSchools  = _parseInt(_adminData?['total_schools'] ?? 6);
@@ -1032,7 +1304,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         }
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
       },
-      onOpenProfile: _showAdminProfileDialog,
+      onOpenProfile: _showSettingsModalDialog,
       onToggleTheme: () => setState(() => _isDarkMode = !_isDarkMode),
       onToggleLanguage: () => setState(() => _isEn = !_isEn),
     );
@@ -1048,114 +1320,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Expanded(
               child: Column(
                 children: [
-                  // TOP NAVIGATION BAR (UNIFORM & SEAMLESS)
-                  Container(
-                    height: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: const Color(0xFF0F172A),
-                  child: Row(
-                    children: [
-                      if (!isWide) ...[
-                        IconButton(
-                          icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      const Spacer(),
-                      Row(
+                  // ── TOP NAVIGATION BAR (MOBILE ONLY) ──────────────────
+                  if (!isWide)
+                    Container(
+                      height: 54,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      color: _bg,
+                      child: Row(
                         children: [
+                          IconButton(
+                            icon: Icon(Icons.menu_rounded, color: _text, size: 24),
+                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(_isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined, color: _isDarkMode ? const Color(0xFFFCD116) : _green, size: 20),
+                            onPressed: () => setState(() => _isDarkMode = !_isDarkMode),
+                            tooltip: _isEn ? 'Toggle Theme' : 'Changer de Thème',
+                          ),
                           InkWell(
-                            onTap: () => setState(() => _isDarkMode = !_isDarkMode),
-                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => setState(() => _isEn = !_isEn),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              width: 38, height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white24, width: 1.5),
+                                color: _green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _green.withValues(alpha: 0.3)),
                               ),
-                              child: Icon(_isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round, color: const Color(0xFFFCD116), size: 18),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Container(
-                            height: 36, width: 100,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.white24, width: 1.5),
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () { if (!_isEn) setState(() => _isEn = true); },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(color: _isEn ? const Color(0xFF006A4E) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-                                      alignment: Alignment.center,
-                                      child: Text('EN', style: TextStyle(color: _isEn ? Colors.white : Colors.white54, fontWeight: FontWeight.w900, fontSize: 11.5)),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () { if (_isEn) setState(() => _isEn = false); },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(color: !_isEn ? const Color(0xFF006A4E) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
-                                      alignment: Alignment.center,
-                                      child: Text('FR', style: TextStyle(color: !_isEn ? Colors.white : Colors.white54, fontWeight: FontWeight.w900, fontSize: 11.5)),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 22),
-                            color: const Color(0xFF1E293B),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            onSelected: (value) async {
-                              if (value == 'profile') {
-                                _showAdminProfileDialog();
-                              } else if (value == 'logout') {
-                                await AuthService.logout();
-                                if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'profile',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.person_rounded, color: Color(0xFF34D399), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(_isEn ? 'Admin Profile' : 'Profil Administrateur', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                                  ],
-                                ),
+                              child: Text(
+                                _isEn ? 'FR' : 'EN',
+                                style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
                               ),
-                              const PopupMenuDivider(),
-                              PopupMenuItem(
-                                value: 'logout',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(_isEn ? 'Logout' : 'Déconnexion', style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.w600, fontSize: 13)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
                 // Main Content Body
                 Expanded(

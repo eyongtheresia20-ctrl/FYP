@@ -82,6 +82,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
         setState(() {
           _resultData = data['data'];
           _isLoading = false;
+          final attempts = _parseInt(_resultData?['attempt_count']);
+          final historyLen = (_resultData?['history'] as List?)?.length ?? 0;
+          if (attempts > 1 || historyLen > 1) {
+            _selectedViewTab = 1; // Auto-select combined multi-test average when 2+ attempts exist
+          }
         });
         return;
       }
@@ -329,16 +334,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
               final pData = jsonDecode(res.body);
               if (pData['success'] == true && pData['data'] != null) {
                 final profile = pData['data'];
-                passCtrl.text    = (profile['password'] ?? 'password123').toString();
-                secCodeCtrl.text = (profile['security_code'] ?? '1234').toString();
+                passCtrl.text    = (profile['password'] ?? '').toString();
+                secCodeCtrl.text = (profile['security_code'] ?? '').toString();
               } else {
-                passCtrl.text    = 'password123';
-                secCodeCtrl.text = '1234';
+                passCtrl.text    = '';
+                secCodeCtrl.text = '';
               }
               if (ctx.mounted) setModalState(() => loading = false);
             }).catchError((_) {
-              passCtrl.text    = 'password123';
-              secCodeCtrl.text = '1234';
+              passCtrl.text    = '';
+              secCodeCtrl.text = '';
               if (ctx.mounted) setModalState(() => loading = false);
             });
           }
@@ -460,44 +465,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       child: CircularProgressIndicator(),
                     )
                   else ...[
-                    // 1. PRESENT PASSWORD INPUT (FETCHED FROM DB)
-                    TextField(
+                    // 1. PASSWORD CARD ROW (LABEL TOP, VALUE BELOW)
+                    _profileEditableRow(
+                      icon: Icons.lock_outline_rounded,
+                      label: _isEn ? 'Password' : 'Mot de Passe',
                       controller: passCtrl,
                       obscureText: obscurePass,
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Password (Loaded from DB)' : 'Mot de Passe Présent (Base de Données)',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.lock_outline_rounded, color: _green, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscurePass ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                          onPressed: () => setModalState(() => obscurePass = !obscurePass),
-                        ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      ),
+                      onToggleObscure: () => setModalState(() => obscurePass = !obscurePass),
+                      hintText: '••••••••',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
-                    // 2. PRESENT SECURITY CODE INPUT (FETCHED FROM DB)
-                    TextField(
+                    // 2. SECURITY CODE CARD ROW (LABEL TOP, VALUE BELOW)
+                    _profileEditableRow(
+                      icon: Icons.security_rounded,
+                      label: _isEn ? 'Security Code' : 'Code de Sécurité',
                       controller: secCodeCtrl,
                       obscureText: obscureSec,
-                      keyboardType: TextInputType.visiblePassword,
-                      decoration: InputDecoration(
-                        labelText: _isEn ? 'Present Security Code (Loaded from DB)' : 'Code de Sécurité Présent (Base de Données)',
-                        labelStyle: TextStyle(color: _sub, fontSize: 12),
-                        prefixIcon: Icon(Icons.security_rounded, color: _green, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(obscureSec ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
-                          onPressed: () => setModalState(() => obscureSec = !obscureSec),
-                        ),
-                        filled: true,
-                        fillColor: _bg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _border)),
-                      ),
+                      onToggleObscure: () => setModalState(() => obscureSec = !obscureSec),
+                      hintText: '1234',
                     ),
                     const SizedBox(height: 18),
 
@@ -586,6 +572,58 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  Widget _profileEditableRow({
+    required IconData icon,
+    required String label,
+    required TextEditingController controller,
+    required bool obscureText,
+    required VoidCallback onToggleObscure,
+    String? hintText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: _green, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label, style: TextStyle(color: _sub, fontSize: 11, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 1),
+                TextField(
+                  controller: controller,
+                  obscureText: obscureText,
+                  style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    hintStyle: TextStyle(color: _sub.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.normal),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 3),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility, color: _sub, size: 20),
+            onPressed: onToggleObscure,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _startAssessment() async {
     final completed = await Navigator.push<bool>(
       context,
@@ -602,6 +640,294 @@ class _StudentDashboardState extends State<StudentDashboard> {
       _fetchResult();
       setState(() => _currentNavIndex = 2); // Switch to Results tab after completing
     }
+  }
+
+  void _showSettingsModalDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(color: _border),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: _sub.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: _buildSettingsInlineView(() => setModalState(() {}))),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSettingsInlineView([VoidCallback? onModalRefresh]) {
+    return StatefulBuilder(
+      builder: (ctx, setSt) => SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.settings_rounded, color: _green, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEn ? 'Settings' : 'Paramètres',
+                        style: TextStyle(color: _text, fontSize: 22, fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEn ? 'Customise your experience' : 'Personnalisez votre expérience',
+                        style: TextStyle(color: _sub, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(_isEn ? 'APPEARANCE' : 'APPARENCE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(_isDarkMode ? Icons.nightlight_round_outlined : Icons.wb_sunny_outlined, color: _isDarkMode ? const Color(0xFF818CF8) : const Color(0xFFFCD116), size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_isEn ? 'Display Theme' : 'Thème d\'affichage', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                        Text(_isDarkMode ? (_isEn ? 'Dark Mode' : 'Mode Sombre') : (_isEn ? 'Light Mode' : 'Mode Clair'), style: TextStyle(color: _sub, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isDarkMode,
+                    onChanged: (val) {
+                      setState(() => _isDarkMode = val);
+                      if (onModalRefresh != null) onModalRefresh();
+                      setSt(() {});
+                    },
+                    activeColor: const Color(0xFF34D399),
+                    activeTrackColor: _green.withValues(alpha: 0.4),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'LANGUAGE' : 'LANGUE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.language_rounded, color: Colors.blueAccent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_isEn ? 'App Language' : 'Langue de l\'application', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = true);
+                            if (onModalRefresh != null) onModalRefresh();
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _isEn ? _green : _border, width: _isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇬🇧', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('English', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _isEn = false);
+                            if (onModalRefresh != null) onModalRefresh();
+                            setSt(() {});
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: !_isEn ? _green.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: !_isEn ? _green : _border, width: !_isEn ? 2 : 1),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🇫🇷', style: TextStyle(fontSize: 26)),
+                                const SizedBox(height: 6),
+                                Text('Français', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                                if (!_isEn) ...[
+                                  const SizedBox(height: 4),
+                                  Icon(Icons.check_circle_rounded, color: _green, size: 16),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Text(_isEn ? 'ACCOUNT PROFILE' : 'PROFIL DU COMPTE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: _green,
+                        child: Text(
+                          _currentUser.fullName.isNotEmpty ? _currentUser.fullName[0].toUpperCase() : 'S',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_currentUser.fullName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 2),
+                            Text('${_currentUser.role.toUpperCase()} | ${_currentUser.matNumber ?? "STD2026"}', style: TextStyle(color: _sub, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showModifyProfileDialog();
+                      },
+                      icon: const Icon(Icons.person_rounded, size: 18),
+                      label: Text(_isEn ? 'Profile' : 'Profil', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5252).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFF5252).withValues(alpha: 0.25)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5252),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    await AuthService.logout();
+                    if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+                  },
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: Text(_isEn ? 'Logout' : 'Déconnexion', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -628,7 +954,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           setState(() => _currentNavIndex = idx);
         }
       },
-      onOpenProfile: _showModifyProfileDialog,
+      onOpenProfile: _showSettingsModalDialog,
       onStartAssessment: _startAssessment,
       onViewResults: () {
         setState(() => _currentNavIndex = 2);
@@ -649,215 +975,43 @@ class _StudentDashboardState extends State<StudentDashboard> {
               child: Column(
                 children: [
                   // ── TOP HEADER BAR (UNIFORM & SEAMLESS) ──────────────────────
-                  Container(
-                    height: 68,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: const Color(0xFF0F172A),
-                  child: Row(
-                    children: [
-                      if (!isWide) ...[
-                        IconButton(
-                          icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 26),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                        ),
-                        const SizedBox(width: 6),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 34, height: 34,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
-                              ),
-                              padding: const EdgeInsets.all(2),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/images/minesec_logo.png',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 18),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'EDU PROFILE',
-                                  style: TextStyle(
-                                    color: Color(0xFFFCD116),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                Text(
-                                  _isEn ? 'Student Portal' : 'Portail Élève',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        Row(
-                          children: [
-                            const Icon(Icons.school_rounded, color: Color(0xFF34D399), size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isEn ? 'Student Learning Portal' : 'Portail d\'Apprentissage Élève',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const Spacer(),
-
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                  // ── TOP NAVIGATION BAR (MOBILE ONLY) ──────────────────
+                  if (!isWide)
+                    Container(
+                      height: 54,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      color: _bg,
+                      child: Row(
                         children: [
-                          // 1. Circular Theme Switcher Button
+                          IconButton(
+                            icon: Icon(Icons.menu_rounded, color: _text, size: 24),
+                            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: Icon(_isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined, color: _isDarkMode ? const Color(0xFFFCD116) : _green, size: 20),
+                            onPressed: () => setState(() => _isDarkMode = !_isDarkMode),
+                            tooltip: _isEn ? 'Toggle Theme' : 'Changer de Thème',
+                          ),
                           InkWell(
-                            onTap: () => setState(() => _isDarkMode = !_isDarkMode),
-                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => setState(() => _isEn = !_isEn),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              width: 38,
-                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white24, width: 1.5),
+                                color: _green.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: _green.withValues(alpha: 0.3)),
                               ),
-                              child: Icon(
-                                _isDarkMode ? Icons.wb_sunny_rounded : Icons.nightlight_round,
-                                color: const Color(0xFFFCD116),
-                                size: 18,
+                              child: Text(
+                                _isEn ? 'FR' : 'EN',
+                                style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-
-                          // 2. Segmented Capsule Button for Language [ EN | FR ]
-                          Container(
-                            height: 36,
-                            width: 100,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1E293B),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.white24, width: 1.5),
-                            ),
-                            padding: const EdgeInsets.all(2),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      if (!_isEn) setState(() => _isEn = true);
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: _isEn ? const Color(0xFF006A4E) : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'EN',
-                                        style: TextStyle(
-                                          color: _isEn ? Colors.white : Colors.white54,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      if (_isEn) setState(() => _isEn = false);
-                                    },
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: !_isEn ? const Color(0xFF006A4E) : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'FR',
-                                        style: TextStyle(
-                                          color: !_isEn ? Colors.white : Colors.white54,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-
-                          // Account Profile Button with Popup Menu
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 22),
-                            color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF334155),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            onSelected: (value) async {
-                              if (value == 'profile') {
-                                _showModifyProfileDialog();
-                              } else if (value == 'logout') {
-                                await AuthService.logout();
-                                if (context.mounted) Navigator.of(context).popUntil((r) => r.isFirst);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'profile',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.person_rounded, color: Color(0xFF34D399), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _isEn ? 'Profile' : 'Profil',
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'logout',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.logout_rounded, color: Color(0xFFFF5252), size: 18),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      _isEn ? 'Logout' : 'Déconnexion',
-                                      style: const TextStyle(color: Color(0xFFFF5252), fontWeight: FontWeight.w600, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
                 // Main Scrollable Body Content
                 Expanded(
@@ -964,8 +1118,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               child: Center(child: CircularProgressIndicator(color: _green)),
                             )
                           else ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 12,
+                              runSpacing: 10,
                               children: [
                                 Text(
                                   _isEn ? 'My VARK Diagnostic Results' : 'Mes Résultats Diagnostics VARK',

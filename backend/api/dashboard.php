@@ -183,6 +183,25 @@ switch ($action) {
             'rw_count' => $scRw,
         ];
 
+        // Fetch all students for Principal Student Management Data Table
+        $stmtAllSt = $pdo->prepare("
+            SELECT st.id AS student_id, u.id AS user_id, u.full_name, COALESCE(st.matricule, u.matricule) AS matricule,
+                   st.class_name, st.gender, st.birth_date, u.region, u.division, COALESCE(u.is_activated, 1) AS is_activated,
+                   COALESCE(
+                       (SELECT a.learning_style 
+                        FROM assessments a 
+                        WHERE a.student_id = st.id 
+                        ORDER BY a.id DESC LIMIT 1),
+                       'Not Assessed'
+                   ) AS learning_style
+            FROM students st
+            JOIN users u ON u.id = st.user_id
+            WHERE u.school_id = ?
+            ORDER BY st.class_name ASC, u.full_name ASC
+        ");
+        $stmtAllSt->execute([$schoolId]);
+        $allStudentsList = $stmtAllSt->fetchAll(PDO::FETCH_ASSOC);
+
         respond(true, 'Principal school data fetched from existing database.', [
             'school_name' => $schoolName,
             'principal_name' => $authUser['full_name'] ?? 'Mme. Etoa Christine',
@@ -198,6 +217,7 @@ switch ($action) {
             'read_write_count' => intval($vark['rw_count'] ?? 0),
             'teachers' => $teachersList,
             'class_breakdown' => $classBreakdown,
+            'all_students' => $allStudentsList,
             'ai_policy_en' => "• Prioritize practical ICT laboratory resources to accommodate visual and kinesthetic learners.\n• Organize inter-class workshops and auditory seminars for language and humanities subjects.\n• Request MINESEC pedagogical support for updated digital learning aids.",
             'ai_policy_fr' => "• Priorisez les équipements de laboratoires informatiques pratiques pour répondre aux besoins des apprenants visuels et kinesthésiques.\n• Organisez des ateliers inter-classes et séminaires auditifs pour les matières littéraires.\n• Sollicitez le soutien pédagogique du MINESEC pour le matériel d'apprentissage numérique.",
         ]);
@@ -624,23 +644,88 @@ switch ($action) {
             ];
         }
 
-        // 2. Fetch student roster strictly for targetClass (LATEST attempt per unique student)
+        // 2. Fetch student roster for targetClass and compute AVERAGE (Summary) scores across all test attempts per student
         $stmtSt = $pdo->prepare("
-            SELECT u.full_name, s.class_name, s.mat_number,
-                   COALESCE(a.learning_style, 'Not Assessed') AS learning_style,
-                   a.visual_score, a.auditory_score, a.kinesthetic_score, a.read_write_score,
-                   r.summary_en, r.summary_fr
+            SELECT s.id AS student_id, u.full_name, s.class_name, s.mat_number
             FROM students s
             JOIN users u ON u.id = s.user_id
-            LEFT JOIN assessments a ON a.id = (
-                SELECT id FROM assessments WHERE student_id = s.id ORDER BY id DESC LIMIT 1
-            )
-            LEFT JOIN results r ON r.student_id = s.id
             WHERE s.class_name = ?
             ORDER BY u.full_name ASC
         ");
         $stmtSt->execute([$targetClass]);
-        $rows = $stmtSt->fetchAll();
+        $studentsList = $stmtSt->fetchAll(PDO::FETCH_ASSOC);
+
+        $rows = [];
+        foreach ($studentsList as $st) {
+            $stId = $st['student_id'];
+            
+            // Fetch ALL assessments for this student
+            $stmtAss = $pdo->prepare("
+                SELECT visual_score, auditory_score, kinesthetic_score, read_write_score, learning_style 
+                FROM assessments 
+                WHERE student_id = ? 
+                ORDER BY completed_at ASC
+            ");
+            $stmtAss->execute([$stId]);
+            $assList = $stmtAss->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($assList)) {
+                $count = count($assList);
+                $sumV = 0; $sumA = 0; $sumK = 0; $sumR = 0;
+                foreach ($assList as $assItem) {
+                    $sumV += floatval($assItem['visual_score']);
+                    $sumA += floatval($assItem['auditory_score']);
+                    $sumK += floatval($assItem['kinesthetic_score']);
+                    $sumR += floatval($assItem['read_write_score']);
+                }
+
+                $avgV = round($sumV / $count);
+                $avgA = round($sumA / $count);
+                $avgK = round($sumK / $count);
+                $avgR = round($sumR / $count);
+
+                // Determine dominant style from averaged scores
+                $scoresMap = [
+                    'Auditory'    => $avgA,
+                    'Visual'      => $avgV,
+                    'Kinesthetic' => $avgK,
+                    'Read/Write'  => $avgR,
+                ];
+                arsort($scoresMap);
+                $topScore = reset($scoresMap);
+                $topStyles = [];
+                foreach ($scoresMap as $stName => $stVal) {
+                    if ($stVal === $topScore) $topStyles[] = $stName;
+                }
+                $compositeStyle = (count($topStyles) > 1) 
+                    ? implode('-', $topStyles) . ' (Dual Style)'
+                    : $topStyles[0];
+
+                $rows[] = [
+                    'full_name'         => $st['full_name'],
+                    'class_name'        => $st['class_name'],
+                    'mat_number'        => $st['mat_number'],
+                    'learning_style'    => $compositeStyle,
+                    'visual_score'      => $avgV,
+                    'auditory_score'    => $avgA,
+                    'kinesthetic_score' => $avgK,
+                    'read_write_score'  => $avgR,
+                    'attempt_count'     => $count,
+                ];
+            } else {
+                $rows[] = [
+                    'full_name'         => $st['full_name'],
+                    'class_name'        => $st['class_name'],
+                    'mat_number'        => $st['mat_number'],
+                    'learning_style'    => 'Not Assessed',
+                    'visual_score'      => 0,
+                    'auditory_score'    => 0,
+                    'kinesthetic_score' => 0,
+                    'read_write_score'  => 0,
+                    'attempt_count'     => 0,
+                ];
+            }
+        }
 
         // 3. VARK score distribution for targetClass
         $vCount = 0; $aCount = 0; $kCount = 0; $rwCount = 0; $assessedTarget = 0;
