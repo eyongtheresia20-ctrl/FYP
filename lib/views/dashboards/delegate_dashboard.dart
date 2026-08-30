@@ -1423,9 +1423,89 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                   isEn: _isEn,
                                 );
 
+                                final scRec = _isEn
+                                    ? (selectedSchoolObj['ai_recommendation_en'] as String? ?? '• Institutional Policy Directive for $scName: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools across all departments.')
+                                    : (selectedSchoolObj['ai_recommendation_fr'] as String? ?? '• Directive Institutionnelle pour $scName : Coordonnez avec les proviseurs pour finaliser les tests VARK et allouer du matériel audio-visuel.');
+
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+
+                                    // ── SCHOOL LEVEL POLICY RECOMMENDATION CARD ──────────────────
+                                    Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: _card,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: _green.withValues(alpha: 0.06),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: _green.withValues(alpha: 0.12),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Icon(Icons.account_balance_rounded, color: _green, size: 22),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      _isEn ? 'School Directive & Recommendation' : 'Directive & Recommandation par Établissement',
+                                                      style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      scName,
+                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 15.5),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: _bg,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: _border),
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    scRec,
+                                                    style: TextStyle(color: _text, fontSize: 12.5, height: 1.5, fontWeight: FontWeight.w500),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
 
                                     // SELECTED CLASS DETAILS & VARK BREAKDOWN CARD
                                     Container(

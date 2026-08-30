@@ -593,11 +593,15 @@ switch ($action) {
             $divisionsMap[$div]['students_count'] += $scStudents;
             $divisionsMap[$div]['assessed_count'] += $scAssessed;
 
+            $scRec = generateSchoolPolicyRecommendation($scVis, $scAud, $scKin, $scRw, $scName);
+
             $divisionsMap[$div]['schools'][] = [
                 'name' => $scName,
                 'teachers_count' => $scTeachers,
                 'students_count' => $scStudents,
                 'assessed_rate' => ($scStudents > 0 ? round(($scAssessed / $scStudents) * 100) . '%' : '0%'),
+                'ai_recommendation_en' => $scRec['en'],
+                'ai_recommendation_fr' => $scRec['fr'],
                 'classes' => $scClassesData,
             ];
         }
