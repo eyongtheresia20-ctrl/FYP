@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/vark_academic_engine.dart';
 import '../../widgets/app_sidebar.dart';
 import '../../core/api_config.dart';
 
@@ -1437,13 +1438,24 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                   }
                                 }
 
+                                final evalSchool = VarkAcademicEngine.evaluate(
+                                  auditory: scAudTotal,
+                                  visual: scVisTotal,
+                                  kinesthetic: scKinTotal,
+                                  readWrite: scRwTotal,
+                                );
+
                                 final scRec = (finalTotalSt == 0 || scAssessedTotal == 0)
                                     ? (_isEn
-                                        ? '• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress for $scName. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.'
-                                        : '• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations diagnostiques VARK sont en cours pour $scName. Encouragez équitablement tous les styles d\'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.')
+                                        ? '• Multimodal Diagnostic Phase: Diagnostic VARK assessments are in progress for $scName. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.'
+                                        : '• Phase Diagnostique Multimodale : Les évaluations diagnostiques VARK sont en cours pour $scName. Encouragez équitablement tous les styles d\'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.')
                                     : (_isEn
-                                        ? (selectedSchoolObj['ai_recommendation_en'] as String? ?? '• Institutional Policy Directive for $scName: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools across all departments.')
-                                        : (selectedSchoolObj['ai_recommendation_fr'] as String? ?? '• Directive Institutionnelle pour $scName : Coordonnez avec les proviseurs pour finaliser les tests VARK et allouer du matériel audio-visuel.'));
+                                        ? "• Academic Diagnosis for $scName: ${evalSchool.learningStyle} (${evalSchool.primaryCategoryNameEn}).\n"
+                                          "• Academic Prospects: ${evalSchool.prospectsSummaryEn}\n\n"
+                                          "${evalSchool.learningStrategyEn}"
+                                        : "• Diagnostic Académique pour $scName : ${evalSchool.learningStyle} (${evalSchool.primaryCategoryNameFr}).\n"
+                                          "• Perspectives Académiques : ${evalSchool.prospectsSummaryFr}\n\n"
+                                          "${evalSchool.learningStrategyFr}");
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

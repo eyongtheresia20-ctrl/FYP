@@ -295,7 +295,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
                         const SizedBox(width: 8),
                         Text(
-                          _isEn ? 'AI Recommendation for Test #$attemptNum' : 'Recommandation IA pour Test #$attemptNum',
+                          _isEn ? 'Academic Strategy for Test #$attemptNum' : 'Stratégie Académique pour Test #$attemptNum',
                           style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
                         ),
                       ],
@@ -1375,7 +1375,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                                 Icon(Icons.auto_awesome_rounded, color: _green, size: 20),
                                                 const SizedBox(width: 8),
                                                 Text(
-                                                  _isEn ? 'AI Learning Recommendations' : 'Recommandations d\'Apprentissage IA',
+                                                  _isEn ? 'Academic Interpretation & Learning Strategy' : 'Interprétation Académique & Stratégie d\'Apprentissage',
                                                   style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14),
                                                 ),
                                               ],
@@ -1464,7 +1464,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                                     Icon(Icons.touch_app_rounded, color: _green, size: 12),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      _isEn ? 'Tap to view full AI recommendation' : 'Appuyez pour voir la recommandation IA',
+                                                      _isEn ? 'Tap to view full academic strategy' : 'Appuyez pour voir la stratégie académique',
                                                       style: TextStyle(color: _green, fontSize: 10.5, fontWeight: FontWeight.w600),
                                                     ),
                                                   ],

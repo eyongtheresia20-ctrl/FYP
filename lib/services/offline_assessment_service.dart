@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../core/api_config.dart';
+import 'vark_academic_engine.dart';
 
 class OfflineAssessmentService {
   // ── 1. LOCAL EVALUATION ENGINE (OFFLINE FIRST) ──────────────────────────────
@@ -29,21 +30,18 @@ class OfflineAssessmentService {
     final kPct = (kinesthetic / 10.0) * 100;
     final rPct = (readWrite / 10.0) * 100;
 
-    final map = {
-      'Auditory': auditory,
-      'Visual': visual,
-      'Kinesthetic': kinesthetic,
-      'Read/Write': readWrite,
+    final eval = VarkAcademicEngine.evaluate(
+      auditory: auditory,
+      visual: visual,
+      kinesthetic: kinesthetic,
+      readWrite: readWrite,
+    );
+
+    final primaryStyle = eval.learningStyle;
+    final recommendations = {
+      'en': eval.fullRecommendationEn,
+      'fr': eval.fullRecommendationFr,
     };
-    final sorted = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final topScore = sorted.first.value;
-    final topStyles = sorted.where((MapEntry<String, int> e) => e.value == topScore).map((e) => e.key).toList();
-
-    final primaryStyle = (topStyles.length > 1)
-        ? '${topStyles.join('-')} (Dual Style)'
-        : topStyles.first;
-
-    final recommendations = generateAIRecommendations(primaryStyle);
 
     final resultData = {
       'completed': true,
@@ -264,7 +262,7 @@ class OfflineAssessmentService {
               pw.SizedBox(height: 20),
 
               // AI Recommendations
-              pw.Text(isEn ? 'AI Pedagogical Recommendations:' : 'Recommandations Pedagogiques IA :', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+              pw.Text(isEn ? 'Academic Interpretation & Learning Strategy (Neil Fleming L.S.T):' : 'Directives & Stratégies d\'Apprentissage (L.S.T de Neil Fleming) :', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
               pw.SizedBox(height: 6),
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),

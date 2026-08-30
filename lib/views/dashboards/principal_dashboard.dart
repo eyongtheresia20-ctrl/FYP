@@ -1343,7 +1343,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                 const SizedBox(height: 10),
                 Text(
                   _isEn
-                      ? 'Official MINESEC platform designed to diagnose student VARK learning preferences and generate actionable AI directives for tailored secondary education in Cameroon.'
+                      ? 'Official MINESEC platform designed to evaluate student VARK learning preferences using Neil Fleming standardized grading scales and generate tailored pedagogical strategies.'
                       : 'Plateforme officielle du MINESEC conçue pour diagnostiquer les préférences d\'apprentissage VARK et générer des directives IA pour l\'enseignement secondaire au Cameroun.',
                   style: const TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.5),
                 ),
@@ -2225,7 +2225,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
-                                          _isEn ? 'AI Strategic Pedagogical Policy Recommendations' : 'Recommandations Pédagogiques Stratégiques IA',
+                                          _isEn ? 'Institutional Pedagogical Strategy & Directives' : 'Directives Pédagogiques Institutionnelles',
                                           style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5),
                                         ),
                                       ),
@@ -2431,7 +2431,7 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
                                                  const SizedBox(width: 8),
                                                  Expanded(
                                                    child: Text(
-                                                     '${_isEn ? "AI Recommendation for" : "Recommandation IA pour"} $cName:',
+                                                     '${_isEn ? "Academic Strategy for" : "Stratégie Académique pour"} $cName:',
                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 13.5),
                                                      softWrap: true,
                                                    ),

@@ -195,9 +195,9 @@ class _AssessmentViewState extends State<AssessmentView> {
       },
       {
         'icon': Icons.psychology_outlined,
-        'title': widget.isEn ? '4. Instant AI Results' : '4. Résultats IA Instantanés',
+        'title': widget.isEn ? '4. Academic Profile & Strategy' : '4. Profil Académique & Stratégie',
         'desc': widget.isEn
-            ? 'Get your VARK learning profile, AI study recommendations, and a downloadable PDF report.'
+            ? 'Get your Neil Fleming VARK learning profile, standardized academic evaluation, and a downloadable PDF report.'
             : 'Obtenez votre profil VARK, des recommandations IA d\'étude et un rapport PDF téléchargeable.',
       },
     ];
@@ -561,7 +561,7 @@ class _AssessmentViewState extends State<AssessmentView> {
         const SizedBox(height: 14),
         Center(
           child: Text(
-            widget.isEn ? 'AI ASSESSMENT EVALUATION' : 'ÉVALUATION DU TEST IA',
+            widget.isEn ? 'ACADEMIC ASSESSMENT EVALUATION' : 'ÉVALUATION ACADÉMIQUE DU TEST',
             style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w900),
           ),
         ),
@@ -610,7 +610,7 @@ class _AssessmentViewState extends State<AssessmentView> {
 
         // AI Recommendations Box
         Text(
-          widget.isEn ? '🤖 AI Pedagogical Study Recommendations:' : '🤖 Recommandations Pédagogiques IA :',
+          widget.isEn ? '🎓 Neil Fleming Academic Interpretation & Strategy:' : '🎓 Interprétation Académique & Stratégie (Neil Fleming) :',
           style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
         ),
         const SizedBox(height: 8),

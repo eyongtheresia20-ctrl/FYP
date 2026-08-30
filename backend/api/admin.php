@@ -10,6 +10,7 @@
 
 require_once __DIR__ . '/../config/helpers.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../services/vark_academic_engine.php';
 
 $action = $_GET['action'] ?? '';
 $body   = getBody();
@@ -390,17 +391,18 @@ switch ($action) {
 
         $assessedRate = $totalSt > 0 ? round(($assessed / $totalSt) * 100) . '%' : '0%';
 
-        $aiRecEn = "• Institutional Policy Directive for {$schoolName}: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools across all departments.\n• Pedagogical Supervision: Conduct quarterly assessments to ensure auditory and visual learners receive balanced instruction.";
-        $aiRecFr = "• Directive Institutionnelle pour {$schoolName} : Coordonnez avec les proviseurs pour finaliser les tests VARK et allouer du matériel audio-visuel.\n• Supervision Pédagogique : Réalisez des bilans trimestriels pour assurer un enseignement multimodal adapté.";
-
         if ($assessed > 0) {
-            if ($audCount >= $visCount && $audCount >= $kinCount && $audCount >= $rwCount) {
-                $aiRecEn = "• Prioritize audio-visual equipment, public address systems, and recorded lecture archives for {$schoolName}.\n• Organize school-wide debate competitions and verbal presentation seminars.";
-                $aiRecFr = "• Priorisez les équipements audio-visuels, sonorisation et archives de cours pour {$schoolName}.\n• Organisez des concours de débats et séminaires d'expression orale.";
-            } elseif ($visCount >= $audCount && $visCount >= $kinCount && $visCount >= $rwCount) {
-                $aiRecEn = "• Equip school libraries and classrooms with visual charts, projectors, and digital slide resources for {$schoolName}.\n• Deploy infographic learning modules across science and technical departments.";
-                $aiRecFr = "• Équipez les bibliothèques et salles de projecteurs et supports visuels pour {$schoolName}.\n• Déployez des modules infographiques dans les départements scientifiques et techniques.";
-            }
+            $eval = VarkAcademicEngine::evaluate($audCount, $visCount, $kinCount, $rwCount);
+            $aiRecEn = "• Institutional Academic Diagnosis ({$schoolName}): Dominant profile is {$eval['learning_style']} ({$eval['primary_category_name_en']}).\n" .
+                       "• Academic Prospects: {$eval['prospects_summary_en']}\n\n" .
+                       $eval['learning_strategy_en'];
+
+            $aiRecFr = "• Diagnostic Pédagogique Institutionnel ({$schoolName}) : Profil dominant {$eval['learning_style']} ({$eval['primary_category_name_fr']}).\n" .
+                       "• Perspectives Académiques : {$eval['prospects_summary_fr']}\n\n" .
+                       $eval['learning_strategy_fr'];
+        } else {
+            $aiRecEn = "• Multimodal Diagnostic Phase: Diagnostic VARK assessments are in progress for {$schoolName}. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.";
+            $aiRecFr = "• Phase Diagnostique Multimodale : Les évaluations diagnostiques VARK sont en cours pour {$schoolName}. Encouragez équitablement tous les styles d'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.";
         }
 
         respond(true, 'School details fetched successfully.', [
