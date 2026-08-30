@@ -1707,11 +1707,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 );
                               },
                             ),
-                          ],
+                            const SizedBox(height: 20),
 
-                          // ── TAB 1: NATIONAL VARK ANALYTICS & POLICY ──────────────────
-                          if (_currentNavIndex == 1) ...[
-                            // VARK Pie Chart Card
+                            // National VARK Learning Styles Breakdown Card (EXCLUSIVELY IN TAB 0: DASHBOARD OVERVIEW)
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(22),
@@ -1765,7 +1763,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 20),
+                          ],
+
+                          // ── TAB 1: NATIONAL VARK ANALYTICS & POLICY ──────────────────
+                          if (_currentNavIndex == 1) ...[
                             Text(_isEn ? 'National Educational Policy' : 'Directives Pédagogiques Nationales', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
                             const SizedBox(height: 16),
                             Container(
