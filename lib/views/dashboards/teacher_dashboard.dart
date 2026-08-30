@@ -198,6 +198,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         'subject': 'Informatique',
         'staff_id': 'T2026001',
         'ticked_classes': ['1ère TI', 'Terminale TI'],
+        'class_summaries': [
+          {'class_name': '1ère TI', 'total_students': 2, 'assessed': 1},
+          {'class_name': 'Terminale TI', 'total_students': 2, 'assessed': 1},
+        ],
+        'overall_total_classes': 2,
+        'overall_total_students': 4,
+        'overall_total_assessed': 2,
         'summary': {
           'total_students': 2,
           'assessed': 2,
@@ -830,6 +837,59 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     );
   }
 
+  String _generateClassroomRec({
+    required int vis,
+    required int aud,
+    required int kin,
+    required int rw,
+    required String className,
+    required bool isEn,
+  }) {
+    final total = vis + aud + kin + rw;
+    if (total == 0) {
+      return isEn
+          ? '• Diagnostic analysis active for class $className.\n• Complete student VARK assessments to generate customized pedagogical recommendations.'
+          : '• Analyse diagnostique active pour la classe $className.\n• Complétez les évaluations VARK des élèves pour générer des recommandations pédagogiques personnalisées.';
+    }
+
+    String dominant = 'Auditory';
+    int maxCount = aud;
+    if (vis > maxCount) { maxCount = vis; dominant = 'Visual'; }
+    if (kin > maxCount) { maxCount = kin; dominant = 'Kinesthetic'; }
+    if (rw > maxCount)  { maxCount = rw;  dominant = 'Read/Write'; }
+    List<String> recsEn = [];
+    List<String> recsFr = [];
+
+    if (dominant == 'Auditory') {
+      recsEn.add('• Auditory Learning Strategy (Primary Focus) in $className: Incorporate clear verbal explanations, class discussions, audio lecture recordings, and Q&A sessions into daily lesson plans.');
+      recsFr.add('• Stratégie d\'Apprentissage Auditif (Focus Principal) en $className : Intégrez des explications orales claires, débats, enregistrements audio et séances de Q/R dans vos cours.');
+    } else if (dominant == 'Visual') {
+      recsEn.add('• Visual Learning Strategy (Primary Focus) in $className: Utilize color-coded visual charts, mind maps, flowcharts, and video demonstrations during daily instruction.');
+      recsFr.add('• Stratégie d\'Apprentissage Visuel (Focus Principal) en $className : Utilisez des schémas visuels en couleurs, cartes mentales, organigrammes et vidéos pendant les leçons.');
+    } else if (dominant == 'Kinesthetic') {
+      recsEn.add('• Kinesthetic Learning Strategy (Primary Focus) in $className: Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.');
+      recsFr.add('• Stratégie d\'Apprentissage Kinesthésique (Focus Principal) en $className : Structurez vos cours autour de travaux pratiques en laboratoire, codage interactif et exercices.');
+    } else {
+      recsEn.add('• Read/Write Learning Strategy (Primary Focus) in $className: Provide structured printed handouts, comprehensive reading glossaries, and detailed bulleted note-taking frameworks.');
+      recsFr.add('• Stratégie d\'Apprentissage Lecture/Écriture (Focus Principal) en $className : Fournissez des fiches de cours imprimées, des glossaires détaillés et fiches de résumés.');
+    }
+
+    // Include directives for all other learning styles to encourage every student in class
+    recsEn.add('• Auditory Strategy: Encourage interactive verbal Q&A sessions and oral presentation tasks.');
+    recsFr.add('• Stratégie Auditive : Encouragez des sessions de Q/R orales interactives et exposés oraux.');
+
+    recsEn.add('• Visual Strategy: Prepare color-coded visual diagrams, mind maps, and whiteboard models.');
+    recsFr.add('• Stratégie Visuelle : Préparez des schémas visuels en couleurs et cartes mentales.');
+
+    recsEn.add('• Kinesthetic Strategy: Incorporate practical demonstrations, hands-on lab exercises, and active group work.');
+    recsFr.add('• Stratégie Kinesthésique : Intégrez des démonstrations pratiques, TP et travaux de groupe actifs.');
+
+    recsEn.add('• Read/Write Strategy: Supply written study outlines, exercise sheets, and structured reading assignments.');
+    recsFr.add('• Stratégie Lecture/Écriture : Fournissez des plans de cours écrits et fiches d\'exercices.');
+
+    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+  }
+
   @override
   Widget build(BuildContext context) {
     final className = _selectedClass ?? (_classData?['class_name'] ?? '1ère TI');
@@ -841,9 +901,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     final int kinesSt    = _parseInt(summary['kinesthetic']);
     final int readWriteSt= _parseInt(summary['read_write']);
 
-    final aiRec = _isEn
-        ? (_classData?['ai_recommendation_en'] ?? '')
-        : (_classData?['ai_recommendation_fr'] ?? '');
+    final aiRec = _generateClassroomRec(
+      vis: visSt,
+      aud: audSt,
+      kin: kinesSt,
+      rw: readWriteSt,
+      className: className,
+      isEn: _isEn,
+    );
 
     final List students      = _classData?['students'] as List? ?? [];
     final List tickedClasses = (_classData?['ticked_classes'] as List?)?.map((e) => e.toString()).toList() ?? ['1ère TI', 'Terminale TI'];
@@ -851,6 +916,25 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     final int overallClasses = _parseInt(_classData?['overall_total_classes'] ?? tickedClasses.length);
     final int overallStudents= _parseInt(_classData?['overall_total_students'] ?? students.length);
     final int overallAssessed= _parseInt(_classData?['overall_total_assessed'] ?? summary['assessed']);
+
+    final List<Map<String, dynamic>> parsedClassSummaries = [];
+    if (classSummaries.isNotEmpty) {
+      for (final cs in classSummaries) {
+        if (cs is Map) {
+          parsedClassSummaries.add(Map<String, dynamic>.from(cs));
+        }
+      }
+    } else {
+      for (final clsName in tickedClasses) {
+        final clsStudents = students.where((s) => s['class_name'] == clsName).toList();
+        final clsAssessed = clsStudents.where((s) => s['learning_style'] != null && s['learning_style'] != 'Not Assessed').length;
+        parsedClassSummaries.add({
+          'class_name': clsName,
+          'total_students': clsStudents.length,
+          'assessed': clsAssessed,
+        });
+      }
+    }
 
     final isWide = MediaQuery.of(context).size.width >= 800;
 
@@ -992,50 +1076,56 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                             LayoutBuilder(
                                builder: (ctx, constraints) {
                                  final isNarrow = constraints.maxWidth < 600;
+
+                                 final classesCard = _overviewStatCard(
+                                   icon: Icons.class_rounded,
+                                   label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
+                                   value: '$overallClasses ${_isEn ? "Classes" : "Classes"}',
+                                   color: const Color(0xFF3B82F6),
+                                   subtitle: tickedClasses.join(' • '),
+                                 );
+
+                                 final totalStdsCard = _overviewStatCard(
+                                   icon: Icons.people_alt_rounded,
+                                   label: _isEn ? 'Total Enrolled' : 'Total Inscrits',
+                                   value: '$overallStudents ${_isEn ? "Students" : "Élèves"}',
+                                   color: const Color(0xFF006A4E),
+                                   subtitle: _isEn ? 'Across assigned classes' : 'Classes assignées',
+                                 );
+
+                                 final overallPctText = overallStudents > 0 ? '${((overallAssessed / overallStudents) * 100).toInt()}%' : '0%';
+                                 final assessedStdsCard = _overviewStatCard(
+                                   icon: Icons.assignment_turned_in_rounded,
+                                   label: _isEn ? 'Total Assessed' : 'Total Évalués',
+                                   value: '$overallAssessed / $overallStudents',
+                                   color: const Color(0xFF10B981),
+                                   subtitle: '$overallPctText ${_isEn ? "Assessment Rate" : "Taux d'Évaluation"}',
+                                 );
+
+                                 final pedagogicalCard = _overviewStatCard(
+                                   icon: Icons.psychology_rounded,
+                                   label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
+                                   value: _isEn ? 'Optimal' : 'Optimal',
+                                   color: const Color(0xFF8B5CF6),
+                                   subtitle: _isEn ? 'VARK Diagnostic Active' : 'Diagnostic VARK Actif',
+                                 );
+
                                  if (isNarrow) {
                                    return Column(
                                      children: [
                                        Row(
                                          children: [
-                                           Expanded(
-                                             child: _overviewStatCard(
-                                               icon: Icons.class_rounded,
-                                               label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
-                                               value: '$overallClasses',
-                                               color: const Color(0xFF3B82F6),
-                                             ),
-                                           ),
+                                           Expanded(child: classesCard),
                                            const SizedBox(width: 10),
-                                           Expanded(
-                                             child: _overviewStatCard(
-                                               icon: Icons.people_alt_rounded,
-                                               label: _isEn ? 'Total Students' : 'Total Élèves',
-                                               value: '$overallStudents',
-                                               color: const Color(0xFF006A4E),
-                                             ),
-                                           ),
+                                           Expanded(child: totalStdsCard),
                                          ],
                                        ),
                                        const SizedBox(height: 10),
                                        Row(
                                          children: [
-                                           Expanded(
-                                             child: _overviewStatCard(
-                                               icon: Icons.assignment_turned_in_rounded,
-                                               label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
-                                               value: '$overallAssessed',
-                                               color: const Color(0xFF10B981),
-                                             ),
-                                           ),
+                                           Expanded(child: assessedStdsCard),
                                            const SizedBox(width: 10),
-                                           Expanded(
-                                             child: _overviewStatCard(
-                                               icon: Icons.psychology_rounded,
-                                               label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
-                                               value: _isEn ? 'Optimal' : 'Optimal',
-                                               color: const Color(0xFF8B5CF6),
-                                             ),
-                                           ),
+                                           Expanded(child: pedagogicalCard),
                                          ],
                                        ),
                                      ],
@@ -1043,46 +1133,21 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                  } else {
                                    return Row(
                                      children: [
-                                       Expanded(
-                                         child: _overviewStatCard(
-                                           icon: Icons.class_rounded,
-                                           label: _isEn ? 'Assigned Classes' : 'Classes Assignées',
-                                           value: '$overallClasses',
-                                           color: const Color(0xFF3B82F6),
-                                         ),
-                                       ),
+                                       Expanded(child: classesCard),
                                        const SizedBox(width: 10),
-                                       Expanded(
-                                         child: _overviewStatCard(
-                                           icon: Icons.people_alt_rounded,
-                                           label: _isEn ? 'Total Students' : 'Total Élèves',
-                                           value: '$overallStudents',
-                                           color: const Color(0xFF006A4E),
-                                         ),
-                                       ),
+                                       Expanded(child: totalStdsCard),
                                        const SizedBox(width: 10),
-                                       Expanded(
-                                         child: _overviewStatCard(
-                                           icon: Icons.assignment_turned_in_rounded,
-                                           label: _isEn ? 'Assessed Students' : 'Élèves Évalués',
-                                           value: '$overallAssessed',
-                                           color: const Color(0xFF10B981),
-                                         ),
-                                       ),
+                                       Expanded(child: assessedStdsCard),
                                        const SizedBox(width: 10),
-                                       Expanded(
-                                         child: _overviewStatCard(
-                                           icon: Icons.psychology_rounded,
-                                           label: _isEn ? 'Pedagogical Status' : 'Statut Pédagogique',
-                                           value: _isEn ? 'Optimal' : 'Optimal',
-                                           color: const Color(0xFF8B5CF6),
-                                         ),
-                                       ),
+                                       Expanded(child: pedagogicalCard),
                                      ],
                                    );
                                  }
                                },
-                             ),
+                            ),
+
+                            // Per-Class Breakdown Section
+                            _buildPerClassBreakdownSection(parsedClassSummaries),
                           ],
 
                           // ── TAB INDEX 1: CLASS DETAILS VIEW (WELCOME BANNER REMOVED AS REQUESTED) ──
@@ -1184,7 +1249,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                                        const SizedBox(width: 8),
                                        Expanded(
                                          child: Text(
-                                           _isEn ? 'AI Pedagogical Teaching Recommendations' : 'Recommandations Pédagogiques IA',
+                                           _isEn ? 'Recommendation' : 'Recommandation',
                                            style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15),
                                          ),
                                        ),
@@ -1392,12 +1457,13 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     required String label,
     required String value,
     required Color color,
+    String? subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: _card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
       ),
@@ -1408,19 +1474,275 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                child: Icon(icon, color: color, size: 20),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: color, size: 22),
               ),
-              Icon(Icons.trending_up_rounded, color: color.withValues(alpha: 0.5), size: 16),
+              Icon(Icons.trending_up_rounded, color: color.withValues(alpha: 0.5), size: 18),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(label, style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 14),
+          Text(label, style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
-          Text(value, style: TextStyle(color: _text, fontSize: 14.5, fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis),
+          Text(value, style: TextStyle(color: _text, fontSize: 18, fontWeight: FontWeight.w900), overflow: TextOverflow.ellipsis),
+          if (subtitle != null && subtitle.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildPerClassBreakdownSection(List<Map<String, dynamic>> parsedClassSummaries) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _isEn ? 'Class-by-Class Enrollment & Assessment' : 'Répartition des Élèves et Évaluations par Classe',
+              style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                color: _green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${parsedClassSummaries.length} ${_isEn ? "Assigned Classes" : "Classes Assignées"}',
+                style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final isWideScreen = constraints.maxWidth >= 700;
+
+            if (isWideScreen) {
+              // Clean Structured Data Table View for Desktop / Wide screens
+              return Container(
+                decoration: BoxDecoration(
+                  color: _card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: _border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Header Row
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: _bg,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                        border: Border(bottom: BorderSide(color: _border)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(flex: 3, child: Text(_isEn ? 'CLASS NAME' : 'NOM DE LA CLASSE', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text(_isEn ? 'TOTAL ENROLLED' : 'TOTAL INSCRITS', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text(_isEn ? 'ASSESSED' : 'ÉVALUÉS', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 3, child: Text(_isEn ? 'COMPLETION RATE' : 'TAUX DE COMPLÉTION', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Align(alignment: Alignment.centerRight, child: Text(_isEn ? 'ACTION' : 'ACTION', style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)))),
+                        ],
+                      ),
+                    ),
+
+                    // Rows
+                    ...parsedClassSummaries.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final cs = entry.value;
+                      final clsName = cs['class_name']?.toString() ?? 'Class';
+                      final totalStds = _parseInt(cs['total_students']);
+                      final assessedStds = _parseInt(cs['assessed']);
+                      final double pct = totalStds > 0 ? (assessedStds / totalStds) : 0.0;
+                      final pctText = '${(pct * 100).toInt()}%';
+                      final isLast = idx == parsedClassSummaries.length - 1;
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          border: isLast ? null : Border(bottom: BorderSide(color: _border.withValues(alpha: 0.5))),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _green.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(Icons.school_rounded, color: _green, size: 18),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(clsName, style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 14.5)),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text('$totalStds ${_isEn ? "Students" : "Élèves"}', style: TextStyle(color: _text, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text('$assessedStds / $totalStds', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12.5)),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(pctText, style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                        Text(
+                                          pct >= 1.0 ? (_isEn ? 'Completed' : 'Terminé') : (_isEn ? 'In Progress' : 'En Cours'),
+                                          style: TextStyle(
+                                            color: pct >= 1.0 ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 5),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: pct,
+                                        backgroundColor: _sub.withValues(alpha: 0.15),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          pct >= 1.0 ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                                        ),
+                                        minHeight: 6,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _green.withValues(alpha: 0.12),
+                                    foregroundColor: _green,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _currentNavIndex = 1);
+                                    _fetchClassData(clsName);
+                                  },
+                                  icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                                  label: Text(_isEn ? 'View Class' : 'Voir Classe', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              );
+            } else {
+              // Mobile View List Cards
+              return Column(
+                children: parsedClassSummaries.map((cs) {
+                  final clsName = cs['class_name']?.toString() ?? 'Class';
+                  final totalStds = _parseInt(cs['total_students']);
+                  final assessedStds = _parseInt(cs['assessed']);
+                  final double pct = totalStds > 0 ? (assessedStds / totalStds) : 0.0;
+                  final pctText = '${(pct * 100).toInt()}%';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _card,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(clsName, style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16)),
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() => _currentNavIndex = 1);
+                                _fetchClassData(clsName);
+                              },
+                              icon: Icon(Icons.arrow_forward_rounded, color: _green, size: 16),
+                              label: Text(_isEn ? 'View' : 'Voir', style: TextStyle(color: _green, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${_isEn ? "Total Enrolled" : "Inscrits"}: $totalStds', style: TextStyle(color: _sub, fontSize: 12.5)),
+                            Text('${_isEn ? "Assessed" : "Évalués"}: $assessedStds / $totalStds ($pctText)', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            backgroundColor: _sub.withValues(alpha: 0.15),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              pct >= 1.0 ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                            ),
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 

@@ -49,15 +49,6 @@ class _ActivationViewState extends State<ActivationView> {
     setState(() { _loading = true; _error = null; });
     try {
       final result = await AuthService.checkMatricule(m);
-      if (result['already_activated'] == true) {
-        setState(() {
-          _error = _isEn
-              ? 'This account is already activated. Please Sign In instead.'
-              : 'Ce compte est déjà activé. Veuillez vous connecter.';
-          _loading = false;
-        });
-        return;
-      }
       setState(() { _foundUser = result; _step = 1; _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
@@ -94,8 +85,9 @@ class _ActivationViewState extends State<ActivationView> {
     Widget dashboard;
     if (user.isStudent)            dashboard = StudentDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
     else if (user.isTeacher)       dashboard = TeacherDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
-    else if (user.isPrincipal)     dashboard = PrincipalDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
-    else if (user.isDivisionalDelegate || user.isRegionalDelegate)
+    else if (user.isPrincipal || user.isDeanOfStudies)
+                                   dashboard = PrincipalDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
+    else if (user.isRegionalDelegate)
                                    dashboard = DelegateDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
     else                           dashboard = AdminDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
 

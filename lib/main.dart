@@ -1,6 +1,7 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'core/localization.dart';
+import 'views/splash_view.dart';
 import 'views/welcome_view.dart';
 
 void main() {
@@ -37,7 +38,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Learning Style Tracker',
+      title: 'EDU PROFILE — MINESEC VARK',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -50,7 +51,21 @@ class _MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      home: const WelcomeView(),
+      home: const AppHomeWrapper(),
     );
+  }
+}
+
+class AppHomeWrapper extends StatelessWidget {
+  const AppHomeWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Splash screen runs ONLY on native Mobile (Android / iOS).
+    // On Web (browser), open directly to WelcomeView!
+    if (kIsWeb) {
+      return const WelcomeView();
+    }
+    return const SplashView();
   }
 }

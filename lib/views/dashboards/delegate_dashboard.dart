@@ -310,12 +310,24 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                   'ai_recommendation_fr': '• Recommandation Pédagogique pour LYCEE BILINGUE DE NGAOUNDAL : Allouez du matériel numérique et organisez des séminaires d\'apprentissage VARK.',
                 },
               ],
-        'ai_policy_en': isReg
-            ? '• Dominant Regional VARK Learning Profile for ADAMOUA Region: Visual (50% of assessed students across all regional lycées).\n• Regional Equipment Directive: Allocate digital projectors, interactive smartboards, and visual simulation software to technical and general secondary schools across all divisions in ADAMOUA.\n• Pedagogical Training Strategy: Establish regional teacher seminars focused on VARK-adaptive lesson planning and visual diagrammatic instruction.'
-            : '• Divisional Policy Directive for DJEREM: Coordinate inspection visits and prioritize digital infrastructure across technical and general secondary lycées.',
-        'ai_policy_fr': isReg
-            ? '• Profil Pédagogique VARK Dominant pour la Région de l\'ADAMOUA : Visuel (50% des élèves évalués dans tous les lycées régionaux).\n• Directive Régionale d\'Équipement : Allouez des projecteurs numériques, des tableaux interactifs et des logiciels de simulation visuelle dans tous les départements de l\'ADAMOUA.\n• Stratégie de Formation Pédagogique : Organisez des séminaires régionaux de formation des enseignants à la pédagogie différenciée VARK et aux supports visuels d\'enseignement.'
-            : '• Directive Départementale pour le DJEREM : Coordonnez les inspections pédagogiques et priorisez l\'infrastructure numérique dans les lycées.',
+        'ai_policy_en': _generateDelegatePolicyRec(
+          vis: isReg ? 6800 : 1600,
+          aud: isReg ? 4900 : 1100,
+          kin: isReg ? 2100 : 500,
+          rw: isReg ? 1400 : 400,
+          regionOrDivision: isReg ? (_currentUser.region ?? 'ADAMOUA') : (_currentUser.division ?? 'DJEREM'),
+          isRegional: isReg,
+          isEn: true,
+        ),
+        'ai_policy_fr': _generateDelegatePolicyRec(
+          vis: isReg ? 6800 : 1600,
+          aud: isReg ? 4900 : 1100,
+          kin: isReg ? 2100 : 500,
+          rw: isReg ? 1400 : 400,
+          regionOrDivision: isReg ? (_currentUser.region ?? 'ADAMOUA') : (_currentUser.division ?? 'DJEREM'),
+          isRegional: isReg,
+          isEn: false,
+        ),
       };
     });
   }
@@ -866,6 +878,117 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     );
   }
 
+  String _generateClassroomRec({
+    required int vis,
+    required int aud,
+    required int kin,
+    required int rw,
+    required String className,
+    required bool isEn,
+  }) {
+    final total = vis + aud + kin + rw;
+    if (total == 0) {
+      return isEn
+          ? '• Diagnostic analysis in progress for class $className.\n• Complete student VARK assessments to generate customized pedagogical recommendations.'
+          : '• Analyse diagnostique en cours pour la classe $className.\n• Complétez les évaluations VARK des élèves pour générer des recommandations pédagogiques personnalisées.';
+    }
+
+    final counts = {'Visual': vis, 'Auditory': aud, 'Kinesthetic': kin, 'Read/Write': rw};
+    final maxCount = counts.values.reduce((a, b) => a > b ? a : b);
+    final topStyles = counts.entries.where((e) => e.value == maxCount && e.value > 0).map((e) => e.key).toList();
+
+    List<String> recsEn = [];
+    List<String> recsFr = [];
+
+    if (topStyles.contains('Auditory')) {
+      recsEn.add('• Incorporate clear verbal explanations, class discussions, and Q&A sessions into daily lesson notes for class $className.');
+      recsEn.add('• Provide audio recordings and spoken summaries of key lecture topics for student review.');
+      recsFr.add('• Intégrez des explications orales claires, des débats et séances de Q/R dans vos fiches de cours pour la classe $className.');
+      recsFr.add('• Mettez à disposition des enregistrements audio et synthèses orales des leçons.');
+    }
+    if (topStyles.contains('Visual')) {
+      recsEn.add('• Utilize color-coded visual charts, mind maps, flowcharts, and board diagrams when preparing lesson notes for class $className.');
+      recsEn.add('• Incorporate video demonstrations, slides, and graphical models into classroom teaching.');
+      recsFr.add('• Utilisez des schémas visuels en couleur, des cartes mentales et organigrammes pour la classe de $className.');
+      recsFr.add('• Intégrez des démonstrations vidéo, des diaporamas et modèles graphiques en cours.');
+    }
+    if (topStyles.contains('Kinesthetic')) {
+      recsEn.add('• Structure lessons around hands-on lab experiments, interactive coding, and practical exercises for class $className.');
+      recsEn.add('• Provide step-by-step practical demonstrations and assign project-based learning tasks.');
+      recsFr.add('• Structurez vos cours autour de travaux pratiques, du codage interactif et d\'exercices pour $className.');
+      recsFr.add('• Proposez des démonstrations pratiques étape par étape et attribuez des projets pratiques.');
+    }
+    if (topStyles.contains('Read/Write')) {
+      recsEn.add('• Provide structured printed handouts, comprehensive reading glossaries, and written exercise sets for class $className.');
+      recsEn.add('• Guide students in writing out clear summaries, definitions, and detailed bulleted notes.');
+      recsFr.add('• Fournissez des fiches de cours imprimées, des glossaires détaillés et exercices écrits pour $className.');
+      recsFr.add('• Guidez les élèves dans la rédaction de résumés clairs et de notes structurées à puces.');
+    }
+
+    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+  }
+
+  String _generateDelegatePolicyRec({
+    required int vis,
+    required int aud,
+    required int kin,
+    required int rw,
+    required String regionOrDivision,
+    required bool isRegional,
+    required bool isEn,
+  }) {
+    final total = vis + aud + kin + rw;
+    final entityTypeEn = isRegional ? 'Regional' : 'Divisional';
+    final entityTypeFr = isRegional ? 'Régionale' : 'Départementale';
+
+    if (total == 0) {
+      return isEn
+          ? '• $entityTypeEn VARK Diagnostic Directive for $regionOrDivision:\n• Coordinate inspection visits with school principals across $regionOrDivision to accelerate student VARK diagnostic completion.\n• Ensure all secondary lycées establish offline diagnostic stations for unassessed classes.'
+          : '• Directive de Diagnostic $entityTypeFr pour le $regionOrDivision :\n• Coordonnez les visites d\'inspection avec les proviseurs du $regionOrDivision pour accélérer la réalisation des tests VARK.\n• Veillez à ce que tous les lycées installent des stations de diagnostic hors-ligne.';
+    }
+
+    final counts = {'Visual': vis, 'Auditory': aud, 'Kinesthetic': kin, 'Read/Write': rw};
+    String dominant = 'Auditory';
+    int maxCount = aud;
+    if (vis > maxCount) { maxCount = vis; dominant = 'Visual'; }
+    if (kin > maxCount) { maxCount = kin; dominant = 'Kinesthetic'; }
+    if (rw > maxCount)  { maxCount = rw;  dominant = 'Read/Write'; }
+
+    final int pct = total > 0 ? ((maxCount / total) * 100).round() : 0;
+
+    List<String> recsEn = [];
+    List<String> recsFr = [];
+
+    if (dominant == 'Auditory') {
+      recsEn.add('• Auditory Learning Strategy (Primary Focus) in $regionOrDivision: Prioritize audio-visual equipment, lecture recordings, peer debates, and verbal instruction toolkits across all lycées.');
+      recsFr.add('• Stratégie d\'Apprentissage Auditif (Focus Principal) au $regionOrDivision : Priorisez les équipements audiovisuels, enregistrements de cours, débats et outils d\'enseignement oral dans les lycées.');
+    } else if (dominant == 'Visual') {
+      recsEn.add('• Visual Learning Strategy (Primary Focus) in $regionOrDivision: Allocate digital projectors, interactive smartboards, visual simulation software, and color-coded study guides.');
+      recsFr.add('• Stratégie d\'Apprentissage Visuel (Focus Principal) au $regionOrDivision : Allouez des vidéoprojecteurs, tableaux interactifs, logiciels visuels et fiches synthétiques en couleurs.');
+    } else if (dominant == 'Kinesthetic') {
+      recsEn.add('• Kinesthetic Learning Strategy (Primary Focus) in $regionOrDivision: Expand practical computer science laboratories, technical hardware workshops, and practical field training.');
+      recsFr.add('• Stratégie d\'Apprentissage Kinesthésique (Focus Principal) au $regionOrDivision : Développez les laboratoires informatiques pratiques, ateliers de maintenance et stages techniques.');
+    } else {
+      recsEn.add('• Read/Write Learning Strategy (Primary Focus) in $regionOrDivision: Enrich school libraries with updated textbooks, digital reference manuals, e-libraries, and essay competitions.');
+      recsFr.add('• Stratégie d\'Apprentissage Lecture/Écriture (Focus Principal) au $regionOrDivision : Enrichissez les bibliothèques en manuels, répertoires numériques et concours de rédaction.');
+    }
+
+    // Include directives for all other learning styles to encourage all students
+    recsEn.add('• Auditory Directive: Facilitate interactive classroom discussions, oral presentations, and group debate competitions.');
+    recsFr.add('• Directive Auditive : Facilitez les discussions interactives en classe, exposés oraux et concours de débats.');
+
+    recsEn.add('• Visual Directive: Inspect computer labs and equip classrooms with visual charts, multi-colored whiteboards, and mind-mapping software.');
+    recsFr.add('• Directive Visuelle : Inspectez les labos informatiques et équipez les classes de supports visuels et schémas.');
+
+    recsEn.add('• Kinesthetic Workshop Directive: Provide hands-on laboratory equipment, practical ICT workshops, and physical learning activities.');
+    recsFr.add('• Directive Kinesthésique : Fournissez du matériel de laboratoire pratique, des ateliers informatiques et activités physiques.');
+
+    recsEn.add('• Read/Write Support: Supply comprehensive textbook reference guides, structured note-taking frameworks, and library resources.');
+    recsFr.add('• Soutien Lecture/Écriture : Mettez à disposition des manuels de référence complets, fiches de synthèse et ressources en bibliothèque.');
+
+    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isReg = _currentUser.isRegionalDelegate;
@@ -889,9 +1012,15 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     }
     if (schoolNames.isEmpty) schoolNames.addAll(['LYCEE TECHNIQUE DE NGAOUNDAL', 'LYCEE CLASSIQUE DE NGAOUNDAL', 'LYCEE BILINGUE DE NGAOUNDAL']);
 
-    final String aiPolicy = _isEn
-        ? (_delegateData?['ai_policy_en'] ?? '')
-        : (_delegateData?['ai_policy_fr'] ?? '');
+    final String aiPolicy = _generateDelegatePolicyRec(
+      vis: visSt,
+      aud: audSt,
+      kin: kinesSt,
+      rw: rwSt,
+      regionOrDivision: isReg ? (_currentUser.region ?? 'ADAMOUA') : (_currentUser.division ?? 'DJEREM'),
+      isRegional: isReg,
+      isEn: _isEn,
+    );
 
     final isWide = MediaQuery.of(context).size.width >= 800;
 
@@ -1160,7 +1289,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                     children: [
                                       Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
                                       const SizedBox(width: 8),
-                                      Text(_isEn ? 'AI Regional Policy Directives' : 'Directives Stratégiques Régionales IA', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
+                                      Text(_isEn ? 'Regional Pedagogical Directives' : 'Directives Pédagogiques Régionales', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
@@ -1285,38 +1414,14 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                 final rw    = _parseInt(selectedClassObj['read_write'] ?? 0);
                                 final stList = selectedClassObj['students'] as List? ?? [];
 
-                                // ── Dynamic AI Recommendation from VARK Analysis ──────────
-                                String cRec;
-                                final totalVark = vis + aud + kin + rw;
-                                if (totalVark > 0) {
-                                  final styles = [
-                                    MapEntry(_isEn ? 'Visual' : 'Visuel', vis),
-                                    MapEntry(_isEn ? 'Auditory' : 'Auditif', aud),
-                                    MapEntry(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin),
-                                    MapEntry(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw),
-                                  ];
-                                  styles.sort((a, b) => b.value.compareTo(a.value));
-                                  final dom = styles.first;
-                                  final domPct = ((dom.value / totalVark) * 100).round();
-
-                                  if (_isEn) {
-                                    cRec = "• Dominant VARK Learning Profile for $cName at $scName: ${dom.key} ($domPct% of assessed students).\n" +
-                                           (dom.key.contains('Visual') ? "• Pedagogical Analysis Recommendation: Implement color-coded visual charts, interactive flowcharts, and video demonstrations for $cName." :
-                                            dom.key.contains('Auditory') ? "• Pedagogical Analysis Recommendation: Prioritize class discussions, peer debriefs, and oral explanations for $cName." :
-                                            dom.key.contains('Kinesthetic') ? "• Pedagogical Analysis Recommendation: Prioritize hands-on lab experiments, hardware wiring workshops, and physical practice." :
-                                            "• Pedagogical Analysis Recommendation: Prioritize structured reading materials, written summaries, and essay documentation.");
-                                  } else {
-                                    cRec = "• Profil VARK Dominant pour $cName à $scName : ${dom.key} ($domPct% des élèves évalués).\n" +
-                                           (dom.key.contains('Visuel') ? "• Recommandation d'Analyse Pédagogique : Priorisez les organigrammes interactifs, les diagrammes et schémas visuels pour $cName." :
-                                            dom.key.contains('Auditif') ? "• Recommandation d'Analyse Pédagogique : Priorisez les débats en classe, les explications orales et les cours récapitulatifs." :
-                                            dom.key.contains('Kinesthésique') ? "• Recommandation d'Analyse Pédagogique : Priorisez les travaux pratiques en laboratoire et les ateliers pratiques." :
-                                            "• Recommandation d'Analyse Pédagogique : Priorisez les fiches de lecture structurées et la rédaction de synthèses.");
-                                  }
-                                } else {
-                                  cRec = _isEn
-                                      ? "• Diagnostic Analysis Active for $cName: Pending student assessment completion. Encourage students to complete the VARK test."
-                                      : "• Analyse Diagnostique Active pour $cName : Évaluations en attente. Encouragez les élèves à passer l'évaluation VARK.";
-                                }
+                                final cRec = _generateClassroomRec(
+                                  vis: vis,
+                                  aud: aud,
+                                  kin: kin,
+                                  rw: rw,
+                                  className: '$cName ($scName)',
+                                  isEn: _isEn,
+                                );
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1435,8 +1540,8 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                                     const SizedBox(width: 8),
                                                     Expanded(
                                                       child: Text(
-                                                        '${_isEn ? "AI Recommendation for" : "Recommandation IA pour"} $cName :',
-                                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 12.5),
+                                                        _isEn ? 'Recommendation' : 'Recommandation',
+                                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
                                                         softWrap: true,
                                                       ),
                                                     ),

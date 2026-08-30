@@ -58,6 +58,174 @@ function getSchoolClassBreakdownAndRoster($pdo, $schoolId, $clsName) {
     ];
 }
 
+function generateClassroomRecommendation($vis, $aud, $kin, $rw, $clsName) {
+    $total = $vis + $aud + $kin + $rw;
+    if ($total == 0) {
+        return [
+            'en' => "• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress. Encourage all learning styles equally through multimodal instruction.\n" .
+                    "• Auditory Recommendation: Integrate interactive class discussions, verbal lecture summaries, audio recordings, and peer Q&A sessions.\n" .
+                    "• Visual Recommendation: Utilize color-coded visual board diagrams, mind maps, graphic organizers, and video demonstrations.\n" .
+                    "• Kinesthetic Recommendation: Incorporate hands-on problem-solving exercises, practical lab demonstrations, and interactive group activities.\n" .
+                    "• Read/Write Recommendation: Supply structured printed handouts, comprehensive reading glossaries, and bulleted note-taking frameworks.",
+            'fr' => "• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations VARK sont en cours. Encouragez équitablement tous les styles d'apprentissage.\n" .
+                    "• Recommandation Auditive : Intégrez des discussions interactives en classe, des synthèses orales de cours et des enregistrements audio.\n" .
+                    "• Recommandation Visuelle : Utilisez des schémas visuels en couleurs, des cartes mentales et des diaporamas résumés.\n" .
+                    "• Recommandation Kinesthésique : Proposez des exercices pratiques de résolution de problèmes et des travaux en groupe.\n" .
+                    "• Recommandation Lecture/Écriture : Fournissez des fiches de cours imprimées structurées et des glossaires détaillés."
+        ];
+    }
+
+    $dominant = 'Auditory';
+    $maxVal = $aud;
+    if ($vis > $maxVal) { $maxVal = $vis; $dominant = 'Visual'; }
+    if ($kin > $maxVal) { $maxVal = $kin; $dominant = 'Kinesthetic'; }
+    if ($rw > $maxVal)  { $maxVal = $rw;  $dominant = 'Read/Write'; }
+
+    $pct = $total > 0 ? round(($maxVal / $total) * 100) : 0;
+
+    $recsEn = [];
+    $recsFr = [];
+
+    if ($dominant == 'Auditory') {
+        $recsEn[] = "• Auditory Learning Strategy (Primary Focus): Integrate interactive class discussions, verbal lecture summaries, audio recordings, and peer debates to maximize retention.";
+        $recsFr[] = "• Stratégie d'Apprentissage Auditif (Focus Principal) : Intégrez des discussions interactives en classe, des synthèses orales de cours, des enregistrements audio et des débats.";
+    } elseif ($dominant == 'Visual') {
+        $recsEn[] = "• Visual Learning Strategy (Primary Focus): Utilize color-coded visual charts, mind maps, graphic organizers, and video demonstrations to boost comprehension.";
+        $recsFr[] = "• Stratégie d'Apprentissage Visuel (Focus Principal) : Utilisez des schémas visuels en couleurs, des cartes mentales, des organisateurs graphiques et des démonstrations vidéo.";
+    } elseif ($dominant == 'Kinesthetic') {
+        $recsEn[] = "• Kinesthetic Learning Strategy (Primary Focus): Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.";
+        $recsFr[] = "• Stratégie d'Apprentissage Kinesthésique (Focus Principal) : Structurez les cours autour de travaux pratiques en laboratoire, du codage interactif et d'exercices pratiques.";
+    } else {
+        $recsEn[] = "• Read/Write Learning Strategy (Primary Focus): Provide structured printed handouts, comprehensive reading glossaries, and detailed note-taking frameworks.";
+        $recsFr[] = "• Stratégie d'Apprentissage Lecture/Écriture (Focus Principal) : Fournissez des fiches de cours imprimées, des glossaires détaillés et des guides de prise de notes.";
+    }
+
+    $recsEn[] = "• Visual Support: Provide color-coded summary charts, mind maps, and key visual diagrams on the board.";
+    $recsFr[] = "• Support Visuel : Fournissez des schémas résumés en couleurs, des cartes mentales et des diagrammes clés au tableau.";
+
+    $recsEn[] = "• Kinesthetic Support: Incorporate hands-on problem-solving exercises, interactive group activities, and practical demonstrations.";
+    $recsFr[] = "• Support Kinesthésique : Intégrez des exercices pratiques de résolution de problèmes, des activités de groupe et des démonstrations.";
+
+    $recsEn[] = "• Read/Write Support: Supply structured reading handouts, written vocabulary lists, and guided note-taking frameworks.";
+    $recsFr[] = "• Support Lecture/Écriture : Proposez des fiches de cours imprimées structurées, des listes de vocabulaire récapitulatives et des guides de prise de notes.";
+
+    return [
+        'en' => implode("\n", $recsEn),
+        'fr' => implode("\n", $recsFr)
+    ];
+}
+
+function generateSchoolPolicyRecommendation($vis, $aud, $kin, $rw, $schoolName) {
+    $total = $vis + $aud + $kin + $rw;
+    if ($total == 0) {
+        return [
+            'en' => "• Strategic Institutional Directive for $schoolName: Student diagnostic assessment coverage in progress. Coordinate with department heads to complete student VARK testing.",
+            'fr' => "• Directive Stratégique Institutionnelle pour $schoolName : Couverture des évaluations diagnostiques en cours. Coordonnez avec les chefs de travaux pour finaliser les tests VARK."
+        ];
+    }
+
+    $counts = ['Visual' => $vis, 'Auditory' => $aud, 'Kinesthetic' => $kin, 'Read/Write' => $rw];
+    $maxCount = max($counts);
+    $topStyles = [];
+    foreach ($counts as $style => $val) {
+        if ($val == $maxCount && $val > 0) $topStyles[] = $style;
+    }
+
+    $recsEn = [];
+    $recsFr = [];
+
+    if (in_array('Auditory', $topStyles)) {
+        $recsEn[] = "• Prioritize audio-visual equipment, public address systems, and recorded lecture archives.";
+        $recsEn[] = "• Organize school-wide debate competitions and verbal presentation seminars.";
+        $recsFr[] = "• Priorisez les équipements audio, les systèmes de sonorisation et les cours enregistrés.";
+        $recsFr[] = "• Organisez des concours de débat et des séminaires de présentation orale à l'échelle du lycée.";
+    }
+    if (in_array('Visual', $topStyles)) {
+        $recsEn[] = "• Allocate digital projectors, interactive smartboards, and visual simulation software across all classrooms.";
+        $recsEn[] = "• Provide teachers with graphic design and visual diagramming training.";
+        $recsFr[] = "• Allouez des vidéoprojecteurs, des tableaux interactifs et des logiciels de simulation visuelle.";
+        $recsFr[] = "• Offrez aux enseignants une formation aux supports graphiques et cartes mentales.";
+    }
+    if (in_array('Kinesthetic', $topStyles)) {
+        $recsEn[] = "• Expand practical ICT laboratory resources, computer hardware workshops, and technical lab equipment.";
+        $recsEn[] = "• Integrate active learning, hands-on demonstrations, and field practicals into the curriculum.";
+        $recsFr[] = "• Développez les laboratoires informatiques pratiques, ateliers de maintenance et équipements TP.";
+        $recsFr[] = "• Intégrez l'apprentissage actif, les démonstrations pratiques et les travaux de terrain.";
+    }
+    if (in_array('Read/Write', $topStyles)) {
+        $recsEn[] = "• Enrich the school library with updated textbooks, digital reference manuals, and printed study guides.";
+        $recsEn[] = "• Conduct essay-writing and structured documentation workshops for technical students.";
+        $recsFr[] = "• Enrichissez la bibliothèque en manuels scolaires, répertoires numériques et fiches de révision.";
+        $recsFr[] = "• Organisez des ateliers de rédaction et de documentation structurée pour les élèves.";
+    }
+
+    return [
+        'en' => implode("\n", $recsEn),
+        'fr' => implode("\n", $recsFr)
+    ];
+}
+
+function generateDelegatePolicyRecommendation($vis, $aud, $kin, $rw, $entityName, $isRegional = false) {
+    $total = $vis + $aud + $kin + $rw;
+    $entityTypeEn = $isRegional ? 'Regional' : 'Divisional';
+    $entityTypeFr = $isRegional ? 'Régionale' : 'Départementale';
+
+    if ($total == 0) {
+        return [
+            'en' => "• $entityTypeEn VARK Diagnostic Directive for $entityName:\n• Coordinate inspection visits with school principals across $entityName to accelerate student VARK diagnostic completion.\n• Ensure all secondary lycées establish offline diagnostic stations for unassessed classes.",
+            'fr' => "• Directive de Diagnostic $entityTypeFr pour le $entityName :\n• Coordonnez les visites d'inspection avec les proviseurs du $entityName pour accélérer la réalisation des tests VARK.\n• Veillez à ce que tous les lycées installent des stations de diagnostic hors-ligne."
+        ];
+    }
+
+    $counts = ['Visual' => $vis, 'Auditory' => $aud, 'Kinesthetic' => $kin, 'Read/Write' => $rw];
+    $maxCount = max($counts);
+    $topStyles = [];
+    foreach ($counts as $style => $val) {
+        if ($val == $maxCount && $val > 0) $topStyles[] = $style;
+    }
+
+    $recsEn = [];
+    $recsFr = [];
+
+    if (in_array('Auditory', $topStyles)) {
+        $recsEn[] = "• Prioritize audio-visual equipment, public address systems, and recorded lecture archives across lycées in $entityName.";
+        $recsEn[] = "• Organize $entityTypeEn debate competitions and verbal presentation seminars for secondary students.";
+        $recsEn[] = "• Conduct pedagogical inspection visits focused on interactive verbal instruction and auditory teaching methods.";
+        $recsFr[] = "• Priorisez les équipements audio-visuels, sonorisations et archives audio dans les lycées du $entityName.";
+        $recsFr[] = "• Organisez des concours de débat et séminaires d'expression orale à l'échelle $entityTypeFr.";
+        $recsFr[] = "• Coordonnez des visites d'inspection axées sur l'enseignement verbal interactif et les débats.";
+    }
+    if (in_array('Visual', $topStyles)) {
+        $recsEn[] = "• Allocate digital projectors, interactive smartboards, and visual simulation software across all lycées in $entityName.";
+        $recsEn[] = "• Provide secondary teachers with graphic design and visual diagramming training.";
+        $recsEn[] = "• Inspect computer laboratories to ensure visual teaching aids and mind-mapping tools are operational.";
+        $recsFr[] = "• Allouez des vidéoprojecteurs, des tableaux interactifs et logiciels de simulation visuelle dans le $entityName.";
+        $recsFr[] = "• Offrez aux enseignants une formation aux supports graphiques et cartes mentales.";
+        $recsFr[] = "• Inspectez les laboratoires informatiques pour vérifier la disponibilité des outils visuels.";
+    }
+    if (in_array('Kinesthetic', $topStyles)) {
+        $recsEn[] = "• Expand practical ICT laboratory resources, computer hardware workshops, and technical lab equipment in $entityName.";
+        $recsEn[] = "• Strengthen partnerships with technical industries and integrate practical field internships into the curriculum.";
+        $recsEn[] = "• Inspect technical workshops to verify safety protocols and practical hands-on training execution.";
+        $recsFr[] = "• Développez les laboratoires informatiques pratiques, ateliers de maintenance et équipements TP dans le $entityName.";
+        $recsFr[] = "• Renforcez les partenariats industriels et intégrez des stages pratiques dans le calendrier scolaire.";
+        $recsFr[] = "• Inspectez les ateliers techniques pour vérifier les protocoles de sécurité et la réalisation des TP.";
+    }
+    if (in_array('Read/Write', $topStyles)) {
+        $recsEn[] = "• Enrich secondary school libraries with updated textbooks, digital reference manuals, and printed study guides in $entityName.";
+        $recsEn[] = "• Establish digital e-libraries and subscription access to educational journals and technical reading materials.";
+        $recsEn[] = "• Conduct $entityTypeEn essay-writing competitions and structured documentation workshops.";
+        $recsFr[] = "• Enrichissez les bibliothèques scolaires en manuels, répertoires numériques et fiches dans le $entityName.";
+        $recsFr[] = "• Mettez en place une bibliothèque numérique avec accès aux revues éducatives et manuels techniques.";
+        $recsFr[] = "• Organisez des concours de rédaction académique et des ateliers de documentation technique.";
+    }
+
+    return [
+        'en' => implode("\n", $recsEn),
+        'fr' => implode("\n", $recsFr)
+    ];
+}
+
 $userId = intval($body['user_id'] ?? $_GET['user_id'] ?? $_GET['principal_id'] ?? 0);
 
 // If user_id provided, fetch user details
@@ -146,6 +314,13 @@ switch ($action) {
         $stmtClasses->execute([$schoolId]);
         $classList = $stmtClasses->fetchAll(PDO::FETCH_COLUMN);
 
+        $defaultClasses = ['1ère TI', 'Terminale TI', '2nde C', '1ère C', 'Terminale C'];
+        foreach ($defaultClasses as $dc) {
+            if (!in_array($dc, $classList)) {
+                $classList[] = $dc;
+            }
+        }
+
         $classBreakdown = [];
         $scAssessed = 0;
         $scVis = 0; $scAud = 0; $scKin = 0; $scRw = 0;
@@ -158,8 +333,7 @@ switch ($action) {
             $scKin += $cData['kinesthetic'];
             $scRw += $cData['read_write'];
 
-            $recEn = "• Integrate visual mind maps, flowchart diagrams, and auditory lectures tailored for $cls.\n• Encourage interactive peer discussions and practical lab sessions.";
-            $recFr = "• Intégrez des cartes mentales visuelles, des schémas et des cours auditifs adaptés pour la classe de $cls.\n• Encouragez les discussions interactives entre pairs et les séances de travaux pratiques.";
+            $classRec = generateClassroomRecommendation($cData['visual'], $cData['auditory'], $cData['kinesthetic'], $cData['read_write'], $cls);
 
             $classBreakdown[] = [
                 'class_name' => $cls,
@@ -170,8 +344,8 @@ switch ($action) {
                 'kinesthetic' => $cData['kinesthetic'],
                 'read_write' => $cData['read_write'],
                 'students' => $cData['students'],
-                'ai_recommendation_en' => $recEn,
-                'ai_recommendation_fr' => $recFr,
+                'ai_recommendation_en' => $classRec['en'],
+                'ai_recommendation_fr' => $classRec['fr'],
             ];
         }
 
@@ -183,10 +357,13 @@ switch ($action) {
             'rw_count' => $scRw,
         ];
 
+        $schoolPolicyRec = generateSchoolPolicyRecommendation($scVis, $scAud, $scKin, $scRw, $schoolName);
+
         // Fetch all students for Principal Student Management Data Table
         $stmtAllSt = $pdo->prepare("
             SELECT st.id AS student_id, u.id AS user_id, u.full_name, COALESCE(st.matricule, u.matricule) AS matricule,
-                   st.class_name, st.gender, st.birth_date, u.region, u.division, COALESCE(u.is_activated, 1) AS is_activated,
+                   st.class_name, st.gender, st.birth_date, u.region, u.division, 
+                   CASE WHEN u.is_activated = 1 AND u.password_hash IS NOT NULL AND u.password_hash != '' THEN 1 ELSE 0 END AS is_activated,
                    COALESCE(
                        (SELECT a.learning_style 
                         FROM assessments a 
@@ -218,8 +395,8 @@ switch ($action) {
             'teachers' => $teachersList,
             'class_breakdown' => $classBreakdown,
             'all_students' => $allStudentsList,
-            'ai_policy_en' => "• Prioritize practical ICT laboratory resources to accommodate visual and kinesthetic learners.\n• Organize inter-class workshops and auditory seminars for language and humanities subjects.\n• Request MINESEC pedagogical support for updated digital learning aids.",
-            'ai_policy_fr' => "• Priorisez les équipements de laboratoires informatiques pratiques pour répondre aux besoins des apprenants visuels et kinesthésiques.\n• Organisez des ateliers inter-classes et séminaires auditifs pour les matières littéraires.\n• Sollicitez le soutien pédagogique du MINESEC pour le matériel d'apprentissage numérique.",
+            'ai_policy_en' => $schoolPolicyRec['en'],
+            'ai_policy_fr' => $schoolPolicyRec['fr'],
         ]);
         break;
 
@@ -284,10 +461,19 @@ switch ($action) {
                     'visual' => $cData['visual'],
                     'auditory' => $cData['auditory'],
                     'kinesthetic' => $cData['kinesthetic'],
+                $clsRec = generateClassroomRecommendation($cData['visual'], $cData['auditory'], $cData['kinesthetic'], $cData['read_write'], "$clsName ($scName)");
+
+                $scClassesData[] = [
+                    'class_name' => $clsName,
+                    'total_students' => $cData['total_students'],
+                    'assessed' => $cData['assessed'],
+                    'visual' => $cData['visual'],
+                    'auditory' => $cData['auditory'],
+                    'kinesthetic' => $cData['kinesthetic'],
                     'read_write' => $cData['read_write'],
                     'students' => $cData['students'],
-                    'ai_recommendation_en' => "• Prioritize interactive VARK workshops and visual flowcharts for $clsName at $scName.",
-                    'ai_recommendation_fr' => "• Priorisez les ateliers VARK interactifs et les organigrammes visuels pour la classe de $clsName à $scName.",
+                    'ai_recommendation_en' => $clsRec['en'],
+                    'ai_recommendation_fr' => $clsRec['fr'],
                 ];
             }
 
@@ -297,6 +483,7 @@ switch ($action) {
             $divVis += $scVis; $divAud += $scAud; $divKin += $scKin; $divRw += $scRw;
 
             $assRate = $scStudents > 0 ? round(($scAssessed / $scStudents) * 100) . '%' : '0%';
+            $scRec = generateSchoolPolicyRecommendation($scVis, $scAud, $scKin, $scRw, $scName);
 
             $schoolsList[] = [
                 'name' => $scName,
@@ -304,10 +491,17 @@ switch ($action) {
                 'students_count' => $scStudents,
                 'assessed_rate' => $assRate,
                 'classes' => $scClassesData,
-                'ai_recommendation_en' => "• School Policy Recommendation for $scName: Allocate digital learning aids and conduct teacher VARK seminars.",
-                'ai_recommendation_fr' => "• Recommandation Pédagogique pour $scName : Allouez du matériel numérique et organisez des séminaires d'apprentissage VARK.",
+                'ai_recommendation_en' => $scRec['en'],
+                'ai_recommendation_fr' => $scRec['fr'],
             ];
         }
+
+        respond(true, 'Divisional analytics fetched from live database.', [
+            'title' => 'DÉLÉGATION DÉPARTEMENTALE DE L\'ENSEIGNEMENT SECONDAIRE',
+            'delegate_name' => $authUser['full_name'] ?? 'M. Bikoi Joseph',
+            'region' => $region,
+            'division' => $division,
+        $divPolicyRec = generateDelegatePolicyRecommendation($divVis, $divAud, $divKin, $divRw, $division, false);
 
         respond(true, 'Divisional analytics fetched from live database.', [
             'title' => 'DÉLÉGATION DÉPARTEMENTALE DE L\'ENSEIGNEMENT SECONDAIRE',
@@ -323,8 +517,8 @@ switch ($action) {
             'kinesthetic_count' => $divKin,
             'read_write_count' => $divRw,
             'items' => $schoolsList,
-            'ai_policy_en' => "• Divisional Policy Directive for $division: Coordinate inspection visits and prioritize digital infrastructure across technical and general secondary lycées.",
-            'ai_policy_fr' => "• Directive Départementale pour le $division : Coordonnez les inspections pédagogiques et priorisez l'infrastructure numérique dans les lycées.",
+            'ai_policy_en' => $divPolicyRec['en'],
+            'ai_policy_fr' => $divPolicyRec['fr'],
         ]);
         break;
 
@@ -386,6 +580,8 @@ switch ($action) {
                 $scAssessed += $cData['assessed'];
                 $scVis += $cData['visual']; $scAud += $cData['auditory']; $scKin += $cData['kinesthetic']; $scRw += $cData['read_write'];
 
+                $clsRec = generateClassroomRecommendation($cData['visual'], $cData['auditory'], $cData['kinesthetic'], $cData['read_write'], "$clsName ($scName)");
+
                 $scClassesData[] = [
                     'class_name' => $clsName,
                     'total_students' => $cData['total_students'],
@@ -395,8 +591,8 @@ switch ($action) {
                     'kinesthetic' => $cData['kinesthetic'],
                     'read_write' => $cData['read_write'],
                     'students' => $cData['students'],
-                    'ai_recommendation_en' => "• VARK Analysis for $clsName at $scName: " . ($cData['assessed'] > 0 ? "Visual: {$cData['visual']}, Auditory: {$cData['auditory']}, Kinesthetic: {$cData['kinesthetic']}, Read/Write: {$cData['read_write']}." : "Assessments pending."),
-                    'ai_recommendation_fr' => "• Analyse VARK pour la classe $clsName à $scName : " . ($cData['assessed'] > 0 ? "Visuel: {$cData['visual']}, Auditif: {$cData['auditory']}, Kinesthésique: {$cData['kinesthetic']}, Lecture/Écriture: {$cData['read_write']}." : "Évaluations en attente."),
+                    'ai_recommendation_en' => $clsRec['en'],
+                    'ai_recommendation_fr' => $clsRec['fr'],
                 ];
             }
 
@@ -427,30 +623,9 @@ switch ($action) {
             $divItems[] = $divVal;
         }
 
-        $totalVarkReg = $regVis + $regAud + $regKin + $regRw;
-        if ($totalVarkReg > 0) {
-            $regStyles = [
-                'Visual' => $regVis,
-                'Auditory' => $regAud,
-                'Kinesthetic' => $regKin,
-                'Read/Write' => $regRw
-            ];
-            arsort($regStyles);
-            $domStyle = key($regStyles);
-            $domCount = current($regStyles);
-            $domPct = round(($domCount / $totalVarkReg) * 100);
-
-            $aiPolicyEn = "• Dominant Regional VARK Learning Profile for $region Region: $domStyle ($domPct% of assessed students across all regional lycées).\n" .
-                          "• Regional Equipment Directive: Allocate digital projectors, interactive smartboards, and visual simulation software to technical and general secondary schools across all divisions in $region.\n" .
-                          "• Pedagogical Training Strategy: Establish regional teacher seminars focused on VARK-adaptive lesson planning and visual diagrammatic instruction.";
-
-            $aiPolicyFr = "• Profil Pédagogique VARK Dominant pour la Région de l'$region : $domStyle ($domPct% des élèves évalués dans tous les lycées régionaux).\n" .
-                          "• Directive Régionale d'Équipement : Allouez des projecteurs numériques, des tableaux interactifs et des logiciels de simulation visuelle dans tous les départements de l'$region.\n" .
-                          "• Stratégie de Formation Pédagogique : Organisez des séminaires régionaux de formation des enseignants à la pédagogie différenciée VARK et aux supports visuels d'enseignement.";
-        } else {
-            $aiPolicyEn = "• Regional Policy Directive for $region: Assessment coverage in progress. Coordinate with divisional delegates to accelerate student VARK diagnostic completion.";
-            $aiPolicyFr = "• Directive Régionale pour l'$region : Couverture des évaluations en cours. Coordonnez avec les délégués départementaux pour accélérer le diagnostic VARK des élèves.";
-        }
+        $regPolicyRec = generateDelegatePolicyRecommendation($regVis, $regAud, $regKin, $regRw, $region, true);
+        $aiPolicyEn = $regPolicyRec['en'];
+        $aiPolicyFr = $regPolicyRec['fr'];
 
         respond(true, 'Regional analytics fetched from live database.', [
             'title' => 'DÉLÉGATION RÉGIONALE DE L\'ENSEIGNEMENT SECONDAIRE',
@@ -586,18 +761,63 @@ switch ($action) {
             'admin_name' => $authUser['full_name'] ?? 'Dr. Tchatchouang Paul',
             'title' => 'MINISTÈRE DE L\'ENSEIGNEMENT SECONDAIRE — DIRECTION GÉNÉRALE',
             'total_regions' => $totalRegions,
+        $visCount = intval($vark['visual'] ?? 0);
+        $audCount = intval($vark['auditory'] ?? 0);
+        $kinCount = intval($vark['kinesthetic'] ?? 0);
+        $rwCount  = intval($vark['rw_count'] ?? 0);
+        $totalVark = $visCount + $audCount + $kinCount + $rwCount;
+
+        $dominant = 'Auditory';
+        $maxCount = $audCount;
+        if ($visCount > $maxCount) { $maxCount = $visCount; $dominant = 'Visual'; }
+        if ($kinCount > $maxCount) { $maxCount = $kinCount; $dominant = 'Kinesthetic'; }
+        if ($rwCount > $maxCount)  { $maxCount = $rwCount;  $dominant = 'Read/Write'; }
+
+        $pct = $totalVark > 0 ? round(($maxCount / $totalVark) * 100) : 0;
+
+        $recEn = [];
+        $recFr = [];
+
+        if ($dominant == 'Auditory') {
+            $recEn[] = "• Dominant Auditory Preference Detected" . ($pct > 0 ? " ({$pct}% of assessed students)" : "") . ": National statistics indicate a higher proportion of Auditory learners. Prioritize interactive classroom discussions, verbal lecture summaries, peer debates, and audio-assisted learning toolkits across secondary schools.";
+            $recFr[] = "• Préférence Auditive Dominante Détectée" . ($pct > 0 ? " ({$pct}% des élèves évalués)" : "") . " : Les statistiques nationales indiquent une proportion plus élevée d'apprenants auditifs. Privilégiez les discussions interactives en classe, les résumés de cours oraux, les débats et les outils audio.";
+        } elseif ($dominant == 'Visual') {
+            $recEn[] = "• Dominant Visual Preference Detected" . ($pct > 0 ? " ({$pct}% of assessed students)" : "") . ": National statistics indicate a higher proportion of Visual learners. Prioritize visual mind maps, graphic organizers, color-coded study guides, and video presentations.";
+            $recFr[] = "• Préférence Visuelle Dominante Détectée" . ($pct > 0 ? " ({$pct}% des élèves évalués)" : "") . " : Les statistiques nationales indiquent une proportion plus élevée d'apprenants visuels. Privilégiez les cartes mentales, schémas, guides en couleurs et présentations vidéo.";
+        } elseif ($dominant == 'Kinesthetic') {
+            $recEn[] = "• Dominant Kinesthetic Preference Detected" . ($pct > 0 ? " ({$pct}% of assessed students)" : "") . ": National statistics indicate a higher proportion of Kinesthetic learners. Prioritize hands-on laboratory workshops, practical experiments, and kinesthetic learning kits.";
+            $recFr[] = "• Préférence Kinesthésique Dominante Détectée" . ($pct > 0 ? " ({$pct}% des élèves évalués)" : "") . " : Les statistiques nationales indiquent une proportion plus élevée d'apprenants kinesthésiques. Privilégiez les travaux pratiques en laboratoire et les kits kinesthésiques.";
+        } else {
+            $recEn[] = "• Dominant Read/Write Preference Detected" . ($pct > 0 ? " ({$pct}% of assessed students)" : "") . ": National statistics indicate a higher proportion of Read/Write learners. Prioritize structured text materials, reading comprehension modules, and essay writing frameworks.";
+            $recFr[] = "• Préférence Lecture/Écriture Dominante Détectée" . ($pct > 0 ? " ({$pct}% des élèves évalués)" : "") . " : Les statistiques nationales indiquent une proportion plus élevée d'apprenants lecture/écriture. Privilégiez les manuels structurés et les modules de rédaction.";
+        }
+
+        // Encourage all other learning styles as well
+        $recEn[] = "• Visual Learning Support: Equip classrooms with visual charts, multi-colored whiteboards, and visual media tools to support visual learners.";
+        $recFr[] = "• Soutien à l'Apprentissage Visuel : Équipez les classes de graphiques visuels, de tableaux colorés et de supports médias pour soutenir les élèves visuels.";
+
+        $recEn[] = "• Kinesthetic & Practical Workshop Guidance: Provide hands-on laboratory exercises, interactive workshops, and practical learning kits.";
+        $recFr[] = "• Orientation des Ateliers Kinesthésiques et Pratiques : Fournissez des travaux pratiques de laboratoire, des ateliers interactifs et des kits d'apprentissage.";
+
+        $recEn[] = "• Read/Write Reinforcement: Supply comprehensive textbook reference guides, structured note-taking templates, and school library materials.";
+        $recFr[] = "• Renforcement de la Lecture et de l'Écriture : Fournissez des manuels de référence complets, des modèles de prise de notes structurés et des ressources en bibliothèque.";
+
+        respond(true, 'Admin analytics fetched from live database.', [
+            'admin_name' => $authUser['full_name'] ?? 'Dr. Tchatchouang Paul',
+            'title' => 'MINISTÈRE DE L\'ENSEIGNEMENT SECONDAIRE — DIRECTION GÉNÉRALE',
+            'total_regions' => $totalRegions,
             'total_schools' => $totalSchools,
             'total_students' => $totalStudents,
             'assessed_students' => intval($vark['assessed'] ?? 0),
             'total_teachers' => $totalTeachers,
-            'visual_count' => intval($vark['visual'] ?? 0),
-            'auditory_count' => intval($vark['auditory'] ?? 0),
-            'kinesthetic_count' => intval($vark['kinesthetic'] ?? 0),
-            'read_write_count' => intval($vark['rw_count'] ?? 0),
+            'visual_count' => $visCount,
+            'auditory_count' => $audCount,
+            'kinesthetic_count' => $kinCount,
+            'read_write_count' => $rwCount,
             'regions_analytics' => $regAnalytics,
             'national_hierarchy' => $nationalItems,
-            'ai_national_strategy_en' => "• National Pedagogical Strategy: Live diagnostic tracking active. Total assessed: " . intval($vark['assessed'] ?? 0) . " out of $totalStudents students.",
-            'ai_national_strategy_fr' => "• Stratégie Pédagogique Nationale : Suivi diagnostique en direct. Total évalué : " . intval($vark['assessed'] ?? 0) . " sur $totalStudents élèves.",
+            'ai_national_strategy_en' => implode("\n", $recEn),
+            'ai_national_strategy_fr' => implode("\n", $recFr),
         ]);
         break;
 

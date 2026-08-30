@@ -1,5 +1,6 @@
 // lib/views/language_view.dart
 import 'package:flutter/material.dart';
+import '../widgets/app_logo.dart';
 import '../core/localization.dart';
 import 'welcome_view.dart';
 
@@ -42,30 +43,7 @@ class LanguageView extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Official Logo Circular Badge
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // White background matching the circular logo format
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF006A4E), width: 2), // Cameroon green ring
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(4), // Subtle padding border
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/minesec_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                      ),
-                    ),
-                  ),
+                  const AppLogo(size: 65, showGlow: true),
                   const SizedBox(height: 25),
                   const Text(
                     'Welcome / Bienvenue',

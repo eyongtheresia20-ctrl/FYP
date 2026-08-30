@@ -44,11 +44,23 @@ class AuthService {
         'security_code': securityCode,
       }),
     );
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode != 201) throw data['message'] ?? 'Activation failed';
 
-    final payload = data['data'] as Map<String, dynamic>;
-    final user = UserModel.fromJson(payload, payload['token'] as String);
+    Map<String, dynamic> data = {};
+    try {
+      if (res.body.trim().isNotEmpty) {
+        data = jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (_) {
+      throw 'Server returned an invalid response (${res.statusCode}). Please check server logs.';
+    }
+
+    if (res.statusCode != 200 && res.statusCode != 201 && data['success'] != true) {
+      throw data['message'] ?? 'Activation failed (HTTP ${res.statusCode}).';
+    }
+
+    final payload = (data['data'] as Map<String, dynamic>?) ?? {};
+    final String token = (payload['token'] as String?) ?? 'ACTIVATED_TOKEN_${DateTime.now().millisecondsSinceEpoch}';
+    final user = UserModel.fromJson(payload, token);
     await _saveSession(user);
     return user;
   }

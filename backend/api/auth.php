@@ -26,7 +26,7 @@ switch ($action) {
 
         // 1. Direct search in users table
         $stmt = $pdo->prepare("
-            SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+            SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                    u.matricule, sc.name AS school_name
             FROM users u
             LEFT JOIN schools sc ON sc.id = u.school_id
@@ -38,7 +38,7 @@ switch ($action) {
         // 2. Fallback search in students table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        s.class_name, s.matricule, sc.name AS school_name
                 FROM students s
                 JOIN users u ON u.id = s.user_id
@@ -52,7 +52,7 @@ switch ($action) {
         // 3. Fallback search in teachers table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        t.subject, t.matricule, sc.name AS school_name
                 FROM teachers t
                 JOIN users u ON u.id = t.user_id
@@ -66,7 +66,7 @@ switch ($action) {
         // 4. Fallback search in principals table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        p.matricule, sc.name AS school_name
                 FROM principals p
                 JOIN users u ON u.id = p.user_id
@@ -77,23 +77,23 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // 5. Fallback search in divisional_delegates table
+        // 5. Fallback search in dean_of_studies table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
-                       d.matricule, d.delegation_name
-                FROM divisional_delegates d
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
+                       d.staff_id AS matricule, d.office_title
+                FROM dean_of_studies d
                 JOIN users u ON u.id = d.user_id
-                WHERE d.matricule = ? OR d.staff_id = ?
+                WHERE d.staff_id = ?
             ");
-            $stmt->execute([$matricule, $matricule]);
+            $stmt->execute([$matricule]);
             $user = $stmt->fetch();
         }
 
         // 6. Fallback search in regional_delegates table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        r.matricule, r.delegation_name
                 FROM regional_delegates r
                 JOIN users u ON u.id = r.user_id
@@ -106,7 +106,7 @@ switch ($action) {
         // 7. Fallback search in admins table
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        a.matricule
                 FROM admins a
                 JOIN users u ON u.id = a.user_id
@@ -119,7 +119,7 @@ switch ($action) {
         // 8. Search by phone for delegates / admins / users
         if (!$user) {
             $stmt = $pdo->prepare("
-                SELECT u.id, u.full_name, u.role, u.is_activated, u.school_id, u.region, u.division,
+                SELECT u.id, u.full_name, u.role, u.is_activated, u.password_hash, u.school_id, u.region, u.division,
                        sc.name AS school_name
                 FROM users u
                 LEFT JOIN schools sc ON sc.id = u.school_id
@@ -130,14 +130,6 @@ switch ($action) {
         }
 
         if (!$user) respondError('Matricule not found. Contact your administrator.', 404);
-
-        if ($user['is_activated']) {
-            respond(true, 'Account already activated. Please sign in.', [
-                'already_activated' => true,
-                'full_name' => $user['full_name'],
-                'role'      => $user['role'],
-            ]);
-        }
 
         respond(true, 'Matricule found.', [
             'already_activated' => false,
@@ -194,8 +186,8 @@ switch ($action) {
         }
 
         if (!$userId) {
-            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.matricule = ? OR d.staff_id = ?");
-            $stmt->execute([$matricule, $matricule]);
+            $stmt = $pdo->prepare("SELECT u.id, u.is_activated FROM dean_of_studies d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ?");
+            $stmt->execute([$matricule]);
             $row = $stmt->fetch();
             if ($row) $userId = $row['id'];
         }
@@ -222,7 +214,6 @@ switch ($action) {
         }
 
         if (!$userId) respondError('Matricule not found.', 404);
-        if ($row['is_activated']) respondError('Account already activated. Please sign in.', 409);
         if (strlen($body['password']) < 6) respondError('Password must be at least 6 characters.');
         if (strlen($body['security_code']) < 4) respondError('Security code must be at least 4 characters.');
 
@@ -231,13 +222,17 @@ switch ($action) {
         $passwordHash = hash('sha256', $passwordRaw);
         $securityHash = hash('sha256', $securityCode);
 
-        $pdo->prepare("UPDATE users SET password_hash = ?, password_raw = ?, security_code = ?, is_activated = 1, activated_at = NOW() WHERE id = ?")->execute([$passwordHash, $passwordRaw, $securityCode, $userId]);
-        $pdo->prepare("UPDATE students SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
-        $pdo->prepare("UPDATE teachers SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
-        $pdo->prepare("UPDATE principals SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
-        $pdo->prepare("UPDATE divisional_delegates SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
-        $pdo->prepare("UPDATE regional_delegates SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
-        $pdo->prepare("UPDATE admins SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]);
+        try {
+            $pdo->prepare("UPDATE users SET password_hash = ?, security_code = ?, is_activated = 1 WHERE id = ?")->execute([$passwordHash, $securityCode, $userId]);
+        } catch (Exception $e) {
+            try { $pdo->prepare("UPDATE users SET password_hash = ?, is_activated = 1 WHERE id = ?")->execute([$passwordHash, $userId]); } catch (Exception $e2) {}
+        }
+        try { $pdo->prepare("UPDATE students SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
+        try { $pdo->prepare("UPDATE teachers SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
+        try { $pdo->prepare("UPDATE principals SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
+        try { $pdo->prepare("UPDATE dean_of_studies SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
+        try { $pdo->prepare("UPDATE regional_delegates SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
+        try { $pdo->prepare("UPDATE admins SET password_hash = ?, security_code = ? WHERE user_id = ?")->execute([$passwordHash, $securityCode, $userId]); } catch (Exception $e) {}
 
         $stmt = $pdo->prepare("SELECT id, full_name, role, school_id, region, division FROM users WHERE id = ?");
         $stmt->execute([$userId]);
@@ -296,10 +291,10 @@ switch ($action) {
             $user = $stmt->fetch();
         }
 
-        // 5. Search in divisional delegates table
+        // 5. Search in dean of studies table
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT u.* FROM divisional_delegates d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ? OR d.matricule = ?");
-            $stmt->execute([$matricule, $matricule]);
+            $stmt = $pdo->prepare("SELECT u.* FROM dean_of_studies d JOIN users u ON u.id = d.user_id WHERE d.staff_id = ?");
+            $stmt->execute([$matricule]);
             $user = $stmt->fetch();
         }
 

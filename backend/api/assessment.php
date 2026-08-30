@@ -275,29 +275,36 @@ if ($action === 'submit_assessment') {
 }
 
 function generateAIRecommendations($style, $v = 0, $a = 0, $k = 0, $r = 0) {
-    $recEn = "";
-    $recFr = "";
+    $partsEn = [];
+    $partsFr = [];
 
-    if (str_contains($style, 'Auditory')) {
-        $recEn .= "• Listen to recorded lectures and podcasts.\n• Read your notes aloud or explain concepts to a study partner.\n• Use rhythmic memory devices and rhymes to remember formulas.";
-        $recFr .= "• Écoutez les cours enregistrés et les podcasts.\n• Lisez vos notes à voix haute ou expliquez les concepts à un camarade.\n• Utilisez des répétitions rythmiques et des rimes pour mémoriser.";
-    } 
     if (str_contains($style, 'Visual')) {
-        if ($recEn != "") { $recEn .= "\n\n"; $recFr .= "\n\n"; }
-        $recEn .= "• Use color-coded highlighters, mind maps, and diagrams.\n• Watch educational video tutorials and visual demonstrations.\n• Visualize concepts in your mind when recalling notebook pages.";
-        $recFr .= "• Utilisez du surlignage couleur, des cartes mentales et des diagrammes.\n• Regardez des tutoriels vidéo éducatifs et des démonstrations visuelles.\n• Visualisez les pages de votre cahier dans votre esprit.";
-    } 
+        $partsEn[] = "• Use color-coded highlighters, mind maps, and concept diagrams.\n• Watch educational video tutorials, animations, and visual demonstrations.\n• Visualize notebook pages and key formulas in your mind during study.";
+        $partsFr[] = "• Utilisez du surlignage couleur, des cartes mentales et des schémas explicatifs.\n• Regardez des tutoriels vidéo éducatifs, des animations et démonstrations visuelles.\n• Visualisez les pages de vos cours et les formules clés dans votre esprit.";
+    }
+    if (str_contains($style, 'Auditory')) {
+        $partsEn[] = "• Listen attentively to recorded lectures, podcasts, and verbal explanations.\n• Read your notes aloud and explain complex concepts to a study partner.\n• Use rhythmic memory devices, acronyms, and rhymes for memorization.";
+        $partsFr[] = "• Écoutez attentivement les cours enregistrés, les podcasts et explications orales.\n• Lisez vos notes à voix haute et expliquez les concepts clés à un camarade.\n• Utilisez des répétitions rythmiques, des acronymes et des rimes pour mémoriser.";
+    }
     if (str_contains($style, 'Kinesthetic')) {
-        if ($recEn != "") { $recEn .= "\n\n"; $recFr .= "\n\n"; }
-        $recEn .= "• Study while walking around the room or holding stress objects.\n• Participate in practical experiments, role-play, and hands-on activities.\n• Take short active breaks between study sessions.";
-        $recFr .= "• Étudiez en marchant dans la pièce ou en manipulant un objet.\n• Participez aux travaux pratiques, jeux de rôle et activités manuelles.\n• Prenez de courtes pauses actives entre les sessions d'étude.";
-    } 
+        $partsEn[] = "• Study while walking around or holding tactile study objects (flashcards, models).\n• Participate in hands-on experiments, practical exercises, and role-playing.\n• Take short, active breaks (Pomodoro technique) between focused study sessions.";
+        $partsFr[] = "• Étudiez en vous déplaçant ou en manipulant des supports tactiles (fiches, modèles).\n• Participez à des travaux pratiques, des expériences et exercices d'application.\n• Prenez de courtes pauses actives (technique Pomodoro) entre les sessions d'étude.";
+    }
     if (str_contains($style, 'Read/Write')) {
-        if ($recEn != "") { $recEn .= "\n\n"; $recFr .= "\n\n"; }
-        $recEn .= "• Write detailed summaries and re-write key points in your own words.\n• Create lists, glossaries, and flashcards for formulas and terms.\n• Read textbooks silently and take structured bulleted notes.";
-        $recFr .= "• Rédigez des résumés détaillés et réécrivez les points clés avec vos propres mots.\n• Créez des listes, glossaires et fiches pour les formules et termes.\n• Lisez vos manuels en silence et prenez des notes structurées.";
+        $partsEn[] = "• Write comprehensive summaries and rewrite main points in your own words.\n• Create structured glossaries, flashcards, and lists of formulas/terms.\n• Read textbooks silently and take structured bulleted notes.";
+        $partsFr[] = "• Rédigez des résumés détaillés et réécrivez les points clés avec vos propres mots.\n• Créez des glossaires structurés, des fiches et des listes de formules et mots-clés.\n• Lisez les manuels en silence et prenez des notes structurées à puces.";
     }
 
-    return ['en' => $recEn, 'fr' => $recFr];
+    // Default fallback if style string didn't match standard names
+    if (empty($partsEn)) {
+        $partsEn[] = "• Combine visual diagrams with written summaries and active study sessions.\n• Review core concepts regularly using interactive practice exercises.";
+        $partsFr[] = "• Combinez schémas visuels, résumés écrits et sessions d'étude actives.\n• Révisez régulièrement les concepts clés à l'aide d'exercices interactifs.";
+    }
+
+    return [
+        'en' => implode("\n\n", $partsEn),
+        'fr' => implode("\n\n", $partsFr)
+    ];
 }
+
 

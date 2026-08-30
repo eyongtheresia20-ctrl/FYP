@@ -1,6 +1,6 @@
 {
-    "name": "minesec_lst",
-    "short_name": "minesec_lst",
+    "name": "EduProfile",
+    "short_name": "EduProfile",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

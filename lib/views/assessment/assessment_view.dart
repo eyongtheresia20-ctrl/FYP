@@ -20,10 +20,6 @@ class _AssessmentViewState extends State<AssessmentView> {
   int _currentIdx = 0;
   final Map<int, int> _answers = {}; // question index -> option (1..4)
 
-  // Feedback survey
-  int _satisfactionLevel = 3;
-  String _revealedStyle = 'Yes';
-
   // Timer (15 mins = 900s)
   late int _secondsLeft;
   Timer? _timer;
@@ -40,6 +36,8 @@ class _AssessmentViewState extends State<AssessmentView> {
   Color get _sub    => widget.isDarkMode ? Colors.white60 : const Color(0xFF475569);
   Color get _border => widget.isDarkMode ? const Color(0x33FFFFFF) : const Color(0xFFE2E8F0);
 
+  bool _autoSubmitted = false;
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +49,7 @@ class _AssessmentViewState extends State<AssessmentView> {
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_secondsLeft <= 1) {
         t.cancel();
-        _evaluateAssessment();
+        _evaluateAssessment(isAutoSubmit: true);
       } else {
         setState(() => _secondsLeft--);
       }
@@ -74,20 +72,25 @@ class _AssessmentViewState extends State<AssessmentView> {
     setState(() {
       _currentStep = 1;
       _secondsLeft = 900; // 15 mins
+      _autoSubmitted = false;
     });
     _startTimer();
   }
 
-  Future<void> _evaluateAssessment() async {
-    if (_answers.length < 10) {
+  Future<void> _evaluateAssessment({bool isAutoSubmit = false}) async {
+    if (!isAutoSubmit && _answers.length < 10) {
       setState(() => _error = widget.isEn
           ? 'Please answer all 10 questions before submitting.'
           : 'Veuillez répondre à toutes les 10 questions avant de soumettre.');
       return;
     }
 
-    setState(() { _isEvaluating = true; _error = null; });
     _timer?.cancel();
+    setState(() {
+      _isEvaluating = true;
+      _error = null;
+      _autoSubmitted = isAutoSubmit;
+    });
 
     final answerList = List.generate(10, (i) => _answers[i] ?? 1);
 
@@ -520,6 +523,31 @@ class _AssessmentViewState extends State<AssessmentView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_autoSubmitted) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.timer_off_outlined, color: Color(0xFFF59E0B), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    widget.isEn
+                        ? 'Time expired! Your test was automatically submitted and evaluated.'
+                        : 'Temps écoulé ! Votre test a été soumis et évalué automatiquement.',
+                    style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 12.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         Center(
           child: Container(
             padding: const EdgeInsets.all(16),

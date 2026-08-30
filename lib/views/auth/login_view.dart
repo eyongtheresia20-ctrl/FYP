@@ -57,8 +57,9 @@ class _LoginViewState extends State<LoginView> {
     Widget dashboard;
     if (user.isStudent)            dashboard = StudentDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
     else if (user.isTeacher)       dashboard = TeacherDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
-    else if (user.isPrincipal)     dashboard = PrincipalDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
-    else if (user.isDivisionalDelegate || user.isRegionalDelegate)
+    else if (user.isPrincipal || user.isDeanOfStudies)
+                                   dashboard = PrincipalDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
+    else if (user.isRegionalDelegate)
                                    dashboard = DelegateDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
     else                           dashboard = AdminDashboard(user: user, isDarkMode: widget.isDarkMode, isEn: _isEn);
 

@@ -753,8 +753,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           {'name': 'CENTRE', 'schools': 1, 'students': 0, 'assessed_pct': '0%'},
           {'name': 'LITTORAL', 'schools': 1, 'students': 0, 'assessed_pct': '0%'},
         ],
-        'ai_national_strategy_en': '• Implement nation-wide teacher training modules for VARK-differentiated instruction across all Regions.\n• Allocate budget for digital media infrastructure based on live database assessments.\n• Monitor real-time student diagnostic assessment coverage at national scale.',
-        'ai_national_strategy_fr': '• Mettez en œuvre des modules nationaux de formation des enseignants à la pédagogie différenciée VARK.\n• Allouez le budget pour les infrastructures numériques d\'apprentissage selon la base de données.\n• Suivez le taux de couverture des évaluations diagnostiques à l\'échelle nationale.',
+        'ai_national_strategy_en': '• High Visual Preference Detected: Encourage visual mind maps, diagrams, color-coded study guides, and video presentations to boost student comprehension.\n• Auditory Support Directive: Facilitate interactive classroom discussions, group debates, and verbal lecture summaries to aid memory retention.\n• Kinesthetic & Practical Engagement: Equip schools with hands-on laboratory materials, interactive workshops, and kinesthetic learning kits.\n• Continuous Curriculum Support: Provide teachers with multi-sensory instructional guides to personalize support for every student profile.',
+        'ai_national_strategy_fr': '• Forte Préférence Visuelle Détectée : Encouragez les cartes mentales visuelles, les schémas, les guides d\'étude en couleurs et les présentations vidéo pour booster la compréhension.\n• Directive d\'Accompagnement Auditif : Facilitez les discussions interactives en classe, les débats de groupe et les résumés de cours oraux pour renforcer la mémorisation.\n• Engagement Kinesthésique et Pratique : Équipez les établissements en matériel de laboratoire pratique, ateliers interactifs et kits d\'apprentissage kinesthésiques.\n• Accompagnement Pédagogique Continu : Fournissez aux enseignants des guides d\'enseignement multisensoriels pour personnaliser le suivi de chaque élève.',
       };
     });
   }
@@ -1268,9 +1268,73 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
     if (regionNames.isEmpty) regionNames.addAll(['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST']);
 
-    final String aiStrategy = _isEn
+    final int visCount = _parseInt(_adminData?['visual_count'] ?? 1);
+    final int audCount = _parseInt(_adminData?['auditory_count'] ?? 1);
+    final int kinCount = _parseInt(_adminData?['kinesthetic_count'] ?? 0);
+    final int rwCount  = _parseInt(_adminData?['read_write_count'] ?? 0);
+    final int totalV   = visCount + audCount + kinCount + rwCount;
+
+    String dominantStyle = 'Auditory';
+    int maxVal = audCount;
+    if (visCount > maxVal) { maxVal = visCount; dominantStyle = 'Visual'; }
+    if (kinCount > maxVal) { maxVal = kinCount; dominantStyle = 'Kinesthetic'; }
+    if (rwCount > maxVal)  { maxVal = rwCount;  dominantStyle = 'Read/Write'; }
+
+    final int domPct = totalV > 0 ? ((maxVal / totalV) * 100).round() : 50;
+
+    String aiStrategy = _isEn
         ? (_adminData?['ai_national_strategy_en'] ?? '')
         : (_adminData?['ai_national_strategy_fr'] ?? '');
+
+    if (aiStrategy.isEmpty || aiStrategy.contains('Total assessed') || aiStrategy.contains('diagnostic tracking') || aiStrategy.contains('Live diagnostic') || aiStrategy.contains('1 out of 4') || aiStrategy.contains('80%')) {
+      final List<String> lines = [];
+      if (_isEn) {
+        if (dominantStyle == 'Auditory') {
+          lines.add('• Auditory Learners (Majority): Prioritize interactive classroom discussions, verbal lecture summaries, peer debates, and audio-assisted learning toolkits across secondary schools.');
+          lines.add('• Visual Learners Support: Equip classrooms with visual charts, multi-colored whiteboards, mind maps, and visual media tools to support visual learners.');
+          lines.add('• Kinesthetic Learners Support: Provide hands-on laboratory exercises, interactive workshops, and practical learning kits for practical learners.');
+          lines.add('• Read/Write Learners Support: Supply comprehensive textbook reference guides, structured note-taking templates, and school library materials.');
+        } else if (dominantStyle == 'Visual') {
+          lines.add('• Visual Learners (Majority): Prioritize visual mind maps, graphic organizers, color-coded study guides, and video presentations.');
+          lines.add('• Auditory Learners Support: Facilitate interactive classroom discussions, verbal lecture summaries, and oral Q&A sessions.');
+          lines.add('• Kinesthetic Learners Support: Provide hands-on laboratory exercises, interactive workshops, and practical learning kits.');
+          lines.add('• Read/Write Learners Support: Supply comprehensive textbook reference guides, structured note-taking templates, and school library materials.');
+        } else if (dominantStyle == 'Kinesthetic') {
+          lines.add('• Kinesthetic Learners (Majority): Prioritize hands-on laboratory workshops, practical experiments, and kinesthetic learning kits.');
+          lines.add('• Auditory Learners Support: Facilitate interactive classroom discussions, verbal lecture summaries, and oral Q&A sessions.');
+          lines.add('• Visual Learners Support: Equip classrooms with visual charts, multi-colored whiteboards, mind maps, and visual media tools.');
+          lines.add('• Read/Write Learners Support: Supply comprehensive textbook reference guides, structured note-taking templates, and school library materials.');
+        } else {
+          lines.add('• Read/Write Learners (Majority): Prioritize structured text materials, reading comprehension modules, and essay writing frameworks.');
+          lines.add('• Auditory Learners Support: Facilitate interactive classroom discussions, verbal lecture summaries, and oral Q&A sessions.');
+          lines.add('• Visual Learners Support: Equip classrooms with visual charts, multi-colored whiteboards, mind maps, and visual media tools.');
+          lines.add('• Kinesthetic Learners Support: Provide hands-on laboratory exercises, interactive workshops, and practical learning kits.');
+        }
+      } else {
+        if (dominantStyle == 'Auditory') {
+          lines.add('• Apprenants Auditifs (Majorité) : Privilégiez les discussions interactives en classe, les résumés de cours oraux, les débats et les outils audio.');
+          lines.add('• Soutien aux Apprenants Visuels : Équipez les classes de graphiques visuels, de cartes mentales et de supports médias pour soutenir les élèves visuels.');
+          lines.add('• Soutien aux Apprenants Kinesthésiques : Fournissez des travaux pratiques de laboratoire, des ateliers interactifs et des kits d\'apprentissage.');
+          lines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels de référence complets, des modèles de prise de notes structurés et des ressources en bibliothèque.');
+        } else if (dominantStyle == 'Visual') {
+          lines.add('• Apprenants Visuels (Majorité) : Privilégiez les cartes mentales, schémas, guides en couleurs et présentations vidéo.');
+          lines.add('• Soutien aux Apprenants Auditifs : Facilitez les résumés de cours oraux, les séances de Q/R et les discussions de groupe.');
+          lines.add('• Soutien aux Apprenants Kinesthésiques : Fournissez des travaux pratiques de laboratoire, des ateliers interactifs et des kits d\'apprentissage.');
+          lines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels de référence complets et des modèles de prise de notes.');
+        } else if (dominantStyle == 'Kinesthetic') {
+          lines.add('• Apprenants Kinesthésiques (Majorité) : Privilégiez les travaux pratiques en laboratoire et les kits kinesthésiques.');
+          lines.add('• Soutien aux Apprenants Auditifs : Facilitez les résumés de cours oraux, les séances de Q/R et les discussions de groupe.');
+          lines.add('• Soutien aux Apprenants Visuels : Équipez les classes de graphiques visuels, de cartes mentales et de supports médias.');
+          lines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels de référence complets et des modèles de prise de notes.');
+        } else {
+          lines.add('• Apprenants Lecture/Écriture (Majorité) : Privilégiez les manuels structurés et les modules de rédaction.');
+          lines.add('• Soutien aux Apprenants Auditifs : Facilitez les résumés de cours oraux, les séances de Q/R et les discussions de groupe.');
+          lines.add('• Soutien aux Apprenants Visuels : Équipez les classes de graphiques visuels, de cartes mentales et de supports médias.');
+          lines.add('• Soutien aux Apprenants Kinesthésiques : Fournissez des travaux pratiques de laboratoire, des ateliers interactifs et des kits d\'apprentissage.');
+        }
+      }
+      aiStrategy = lines.join('\n');
+    }
 
     final isWide = MediaQuery.of(context).size.width >= 800;
     final List nationalHierarchy = _adminData?['national_hierarchy'] as List? ?? [];
@@ -1450,7 +1514,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                           // ── TAB 1: NATIONAL VARK ANALYTICS & POLICY ──────────────────
                           if (_currentNavIndex == 1) ...[
-                            Text(_isEn ? 'National Educational Policy & AI Guidelines' : 'Directives Pédagogiques Nationales IA', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
+                            Text(_isEn ? 'National Educational Policy' : 'Directives Pédagogiques Nationales', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
                             const SizedBox(height: 16),
                             Container(
                               width: double.infinity,
@@ -1463,7 +1527,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     children: [
                                       Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
                                       const SizedBox(width: 8),
-                                      Text(_isEn ? 'AI National Pedagogical Strategy' : 'Stratégie Pédagogique Nationale IA', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
+                                      Text(_isEn ? 'National Pedagogical Strategy' : 'Stratégie Pédagogique Nationale', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
@@ -1494,7 +1558,82 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   final rw  = _parseInt(_classDetailsData!['read_write_count']);
 
                                   final students = _classDetailsData!['students'] as List? ?? [];
-                                  final aiRec = _isEn ? (_classDetailsData!['ai_recommendation_en'] ?? '') : (_classDetailsData!['ai_recommendation_fr'] ?? '');
+
+                                  String aiRec = _isEn ? (_classDetailsData!['ai_recommendation_en'] ?? '') : (_classDetailsData!['ai_recommendation_fr'] ?? '');
+                                  final int totalC = vis + aud + kin + rw;
+
+                                  if (totalC == 0 || aiRec.isEmpty || aiRec.contains('pending') || aiRec.contains('Diagnostic evaluations') || aiRec.contains('Class VARK Assessment') || aiRec.contains('Dominant VARK Profile') || aiRec.contains('Tactical Strategy') || aiRec.contains('Teacher Action Plan') || aiRec.contains('1 out of 4')) {
+                                    if (totalC == 0) {
+                                      if (_isEn) {
+                                        aiRec = '• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress. Encourage all learning styles equally through multimodal instruction.\n'
+                                                '• Auditory Recommendation: Integrate interactive class discussions, verbal lecture summaries, audio recordings, and peer Q&A sessions.\n'
+                                                '• Visual Recommendation: Utilize color-coded visual board diagrams, mind maps, graphic organizers, and video demonstrations.\n'
+                                                '• Kinesthetic Recommendation: Incorporate hands-on problem-solving exercises, practical lab demonstrations, and interactive group activities.\n'
+                                                '• Read/Write Recommendation: Supply structured printed handouts, comprehensive reading glossaries, and bulleted note-taking frameworks.';
+                                      } else {
+                                        aiRec = '• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations VARK sont en cours. Encouragez équitablement tous les styles d\'apprentissage.\n'
+                                                '• Recommandation Auditive : Intégrez des discussions interactives en classe, des synthèses orales de cours et des enregistrements audio.\n'
+                                                '• Recommandation Visuelle : Utilisez des schémas visuels en couleurs, des cartes mentales et des diaporamas résumés.\n'
+                                                '• Recommandation Kinesthésique : Proposez des exercices pratiques de résolution de problèmes et des travaux en groupe.\n'
+                                                '• Recommandation Lecture/Écriture : Fournissez des fiches de cours imprimées structurées et des glossaires détaillés.';
+                                      }
+                                    } else {
+                                      String domC = 'Auditory';
+                                      int maxC = aud;
+                                      if (vis > maxC) { maxC = vis; domC = 'Visual'; }
+                                      if (kin > maxC) { maxC = kin; domC = 'Kinesthetic'; }
+                                      if (rw  > maxC) { maxC = rw;  domC = 'Read/Write'; }
+                                      final int pctC = ((maxC / totalC) * 100).round();
+
+                                      final List<String> rLines = [];
+                                      if (_isEn) {
+                                        if (domC == 'Auditory') {
+                                          rLines.add('• Auditory Learners (Majority): Prioritize interactive classroom discussions, verbal lecture summaries, peer debates, and audio-assisted learning toolkits across the class.');
+                                          rLines.add('• Visual Learners Support: Include color-coded board diagrams, visual mind maps, and key summary slides so visual students can follow along effectively.');
+                                          rLines.add('• Kinesthetic Learners Support: Incorporate hands-on problem-solving exercises, lab demonstrations, and interactive group activities for practical learners.');
+                                          rLines.add('• Read/Write Learners Support: Provide structured written handouts, key term glossaries, and bulleted note-taking frameworks for text-focused students.');
+                                        } else if (domC == 'Visual') {
+                                          rLines.add('• Visual Learners (Majority): Utilize color-coded visual charts, mind maps, graphic organizers, and video demonstrations to boost comprehension.');
+                                          rLines.add('• Auditory Learners Support: Facilitate verbal lecture summaries, class Q&A sessions, and interactive group discussions for auditory students.');
+                                          rLines.add('• Kinesthetic Learners Support: Incorporate hands-on practical exercises, lab demonstrations, and active learning tasks for practical learners.');
+                                          rLines.add('• Read/Write Learners Support: Provide structured reading materials, written glossaries, and bulleted note-taking frameworks for text-focused students.');
+                                        } else if (domC == 'Kinesthetic') {
+                                          rLines.add('• Kinesthetic Learners (Majority): Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.');
+                                          rLines.add('• Auditory Learners Support: Provide clear verbal explanations, oral instructions, and interactive class Q&A for auditory students.');
+                                          rLines.add('• Visual Learners Support: Supply visual step-by-step procedure diagrams and flowcharts for visual students.');
+                                          rLines.add('• Read/Write Learners Support: Provide written lab manuals and practical exercise worksheets for text-focused students.');
+                                        } else {
+                                          rLines.add('• Read/Write Learners (Majority): Provide structured printed handouts, comprehensive reading glossaries, and detailed note-taking frameworks.');
+                                          rLines.add('• Auditory Learners Support: Conduct verbal class discussions and oral summaries of key concepts for auditory students.');
+                                          rLines.add('• Visual Learners Support: Use visual summary charts and key diagrammatic models for visual students.');
+                                          rLines.add('• Kinesthetic Learners Support: Assign interactive practice exercises and written problem sets for practical learners.');
+                                        }
+                                      } else {
+                                        if (domC == 'Auditory') {
+                                          rLines.add('• Apprenants Auditifs (Majorité) : Privilégiez les discussions interactives en classe, les résumés de cours oraux, les débats et les outils audio.');
+                                          rLines.add('• Soutien aux Apprenants Visuels : Intégrez des schémas visuels en couleurs au tableau, des cartes mentales et des diaporamas résumés.');
+                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques de résolution de problèmes et démonstrations en groupe.');
+                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des fiches de cours imprimées structurées, des glossaires et guides de prise de notes.');
+                                        } else if (domC == 'Visual') {
+                                          rLines.add('• Apprenants Visuels (Majorité) : Utilisez des schémas visuels en couleurs, des cartes mentales, des organisateurs graphiques et démonstrations vidéo.');
+                                          rLines.add('• Soutien aux Apprenants Auditifs : Facilitez les synthèses de cours orales, les séances de Q/R et les discussions de groupe.');
+                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Intégrez des exercices pratiques interactifs et des travaux de groupe.');
+                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels structurés, des glossaires et des fiches de synthèse.');
+                                        } else if (domC == 'Kinesthetic') {
+                                          rLines.add('• Apprenants Kinesthésiques (Majorité) : Structurez les cours autour de travaux pratiques en laboratoire, du codage et d\'exercices pratiques.');
+                                          rLines.add('• Soutien aux Apprenants Auditifs : Proposez des explications orales claires, des instructions verbales et des échanges oraux.');
+                                          rLines.add('• Soutien aux Apprenants Visuels : Fournissez des schémas de procédure étape par étape et des organigrammes.');
+                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Mettez à disposition des manuels de travaux pratiques et des fiches d\'exercices.');
+                                        } else {
+                                          rLines.add('• Apprenants Lecture/Écriture (Majorité) : Fournissez des fiches de cours imprimées, des glossaires détaillés et des guides de prise de notes.');
+                                          rLines.add('• Soutien aux Apprenants Auditifs : Animez des discussions de classe orales et des synthèses verbale des notions clés.');
+                                          rLines.add('• Soutien aux Apprenants Visuels : Utilisez des schémas de synthèse visuels et des modèles schématiques.');
+                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques interactifs et des séries de problèmes.');
+                                        }
+                                      }
+                                      aiRec = rLines.join('\n');
+                                    }
+                                  }
 
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1540,7 +1679,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                                   decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                                                   child: Text(
-                                                    'Taux: $rate',
+                                                    _isEn ? 'Assessed Rate: $rate' : 'Taux d\'Évaluation : $rate',
                                                     style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 11.5),
                                                   ),
                                                 ),
@@ -1575,7 +1714,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    _isEn ? 'National VARK Policy & AI Recommendation' : 'Directives Pédagogiques IA & Recommandations Nationales',
+                                                    _isEn ? 'Recommendation' : 'Recommandation',
                                                     style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14),
                                                   ),
                                                 ),

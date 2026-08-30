@@ -82,15 +82,21 @@ switch ($action) {
         $className = trim($body['class_name'] ?? '1ère TI');
         $subject   = trim($body['subject'] ?? 'Informatique');
 
-        if (empty($fullName) || empty($role) || empty($matricule)) {
-            respondError('Full Name, Role, and Matricule are required.');
+        if (empty($fullName) || empty($role)) {
+            respondError('Full Name and Role are required.');
+        }
+
+        // Auto-generate matricule if empty
+        if (empty($matricule)) {
+            $matricule = 'STU' . date('Y') . sprintf('%04d', rand(1000, 9999));
         }
 
         // Check if matricule already exists
         $stmtChk = $pdo->prepare("SELECT id FROM users WHERE matricule = ?");
         $stmtChk->execute([$matricule]);
         if ($stmtChk->fetch()) {
-            respondError("Matricule '$matricule' already exists in system.");
+            // Append random suffix if exists
+            $matricule .= rand(10, 99);
         }
 
         $passHash = hash('sha256', $password);
@@ -128,9 +134,20 @@ switch ($action) {
             
             $stmtTc = $pdo->prepare("INSERT IGNORE INTO teacher_classes (teacher_id, class_name) VALUES (?, ?)");
             $stmtTc->execute([$newUserId, $className]);
-        } else if ($role === 'principal') {
-            $stmtP = $pdo->prepare("INSERT INTO principals (user_id, full_name, staff_id, matricule, school_id, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmtP->execute([$newUserId, $fullName, $matricule, $matricule, $schoolId, $region, $division, $schoolName]);
+        } else if ($role === 'dean_of_studies' || $role === 'dean') {
+            try {
+                $stmtDean = $pdo->prepare("INSERT INTO dean_of_studies (user_id, full_name, staff_id, matricule, school_id, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmtDean->execute([$newUserId, $fullName, $matricule, $matricule, $schoolId, $region, $division, $schoolName]);
+            } catch (Exception $e) {}
+            // Dean of Studies can also be a class teacher
+            if (!empty($className)) {
+                try {
+                    $stmtT = $pdo->prepare("INSERT INTO teachers (user_id, full_name, staff_id, matricule, subject, class_name, region, division, school_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmtT->execute([$newUserId, $fullName, $matricule, $matricule, $subject, $className, $region, $division, $schoolName]);
+                    $stmtTc = $pdo->prepare("INSERT IGNORE INTO teacher_classes (teacher_id, class_name) VALUES (?, ?)");
+                    $stmtTc->execute([$newUserId, $className]);
+                } catch (Exception $e) {}
+            }
         } else if ($role === 'divisional_delegate') {
             $stmtD = $pdo->prepare("INSERT INTO divisional_delegates (user_id, full_name, staff_id, matricule, delegation_name, region, division) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmtD->execute([$newUserId, $fullName, $matricule, $matricule, "DÉLÉGATION DÉPARTEMENTALE DU $division", $region, $division]);
@@ -224,28 +241,70 @@ switch ($action) {
         $assessedRate = $totalSt > 0 ? round(($assessed / $totalSt) * 100) . '%' : '0%';
 
         // Generate VARK AI Policy Directives for Class
-        $totalVarkClass = $visCount + $audCount + $kinCount + $rwCount;
         if ($totalVarkClass > 0) {
-            $cStyles = [
-                'Visual' => $visCount,
-                'Auditory' => $audCount,
-                'Kinesthetic' => $kinCount,
-                'Read/Write' => $rwCount
-            ];
-            arsort($cStyles);
-            $topStyle = key($cStyles);
-            $topPct = round(($cStyles[$topStyle] / $totalVarkClass) * 100);
+            $dominant = 'Auditory';
+            $maxVal = $audCount;
+            if ($visCount > $maxVal) { $maxVal = $visCount; $dominant = 'Visual'; }
+            if ($kinCount > $maxVal) { $maxVal = $kinCount; $dominant = 'Kinesthetic'; }
+            if ($rwCount > $maxVal)  { $maxVal = $rwCount;  $dominant = 'Read/Write'; }
 
-            $aiRecEn = "• Dominant VARK Profile for $className at $schoolName: $topStyle ($topPct% of diagnosed students).\n" .
-                       "• Class Tactical Strategy: Integrate high-impact $topStyle learning aids, structured visual flowcharts, and interactive problem-solving exercises.\n" .
-                       "• Teacher Action Plan: Differentiate homework assignments to support multimodal learners and provide regular progress monitoring.";
+            $pct = round(($maxVal / $totalVarkClass) * 100);
 
-            $aiRecFr = "• Profil VARK Dominant pour la $className à $schoolName : $topStyle ($topPct% des élèves diagnostiqués).\n" .
-                       "• Stratégie Tactique de Classe : Intégrez des supports pédagogiques $topStyle à fort impact, des schémas visuels structurés et des exercices interactifs.\n" .
-                       "• Plan d'Action Enseignant : Différenciez les devoirs pour accompagner les apprenants multimodaux et assurez un suivi régulier.";
+            $recsEn = [];
+            $recsFr = [];
+
+            if ($dominant == 'Auditory') {
+                $recsEn[] = "• Auditory Learners (Majority — {$pct}%): Prioritize interactive classroom discussions, verbal lecture summaries, peer debates, and audio-assisted learning toolkits across the class.";
+                $recsFr[] = "• Apprenants Auditifs (Majorité — {$pct}%) : Privilégiez les discussions interactives en classe, les résumés de cours oraux, les débats et les outils audio.";
+                $recsEn[] = "• Visual Learners Support: Include color-coded board diagrams, visual mind maps, and key summary slides so visual students can follow along effectively.";
+                $recsFr[] = "• Soutien aux Apprenants Visuels : Intégrez des schémas visuels en couleurs au tableau, des cartes mentales et des diaporamas résumés.";
+                $recsEn[] = "• Kinesthetic Learners Support: Incorporate hands-on problem-solving exercises, lab demonstrations, and interactive group activities for practical learners.";
+                $recsFr[] = "• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques de résolution de problèmes et démonstrations en groupe.";
+                $recsEn[] = "• Read/Write Learners Support: Provide structured written handouts, key term glossaries, and bulleted note-taking frameworks for text-focused students.";
+                $recsFr[] = "• Soutien aux Apprenants Lecture/Écriture : Fournissez des fiches de cours imprimées structurées, des glossaires et guides de prise de notes.";
+            } elseif ($dominant == 'Visual') {
+                $recsEn[] = "• Visual Learners (Majority — {$pct}%): Utilize color-coded visual charts, mind maps, graphic organizers, and video demonstrations to boost comprehension.";
+                $recsFr[] = "• Apprenants Visuels (Majorité — {$pct}%) : Utilisez des schémas visuels en couleurs, des cartes mentales, des organisateurs graphiques et démonstrations vidéo.";
+                $recsEn[] = "• Auditory Learners Support: Facilitate verbal lecture summaries, class Q&A sessions, and interactive group discussions for auditory students.";
+                $recsFr[] = "• Soutien aux Apprenants Auditifs : Facilitez les synthèses de cours orales, les séances de Q/R et les discussions de groupe.";
+                $recsEn[] = "• Kinesthetic Learners Support: Incorporate hands-on practical exercises, lab demonstrations, and active learning tasks for practical learners.";
+                $recsFr[] = "• Soutien aux Apprenants Kinesthésiques : Intégrez des exercices pratiques interactifs et des travaux de groupe.";
+                $recsEn[] = "• Read/Write Learners Support: Provide structured reading materials, written glossaries, and bulleted note-taking frameworks for text-focused students.";
+                $recsFr[] = "• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels structurés, des glossaires et des fiches de synthèse.";
+            } elseif ($dominant == 'Kinesthetic') {
+                $recsEn[] = "• Kinesthetic Learners (Majority — {$pct}%): Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.";
+                $recsFr[] = "• Apprenants Kinesthésiques (Majorité — {$pct}%) : Structurez les cours autour de travaux pratiques en laboratoire, du codage et d'exercices pratiques.";
+                $recsEn[] = "• Auditory Learners Support: Provide clear verbal explanations, oral instructions, and interactive class Q&A for auditory students.";
+                $recsFr[] = "• Soutien aux Apprenants Auditifs : Proposez des explications orales claires, des instructions verbales et des échanges oraux.";
+                $recsEn[] = "• Visual Learners Support: Supply visual step-by-step procedure diagrams and flowcharts for visual students.";
+                $recsFr[] = "• Soutien aux Apprenants Visuels : Fournissez des schémas de procédure étape par étape et des organigrammes.";
+                $recsEn[] = "• Read/Write Learners Support: Provide written lab manuals and practical exercise worksheets for text-focused students.";
+                $recsFr[] = "• Soutien aux Apprenants Lecture/Écriture : Mettez à disposition des manuels de travaux pratiques et des fiches d'exercices.";
+            } else {
+                $recsEn[] = "• Read/Write Learners (Majority — {$pct}%): Provide structured printed handouts, comprehensive reading glossaries, and detailed note-taking frameworks.";
+                $recsFr[] = "• Apprenants Lecture/Écriture (Majorité — {$pct}%) : Fournissez des fiches de cours imprimées, des glossaires détaillés et des guides de prise de notes.";
+                $recsEn[] = "• Auditory Learners Support: Conduct verbal class discussions and oral summaries of key concepts for auditory students.";
+                $recsFr[] = "• Soutien aux Apprenants Auditifs : Animez des discussions de classe orales et des synthèses verbale des notions clés.";
+                $recsEn[] = "• Visual Learners Support: Use visual summary charts and key diagrammatic models for visual students.";
+                $recsFr[] = "• Soutien aux Apprenants Visuels : Utilisez des schémas de synthèse visuels et des modèles schématiques.";
+                $recsEn[] = "• Kinesthetic Learners Support: Assign interactive practice exercises and written problem sets for practical learners.";
+                $recsFr[] = "• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques interactifs et des séries de problèmes.";
+            }
+
+            $aiRecEn = implode("\n", $recsEn);
+            $aiRecFr = implode("\n", $recsFr);
         } else {
-            $aiRecEn = "• Class VARK Assessment for $className at $schoolName: Diagnostic evaluations pending. Administer the 16-item VARK questionnaire to generate AI pedagogical directives.";
-            $aiRecFr = "• Évaluation VARK pour la $className à $schoolName : Évaluations diagnostiques en attente. Administrez le questionnaire VARK pour générer les directives pédagogiques IA.";
+            $aiRecEn = "• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress. Encourage all learning styles equally through multimodal instruction.\n" .
+                       "• Auditory Recommendation: Integrate interactive class discussions, verbal lecture summaries, audio recordings, and peer Q&A sessions.\n" .
+                       "• Visual Recommendation: Utilize color-coded visual board diagrams, mind maps, graphic organizers, and video demonstrations.\n" .
+                       "• Kinesthetic Recommendation: Incorporate hands-on problem-solving exercises, practical lab demonstrations, and interactive group activities.\n" .
+                       "• Read/Write Recommendation: Supply structured printed handouts, comprehensive reading glossaries, and bulleted note-taking frameworks.";
+
+            $aiRecFr = "• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations VARK sont en cours. Encouragez équitablement tous les styles d'apprentissage.\n" .
+                       "• Recommandation Auditive : Intégrez des discussions interactives en classe, des synthèses orales de cours et des enregistrements audio.\n" .
+                       "• Recommandation Visuelle : Utilisez des schémas visuels en couleurs, des cartes mentales et des diaporamas résumés.\n" .
+                       "• Recommandation Kinesthésique : Proposez des exercices pratiques de résolution de problèmes et des travaux en groupe.\n" .
+                       "• Recommandation Lecture/Écriture : Fournissez des fiches de cours imprimées structurées et des glossaires détaillés.";
         }
 
         respond(true, 'Class details fetched successfully.', [
@@ -286,14 +345,17 @@ switch ($action) {
 
         if ($userId <= 0) respondError('User ID is required.');
 
-        // Delete from sub tables
-        $pdo->prepare("DELETE FROM students WHERE user_id = ?")->execute([$userId]);
-        $pdo->prepare("DELETE FROM teachers WHERE user_id = ?")->execute([$userId]);
-        $pdo->prepare("DELETE FROM principals WHERE user_id = ?")->execute([$userId]);
-        $pdo->prepare("DELETE FROM divisional_delegates WHERE user_id = ?")->execute([$userId]);
-        $pdo->prepare("DELETE FROM regional_delegates WHERE user_id = ?")->execute([$userId]);
+        // Delete safely from sub tables
+        $subTables = ['students', 'teachers', 'principals', 'dean_of_studies', 'regional_delegates', 'admins'];
+        foreach ($subTables as $tbl) {
+            try {
+                $pdo->prepare("DELETE FROM $tbl WHERE user_id = ?")->execute([$userId]);
+            } catch (Exception $ex) {
+                // Ignore missing subtable or foreign constraint warnings
+            }
+        }
 
-        // Delete from users table
+        // Delete from main users table
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$userId]);
 

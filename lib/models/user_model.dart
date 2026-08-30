@@ -81,6 +81,7 @@ class UserModel {
   bool get isStudent            => role == 'student';
   bool get isTeacher            => role == 'teacher';
   bool get isPrincipal          => role == 'principal';
+  bool get isDeanOfStudies      => role == 'dean_of_studies';
   bool get isDivisionalDelegate => role == 'divisional_delegate';
   bool get isRegionalDelegate   => role == 'regional_delegate';
   bool get isAdmin              => role == 'admin';

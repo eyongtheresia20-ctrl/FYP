@@ -4,6 +4,7 @@
 //  Include this at the top of every API endpoint
 // ============================================================
 
+ob_start();
 error_reporting(0);
 ini_set('display_errors', '0');
 
@@ -19,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 function respond(bool $success, string $message, $data = null, int $code = 200): void {
+    if (ob_get_length()) ob_clean();
     http_response_code($code);
     echo json_encode([
         'success' => $success,

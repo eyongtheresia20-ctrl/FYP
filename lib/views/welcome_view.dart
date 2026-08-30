@@ -1,5 +1,6 @@
 // lib/views/welcome_view.dart
 import 'package:flutter/material.dart';
+import '../widgets/app_logo.dart';
 import '../core/localization.dart';
 import 'auth/activation_view.dart';
 import 'auth/login_view.dart';
@@ -59,7 +60,7 @@ class _WelcomeViewState extends State<WelcomeView>
 
     // Dynamic Theme Colors
     final Color bgColor = _isDarkMode ? const Color(0xFF07090F) : const Color(0xFFF1F5F9);
-    final Color navBgColor = _isDarkMode ? const Color(0xFF0D1421) : const Color(0xFF0F172A);
+    final Color navBgColor = _isDarkMode ? const Color(0xFF0D1421) : Colors.white;
     final Color textColor = _isDarkMode ? Colors.white : const Color(0xFF0F172A);
     final Color subTextColor = _isDarkMode ? Colors.white60 : const Color(0xFF475569);
     final Color cardBgColor = _isDarkMode
@@ -168,8 +169,8 @@ class _WelcomeViewState extends State<WelcomeView>
 
   // ── Mobile Bottom Navigation Bar ────────────────────────────────────────────
   Widget _buildBottomNav(bool isEn, Color navBgColor) {
-    final Color activeColor = const Color(0xFF34D399);
-    final Color idleColor   = Colors.white38;
+    final Color activeColor = _isDarkMode ? const Color(0xFF34D399) : const Color(0xFF006A4E);
+    final Color idleColor   = _isDarkMode ? Colors.white54 : const Color(0xFF64748B);
     final Color bgColor     = navBgColor;
 
     final items = [
@@ -181,9 +182,13 @@ class _WelcomeViewState extends State<WelcomeView>
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
-        border: Border(top: BorderSide(color: Colors.white12, width: 0.8)),
+        border: Border(top: BorderSide(color: _isDarkMode ? Colors.white12 : const Color(0xFFE2E8F0), width: 0.8)),
         boxShadow: [
-          BoxShadow(color: Colors.black45, blurRadius: 16, offset: const Offset(0, -4)),
+          BoxShadow(
+            color: _isDarkMode ? Colors.black45 : Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: SafeArea(
@@ -204,7 +209,7 @@ class _WelcomeViewState extends State<WelcomeView>
                       border: Border(
                         top: BorderSide(
                           color: active ? activeColor : Colors.transparent,
-                          width: 2,
+                          width: 2.5,
                         ),
                       ),
                     ),
@@ -224,7 +229,7 @@ class _WelcomeViewState extends State<WelcomeView>
                           style: TextStyle(
                             color: active ? activeColor : idleColor,
                             fontSize: 10.5,
-                            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                           ),
                         ),
                       ],
@@ -243,83 +248,52 @@ class _WelcomeViewState extends State<WelcomeView>
   PreferredSizeWidget _buildNavBar(
       BuildContext context, bool isEn, bool isWide, Color navBgColor) {
     return PreferredSize(
-      preferredSize: const Size.fromHeight(68),
+      preferredSize: Size.fromHeight(isWide ? 84 : 76),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
           color: navBgColor,
           border: Border(
             bottom: BorderSide(
-              color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFF1E293B),
-              width: 1,
+              color: _isDarkMode ? const Color(0x22FFFFFF) : const Color(0xFFE2E8F0),
+              width: 1.2,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
+              color: _isDarkMode ? Colors.black.withOpacity(0.35) : Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 3),
             )
           ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
+            padding: EdgeInsets.symmetric(horizontal: isWide ? 32 : 12, vertical: 6),
             child: Row(
               children: [
                 // 1. LEFT SECTION (Logo + Title)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isWide) ...[
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black26, blurRadius: 6, offset: Offset(0, 2))
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(2),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/minesec_logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _currentPage = 'home'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
+                        AppLogo(size: isWide ? 48 : 42, showGlow: false),
+                        SizedBox(width: isWide ? 10 : 6),
+                        Text(
                           'EDU PROFILE',
                           style: TextStyle(
-                            color: Color(0xFFFCD116),
+                            color: _isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF006A4E),
                             fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        Text(
-                          isEn
-                              ? 'Learning Style Tracker'
-                              : 'Traqueur de Style d\'Apprentissage',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 10.5,
-                            letterSpacing: 0.4,
+                            fontSize: isWide ? 19 : 13.5,
+                            letterSpacing: isWide ? 1.6 : 0.8,
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
 
                 const Spacer(),
@@ -332,11 +306,11 @@ class _WelcomeViewState extends State<WelcomeView>
                       _navLink(isEn ? 'Home' : 'Accueil', Icons.home_outlined,
                           _currentPage == 'home',
                           onPressed: () => setState(() => _currentPage = 'home')),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       _navLink(isEn ? 'About' : 'À propos', Icons.info_outline,
                           _currentPage == 'about',
                           onPressed: () => setState(() => _currentPage = 'about')),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       _navLink(isEn ? 'Help' : 'Aide', Icons.help_outline,
                           _currentPage == 'help',
                           onPressed: () => setState(() => _currentPage = 'help')),
@@ -349,42 +323,42 @@ class _WelcomeViewState extends State<WelcomeView>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isWide) ...[
-                      // Theme Switch
-                      Tooltip(
-                        message: _isDarkMode
-                            ? (isEn ? 'Switch to Light Mode' : 'Passer au Mode Clair')
-                            : (isEn ? 'Switch to Dark Mode' : 'Passer au Mode Sombre'),
-                        child: InkWell(
-                          onTap: _toggleTheme,
-                          borderRadius: BorderRadius.circular(30),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(9),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF1E293B),
-                              border: Border.all(
-                                color: Colors.white24,
-                                width: 1,
-                              ),
+                    // Theme Switch
+                    Tooltip(
+                      message: _isDarkMode
+                          ? (isEn ? 'Switch to Light Mode' : 'Passer au Mode Clair')
+                          : (isEn ? 'Switch to Dark Mode' : 'Passer au Mode Sombre'),
+                      child: InkWell(
+                        onTap: _toggleTheme,
+                        borderRadius: BorderRadius.circular(30),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: EdgeInsets.all(isWide ? 10 : 7),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                            border: Border.all(
+                              color: _isDarkMode ? Colors.white24 : const Color(0xFFCBD5E1),
+                              width: 1,
                             ),
-                            child: Icon(
-                              _isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined,
-                              color: _isDarkMode ? const Color(0xFFFCD116) : Colors.white70,
-                              size: 18,
-                            ),
+                          ),
+                          child: Icon(
+                            _isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined,
+                            color: _isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF0F172A),
+                            size: isWide ? 20 : 16,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                    ),
+                    SizedBox(width: isWide ? 10 : 6),
 
+                    if (isWide) ...[
                       // Language Switch
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
+                          color: _isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white12),
+                          border: Border.all(color: _isDarkMode ? Colors.white12 : const Color(0xFFCBD5E1)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -398,7 +372,7 @@ class _WelcomeViewState extends State<WelcomeView>
                     ],
 
                     // Hi + Sign In Button (FAR RIGHT END)
-                    _buildSignInArea(context, isEn),
+                    _buildSignInArea(context, isEn, isWide),
                   ],
                 ),
               ],
@@ -422,7 +396,9 @@ class _WelcomeViewState extends State<WelcomeView>
         child: Text(
           lang,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.white54,
+            color: selected
+                ? Colors.white
+                : (_isDarkMode ? Colors.white54 : const Color(0xFF64748B)),
             fontWeight: FontWeight.bold,
             fontSize: 11,
           ),
@@ -436,14 +412,14 @@ class _WelcomeViewState extends State<WelcomeView>
       label: label,
       icon: icon,
       active: active,
+      isDarkMode: _isDarkMode,
       onPressed: onPressed,
     );
   }
 
 
 
-  // ── Profile Icon & Auth Dropdown Menu ─────────────────────────────────────────
-  Widget _buildSignInArea(BuildContext context, bool isEn) {
+  Widget _buildSignInArea(BuildContext context, bool isEn, bool isWide) {
     final Color green = const Color(0xFF006A4E);
     final Color accent = const Color(0xFF34D399);
 
@@ -561,18 +537,21 @@ class _WelcomeViewState extends State<WelcomeView>
         ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: EdgeInsets.symmetric(
+          horizontal: isWide ? 16 : 10,
+          vertical: isWide ? 10 : 7,
+        ),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF006A4E), Color(0xFF009966)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
               color: const Color(0xFF006A4E).withOpacity(0.35),
-              blurRadius: 8,
+              blurRadius: 10,
               offset: const Offset(0, 3),
             ),
           ],
@@ -580,18 +559,18 @@ class _WelcomeViewState extends State<WelcomeView>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.person_outline_rounded, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
+            Icon(Icons.person_outline_rounded, color: Colors.white, size: isWide ? 20 : 16),
+            SizedBox(width: isWide ? 8 : 4),
             Text(
               isEn ? 'Account' : 'Compte',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: isWide ? 14 : 12.5,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: isWide ? 18 : 15),
           ],
         ),
       ),
@@ -1400,20 +1379,20 @@ class _WelcomeViewState extends State<WelcomeView>
 
     final faqs = isEn
         ? [
-            {'q': 'How do I take the learning style assessment?', 'a': 'Select your role from the Home page, choose your portal, enter your identifier, and answer the profiling questions regarding your study preferences.'},
-            {'q': 'Can I retake the assessment?', 'a': 'Yes, once per academic term to track changes in preferred learning styles over time.'},
-            {'q': 'How do teachers access classroom analytics?', 'a': 'Log into the Teacher Portal with your school credentials. Your dashboard displays real-time charts comparing learning profiles for your classes.'},
-            {'q': 'Where can I find teaching strategies?', 'a': 'Click on any profile card in your classroom analytics dashboard to expand recommended teaching techniques.'},
-            {'q': 'How do administrators manage user accounts?', 'a': 'Administrators can issue activation codes, reset access credentials, and monitor school-wide participation through the Admin Portal.'},
-            {'q': 'How is student data protected?', 'a': 'All platform data is encrypted and handled in compliance with national educational privacy standards.'},
+            {'q': 'How do I take the learning style assessment?', 'a': 'Enter your student matricule on the sign-in screen to log in, navigate to "Take Assessment" in your Student Dashboard, and answer the 10 study preference questions to generate your instant VARK report.'},
+            {'q': 'Can I retake the assessment?', 'a': 'Yes! You can retake the assessment at any time from your Student Dashboard. The system updates your scores, logs your attempt history, and calculates your multi-test composite average.'},
+            {'q': 'How do teachers access classroom analytics?', 'a': 'Log in using your teacher matricule and password. From your Teacher Dashboard, select your assigned class to view real-time VARK pie charts, student score breakdowns, and dominant styles.'},
+            {'q': 'Where can I find teaching strategies?', 'a': 'Open any student profile or VARK score card on your dashboard to view tailored pedagogical recommendations for Visual, Auditory, Kinesthetic, and Read/Write learners.'},
+            {'q': 'How do administrators manage user accounts?', 'a': 'Log into the Principal or Admin Dashboard using your administrative credentials to activate/deactivate accounts, issue 4-digit security PINs, and monitor school-wide participation.'},
+            {'q': 'How is student data protected?', 'a': 'All student diagnostic data is encrypted, stored locally for 100% offline access, and synced securely with the central MINESEC database in compliance with privacy regulations.'},
           ]
         : [
-            {'q': 'Comment passer l\'évaluation des styles d\'apprentissage ?', 'a': 'Sélectionnez votre rôle sur la page d\'accueil, choisissez votre portail, entrez votre identifiant et répondez aux questions sur vos préférences d\'étude.'},
-            {'q': 'Puis-je repasser l\'évaluation de profil ?', 'a': 'Oui, les élèves peuvent repasser l\'évaluation une fois par trimestre.'},
-            {'q': 'Comment les enseignants accèdent-ils aux analyses de classe ?', 'a': 'Connectez-vous au Portail Enseignant. Votre tableau de bord affiche des graphiques en temps réel comparant les profils d\'apprentissage.'},
-            {'q': 'Où trouver des stratégies pédagogiques adaptées ?', 'a': 'Cliquez sur n\'importe quelle carte de profil dans le tableau de bord pour afficher des techniques d\'enseignement recommandées.'},
-            {'q': 'Comment les administrateurs gèrent-ils les comptes ?', 'a': 'Les administrateurs peuvent générer des codes d\'activation, réinitialiser des identifiants et suivre la participation depuis le Portail Admin.'},
-            {'q': 'Comment les données des élèves sont-elles protégées ?', 'a': 'Toutes les données sont cryptées et gérées conformément aux normes nationales de protection.'},
+            {'q': 'Comment passer l\'évaluation des styles d\'apprentissage ?', 'a': 'Entrez votre matricule élève à la connexion, allez sur "Passer l\'évaluation" dans votre Tableau de Bord Élève, et répondez aux 10 questions pour obtenir votre rapport VARK instantané.'},
+            {'q': 'Puis-je repasser l\'évaluation de profil ?', 'a': 'Oui ! Vous pouvez repasser l\'évaluation à tout moment. Le système met à jour vos scores, conserve l\'historique des tentatives et calcule votre moyenne composite.'},
+            {'q': 'Comment les enseignants accèdent-ils aux analyses de classe ?', 'a': 'Connectez-vous avec votre matricule et mot de passe enseignant. Sélectionnez votre classe sur votre tableau de bord pour voir les graphiques VARK et la répartition des profils.'},
+            {'q': 'Où trouver des stratégies pédagogiques adaptées ?', 'a': 'Ouvrez n\'importe quel profil d\'élève ou carte de score VARK sur votre tableau de bord pour afficher des recommandations adaptées aux profils Visuel, Auditif, Kinesthésique et Lecture/Écriture.'},
+            {'q': 'Comment les administrateurs gèrent-ils les comptes ?', 'a': 'Connectez-vous au Tableau de Bord Proviseur ou Admin pour activer/désactiver des comptes, attribuer des codes PIN de sécurité et suivre la participation globale.'},
+            {'q': 'Comment les données des élèves sont-elles protégées ?', 'a': 'Toutes les données sont cryptées, stockées localement pour un accès 100% hors-ligne et synchronisées en toute sécurité avec la base centrale MINESEC.'},
           ];
 
     return SizedBox(
@@ -1518,107 +1497,11 @@ class _WelcomeViewState extends State<WelcomeView>
                       );
                     },
                   ),
-
-                  const SizedBox(height: 36),
-
-                  // Support card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: cardBgColor,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: green.withOpacity(0.35)),
-                    ),
-                    child: isWide
-                        ? Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: green.withOpacity(0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.support_agent_rounded, color: accent, size: 26),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isEn ? 'Still have questions?' : 'Vous avez d\'autres questions ?',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      isEn ? 'Contact our support team for assistance.' : 'Contactez notre équipe de support pour toute assistance.',
-                                      style: TextStyle(fontSize: 13, color: subTextColor),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: green,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                ),
-                                onPressed: () {},
-                                icon: const Icon(Icons.email_outlined, size: 16),
-                                label: Text(isEn ? 'Email Support' : 'Contacter par Email'),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: green.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(Icons.support_agent_rounded, color: accent, size: 24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      isEn ? 'Still have questions?' : 'Vous avez d\'autres questions ?',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                isEn ? 'Contact our support team for assistance.' : 'Contactez notre équipe de support pour toute assistance.',
-                                style: TextStyle(fontSize: 13, color: subTextColor),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: green,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                ),
-                                onPressed: () {},
-                                icon: const Icon(Icons.email_outlined, size: 16),
-                                label: Text(isEn ? 'Email Support' : 'Contacter par Email'),
-                              ),
-                            ],
-                          ),
-                  ),
                 ],
               ),
             ),
 
-            _buildFooter(isEn, subTextColor),
+            if (isWide) _buildFooter(isEn, subTextColor),
           ],
         ),
       ),
@@ -1906,7 +1789,7 @@ class _WelcomeViewState extends State<WelcomeView>
   Widget _buildFooter(bool isEn, Color subTextColor) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 40),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
         border: Border(
             top: BorderSide(
@@ -1915,15 +1798,16 @@ class _WelcomeViewState extends State<WelcomeView>
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               _buildCameroonFlag(),
-              const SizedBox(width: 10),
               Text(
-                isEn
-                    ? 'Republic of Cameroon · MINESEC'
-                    : 'République du Cameroun · MINESEC',
+                'Republic of Cameroon  ·  République du Cameroun',
+                textAlign: TextAlign.center,
                 style: TextStyle(color: subTextColor, fontSize: 12),
               ),
             ],
@@ -2010,12 +1894,14 @@ class _HoverNavLink extends StatefulWidget {
   final String label;
   final IconData icon;
   final bool active;
+  final bool isDarkMode;
   final VoidCallback? onPressed;
 
   const _HoverNavLink({
     required this.label,
     required this.icon,
     required this.active,
+    this.isDarkMode = true,
     this.onPressed,
   });
 
@@ -2028,9 +1914,9 @@ class _HoverNavLinkState extends State<_HoverNavLink> {
 
   @override
   Widget build(BuildContext context) {
-    final Color activeColor = const Color(0xFFFCD116);
-    final Color hoverColor  = Colors.white;
-    final Color idleColor   = Colors.white70;
+    final Color activeColor = widget.isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF006A4E);
+    final Color hoverColor  = widget.isDarkMode ? Colors.white : const Color(0xFF006A4E);
+    final Color idleColor   = widget.isDarkMode ? Colors.white70 : const Color(0xFF475569);
 
     final Color labelColor = widget.active
         ? activeColor
@@ -2050,16 +1936,16 @@ class _HoverNavLinkState extends State<_HoverNavLink> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: widget.active
-                ? const Color(0xFFFCD116).withOpacity(0.08)
+                ? (widget.isDarkMode ? const Color(0xFFFCD116).withOpacity(0.08) : const Color(0xFF006A4E).withOpacity(0.08))
                 : _hovered
-                    ? Colors.white.withOpacity(0.06)
+                    ? (widget.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04))
                     : Colors.transparent,
             border: Border(
               bottom: BorderSide(
                 color: widget.active
                     ? activeColor
                     : _hovered
-                        ? Colors.white38
+                        ? (widget.isDarkMode ? Colors.white38 : const Color(0xFF006A4E).withOpacity(0.3))
                         : Colors.transparent,
                 width: 1.5,
               ),

@@ -1,5 +1,6 @@
 // lib/views/help_view.dart
 import 'package:flutter/material.dart';
+import '../widgets/app_logo.dart';
 import '../core/localization.dart';
 
 class HelpView extends StatefulWidget {
@@ -25,37 +26,37 @@ class _HelpViewState extends State<HelpView> {
           'category': 'Students',
           'question': 'How do I take the learning style assessment?',
           'answer':
-              'Select your role from the Home page, choose "Student Portal", enter your student identifier, and answer the profiling questions regarding your study preferences.',
+              'Enter your student matricule on the sign-in screen to log in, navigate to "Take Assessment" in your Student Dashboard, and answer the 10 study preference questions to generate your instant VARK report.',
         },
         {
           'category': 'Students',
           'question': 'Can I retake the learning profile assessment?',
           'answer':
-              'Yes, students can retake the assessment once per academic term to track changes in their preferred learning styles over time.',
+              'Yes! You can retake the assessment at any time from your Student Dashboard. The system updates your scores, logs your attempt history, and calculates your multi-test composite average.',
         },
         {
           'category': 'Teachers',
           'question': 'How do teachers access classroom analytics?',
           'answer':
-              'Log into the Teacher Portal with your school credentials. Your dashboard displays real-time charts comparing Visual, Auditory, Read/Write, and Kinesthetic profiles for your classes.',
+              'Log in using your teacher matricule and password. From your Teacher Dashboard, select your assigned class to view real-time VARK pie charts, student score breakdowns, and dominant styles.',
         },
         {
           'category': 'Teachers',
           'question': 'Where can I find teaching strategies for specific profiles?',
           'answer':
-              'Click on any profile card in your classroom analytics dashboard to expand recommended teaching techniques tailored for that learning style.',
+              'Open any student profile or VARK score card on your dashboard to view tailored pedagogical recommendations for Visual, Auditory, Kinesthetic, and Read/Write learners.',
         },
         {
           'category': 'Administration',
           'question': 'How do administrators manage user accounts?',
           'answer':
-              'School Administrators can issue activation codes, reset access credentials, and monitor school-wide participation through the Admin Portal.',
+              'Log into the Principal or Admin Dashboard using your administrative credentials to activate/deactivate accounts, issue 4-digit security PINs, and monitor school-wide participation.',
         },
         {
           'category': 'Administration',
           'question': 'How is student data protected and secured?',
           'answer':
-              'All platform data is encrypted and handled in compliance with national educational privacy standards and access controls.',
+              'All student diagnostic data is encrypted, stored locally for 100% offline access, and synced securely with the central MINESEC database in compliance with privacy regulations.',
         },
       ];
     } else {
@@ -64,37 +65,37 @@ class _HelpViewState extends State<HelpView> {
           'category': 'Students',
           'question': 'Comment passer l\'évaluation des styles d\'apprentissage ?',
           'answer':
-              'Sélectionnez votre rôle sur la page d\'accueil, choisissez "Portail Élève", entrez votre identifiant et répondez aux questions sur vos préférences d\'étude.',
+              'Entrez votre matricule élève à la connexion, allez sur "Passer l\'évaluation" dans votre Tableau de Bord Élève, et répondez aux 10 questions pour obtenir votre rapport VARK instantané.',
         },
         {
           'category': 'Students',
           'question': 'Puis-je repasser l\'évaluation de profil ?',
           'answer':
-              'Oui, les élèves peuvent repasser l\'évaluation une fois par trimestre pour suivre l\'évolution de leurs préférences d\'apprentissage.',
+              'Oui ! Vous pouvez repasser l\'évaluation à tout moment. Le système met à jour vos scores, conserve l\'historique des tentatives et calcule votre moyenne composite.',
         },
         {
           'category': 'Teachers',
           'question': 'Comment les enseignants accèdent-ils aux analyses de classe ?',
           'answer':
-              'Connectez-vous au Portail Enseignant. Votre tableau de bord affiche des graphiques en temps réel comparant les profils Visuel, Auditif, Lecture/Écriture et Kinesthésique.',
+              'Connectez-vous avec votre matricule et mot de passe enseignant. Sélectionnez votre classe sur votre tableau de bord pour voir les graphiques VARK et la répartition des profils.',
         },
         {
           'category': 'Teachers',
           'question': 'Où trouver des stratégies pédagogiques adaptées ?',
           'answer':
-              'Cliquez sur n\'importe quelle carte de profil dans le tableau de bord pour afficher des techniques d\'enseignement recommandées.',
+              'Ouvrez n\'importe quel profil d\'élève ou carte de score VARK sur votre tableau de bord pour afficher des recommandations adaptées aux profils Visuel, Auditif, Kinesthésique et Lecture/Écriture.',
         },
         {
           'category': 'Administration',
           'question': 'Comment les administrateurs gèrent-ils les comptes ?',
           'answer':
-              'Les administrateurs peuvent générer des codes d\'activation, réinitialiser des identifiants et suivre la participation depuis le Portail Admin.',
+              'Connectez-vous au Tableau de Bord Proviseur ou Admin pour activer/désactiver des comptes, attribuer des codes PIN de sécurité et suivre la participation globale.',
         },
         {
           'category': 'Administration',
           'question': 'Comment les données des élèves sont-elles protégées ?',
           'answer':
-              'Toutes les données sont cryptées et gérées conformément aux normes nationales de protection de la vie privée et de sécurité.',
+              'Toutes les données sont cryptées, stockées localement pour un accès 100% hors-ligne et synchronisées en toute sécurité avec la base centrale MINESEC.',
         },
       ];
     }
@@ -128,7 +129,7 @@ class _HelpViewState extends State<HelpView> {
     return Scaffold(
       backgroundColor: bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(68),
+        preferredSize: Size.fromHeight(isWide ? 76 : 68),
         child: Container(
           decoration: BoxDecoration(
             color: nav,
@@ -140,36 +141,21 @@ class _HelpViewState extends State<HelpView> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: isWide ? 24 : 12),
               child: Row(
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
+                  const SizedBox(width: 4),
+                  AppLogo(size: isWide ? 46 : 38, showGlow: false),
                   const SizedBox(width: 8),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(2),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/minesec_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Text(
                     AppLocalization.translate('help_title'),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: isWide ? 17 : 14.5,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -178,21 +164,24 @@ class _HelpViewState extends State<HelpView> {
                     icon: Icon(
                       _isDarkMode ? Icons.wb_sunny_outlined : Icons.nightlight_round_outlined,
                       color: _isDarkMode ? const Color(0xFFFCD116) : Colors.white70,
+                      size: isWide ? 22 : 18,
                     ),
                     onPressed: _toggleTheme,
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white12),
+                  if (isWide) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [_langBtn('EN', isEn), _langBtn('FR', !isEn)],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [_langBtn('EN', isEn), _langBtn('FR', !isEn)],
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -405,169 +394,27 @@ class _HelpViewState extends State<HelpView> {
                             );
                           },
                         ),
-                  const SizedBox(height: 36),
-
-                  // Support Contact Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: green.withOpacity(0.35)),
-                    ),
-                    child: isWide
-                        ? Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: green.withOpacity(0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.support_agent_rounded,
-                                    color: accent, size: 26),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isEn
-                                          ? 'Still have questions?'
-                                          : 'Vous avez d\'autres questions ?',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: text,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      isEn
-                                          ? 'Contact our support team for assistance.'
-                                          : 'Contactez notre équipe de support pour toute assistance.',
-                                      style: TextStyle(fontSize: 13, color: sub),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: green,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 18, vertical: 12),
-                                ),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        isEn
-                                            ? 'Support email copied: support@learningtracker.edu.cm'
-                                            : 'Email de support copié : support@learningtracker.edu.cm',
-                                      ),
-                                      backgroundColor: green,
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.email_outlined, size: 16),
-                                label: Text(isEn ? 'Email Support' : 'Contacter par Email'),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: green.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(Icons.support_agent_rounded,
-                                        color: accent, size: 24),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      isEn
-                                          ? 'Still have questions?'
-                                          : 'Vous avez d\'autres questions ?',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: text,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                isEn
-                                    ? 'Contact our support team for assistance.'
-                                    : 'Contactez notre équipe de support pour toute assistance.',
-                                style: TextStyle(fontSize: 13, color: sub),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: green,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 18, vertical: 12),
-                                ),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        isEn
-                                            ? 'Support email copied: support@learningtracker.edu.cm'
-                                            : 'Email de support copié : support@learningtracker.edu.cm',
-                                      ),
-                                      backgroundColor: green,
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.email_outlined, size: 16),
-                                label: Text(isEn ? 'Email Support' : 'Contacter par Email'),
-                              ),
-                            ],
-                          ),
-                  ),
                 ],
               ),
             ),
 
-            // Footer
-            Padding(
-              padding: const EdgeInsets.only(bottom: 30),
-              child: Column(children: [
-                Text(
-                  isEn
-                      ? 'Republic of Cameroon  ·  MINESEC'
-                      : 'République du Cameroun  ·  MINESEC',
-                  style: TextStyle(fontSize: 12, color: sub),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Learning Style Tracker  ·  v1.0.0  ·  2025',
-                  style: TextStyle(
-                      fontSize: 11, color: sub.withOpacity(0.45)),
-                ),
-              ]),
-            ),
+            // Footer (web only)
+            if (isWide)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 30),
+                child: Column(children: [
+                  Text(
+                    'Republic of Cameroon  ·  République du Cameroun',
+                    style: TextStyle(fontSize: 12, color: sub),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Learning Style Tracker  ·  v1.0.0  ·  2025',
+                    style: TextStyle(
+                        fontSize: 11, color: sub.withOpacity(0.45)),
+                  ),
+                ]),
+              ),
           ],
         ),
       ),

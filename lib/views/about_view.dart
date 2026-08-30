@@ -1,5 +1,6 @@
 // lib/views/about_view.dart
 import 'package:flutter/material.dart';
+import '../widgets/app_logo.dart';
 import '../core/localization.dart';
 
 class AboutView extends StatefulWidget {
@@ -81,22 +82,7 @@ class _AboutViewState extends State<AboutView> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(2),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/minesec_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                      ),
-                    ),
-                  ),
+                  const AppLogo(size: 46, showGlow: false),
                   const SizedBox(width: 12),
                   Text(
                     AppLocalization.translate('about_title'),
@@ -260,21 +246,22 @@ class _AboutViewState extends State<AboutView> {
               child: Divider(color: cardBd),
             ),
 
-            // Footer
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              child: Column(children: [
-                Text(
-                  isEn ? 'Republic of Cameroon  ·  MINESEC' : 'République du Cameroun  ·  MINESEC',
-                  style: TextStyle(fontSize: 12, color: sub),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Learning Style Tracker  ·  v1.0.0  ·  2025',
-                  style: TextStyle(fontSize: 11, color: sub.withOpacity(0.45)),
-                ),
-              ]),
-            ),
+            // Footer (web only)
+            if (isWide)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 30),
+                child: Column(children: [
+                  Text(
+                    'Republic of Cameroon  ·  République du Cameroun',
+                    style: TextStyle(fontSize: 12, color: sub),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Learning Style Tracker  ·  v1.0.0  ·  2025',
+                    style: TextStyle(fontSize: 11, color: sub.withOpacity(0.45)),
+                  ),
+                ]),
+              ),
           ],
         ),
       ),

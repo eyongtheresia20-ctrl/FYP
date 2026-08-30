@@ -118,8 +118,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           'kinesthetic': 20.0,
           'read_write': 20.0,
         },
-        'summary_en': '• Listen to recorded lectures and podcasts.\n• Read your notes aloud or explain concepts to a study partner.\n• Use rhythmic memory devices and rhymes to remember formulas.\n\n• Use color-coded highlighters, mind maps, and diagrams.\n• Watch educational video tutorials and visual demonstrations.\n• Visualize concepts in your mind when recalling notebook pages.',
-        'summary_fr': '• Écoutez des cours enregistrés et des podcasts.\n• Lisez vos notes à voix haute ou expliquez les concepts à un camarade.\n• Utilisez des moyens mnémotechniques rythmiques pour retenir les formules.\n\n• Utilisez des surligneurs de couleur, des cartes mentales et des schémas.\n• Regardez des tutoriels vidéo éducatifs et des démonstrations visuelles.\n• Visualisez les concepts dans votre esprit lorsque vous vous remémorez vos cours.',
+        'summary_en': '• Use color-coded highlighters, mind maps, and concept diagrams.\n• Watch educational video tutorials, animations, and visual demonstrations.\n• Visualize notebook pages and key formulas in your mind during study.\n\n• Listen attentively to recorded lectures, podcasts, and verbal explanations.\n• Read your notes aloud and explain complex concepts to a study partner.\n• Use rhythmic memory devices, acronyms, and rhymes for memorization.',
+        'summary_fr': '• Utilisez du surlignage couleur, des cartes mentales et des schémas explicatifs.\n• Regardez des tutoriels vidéo éducatifs, des animations et démonstrations visuelles.\n• Visualisez les pages de vos cours et les formules clés dans votre esprit.\n\n• Écoutez attentivement les cours enregistrés, les podcasts et explications orales.\n• Lisez vos notes à voix haute et expliquez les concepts clés à un camarade.\n• Utilisez des répétitions rythmiques, des acronymes et des rimes pour mémoriser.',
         'completed_at': DateTime.now().toString().split('.')[0],
         'composite': {
           'learning_style': 'Auditory-Visual (Dual Style)',
@@ -172,7 +172,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final style = item['learning_style'] ?? 'VARK';
     final dateStr = item['completed_at'] ?? 'N/A';
     final sc = item['scores'] as Map<String, dynamic>? ?? {};
-    final summary = _isEn ? (item['summary_en'] ?? '') : (item['summary_fr'] ?? '');
+    
+    String summary = _isEn ? (item['summary_en'] ?? '') : (item['summary_fr'] ?? '');
+    if (summary.trim().isEmpty) {
+      final generatedRec = OfflineAssessmentService.generateAIRecommendations(style);
+      summary = _isEn ? generatedRec['en']! : generatedRec['fr']!;
+    }
 
     final v = _parseInt(sc['visual']);
     final a = _parseInt(sc['auditory']);
@@ -1223,11 +1228,56 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 final kVal = isCompositeMode ? '${scMap['kinesthetic']}%' : '$kScore%';
                                 final rVal = isCompositeMode ? '${scMap['read_write']}%' : '$rScore%';
 
-                                final aiRecText = isCompositeMode
+                                final double vNum = double.tryParse(vScore.toString()) ?? 0;
+                                final double aNum = double.tryParse(aScore.toString()) ?? 0;
+                                final double kNum = double.tryParse(kScore.toString()) ?? 0;
+                                final double rNum = double.tryParse(rScore.toString()) ?? 0;
+
+                                String studentDominant = 'Auditory';
+                                double maxS = aNum;
+                                if (vNum > maxS) { maxS = vNum; studentDominant = 'Visual'; }
+                                if (kNum > maxS) { maxS = kNum; studentDominant = 'Kinesthetic'; }
+                                if (rNum > maxS) { maxS = rNum; studentDominant = 'Read/Write'; }
+
+                                String aiRecText = isCompositeMode
                                     ? (_isEn
                                         ? (_resultData!['composite']['recommendations']['en'] ?? '')
                                         : (_resultData!['composite']['recommendations']['fr'] ?? ''))
                                     : (_isEn ? (_resultData?['summary_en'] ?? '') : (_resultData?['summary_fr'] ?? ''));
+
+                                if (aiRecText.isEmpty || aiRecText.contains('Total assessed') || aiRecText.contains('1 out of 4')) {
+                                  final List<String> stLines = [];
+                                  if (_isEn) {
+                                    if (studentDominant == 'Auditory') {
+                                      stLines.add('• Dominant Auditory Learning Style (${maxS.toInt()}%): You learn best by listening and speaking. Listen to recorded lectures, participate in study group debates, and read your notes aloud.');
+                                    } else if (studentDominant == 'Visual') {
+                                      stLines.add('• Dominant Visual Learning Style (${maxS.toInt()}%): You learn best visually. Use mind maps, color-coded highlighters, flowcharts, and video tutorials.');
+                                    } else if (studentDominant == 'Kinesthetic') {
+                                      stLines.add('• Dominant Kinesthetic Learning Style (${maxS.toInt()}%): You learn best by doing. Use hands-on lab experiments, practical exercises, and physical role-playing.');
+                                    } else {
+                                      stLines.add('• Dominant Read/Write Learning Style (${maxS.toInt()}%): You learn best through text. Take detailed bulleted notes, rewrite key definitions, and read reference textbooks.');
+                                    }
+                                    stLines.add('• Visual Support: Create summary mind-maps and visual diagrams for tricky topics.');
+                                    stLines.add('• Auditory Support: Discuss challenging lessons with classmates and explain concepts aloud.');
+                                    stLines.add('• Kinesthetic Support: Practice interactive quizzes, coding exercises, and lab simulations.');
+                                    stLines.add('• Read/Write Support: Keep a written formula and vocabulary notebook for revision.');
+                                  } else {
+                                    if (studentDominant == 'Auditory') {
+                                      stLines.add('• Style Auditif Dominant (${maxS.toInt()}%) : Vous apprenez mieux en écoutant et en parlant. Écoutez les cours enregistrés, participez aux débats et lisez vos notes à voix haute.');
+                                    } else if (studentDominant == 'Visual') {
+                                      stLines.add('• Style Visuel Dominant (${maxS.toInt()}%) : Vous apprenez mieux avec des visuels. Utilisez des cartes mentales, des surligneurs colorés et des schémas.');
+                                    } else if (studentDominant == 'Kinesthetic') {
+                                      stLines.add('• Style Kinesthésique Dominant (${maxS.toInt()}%) : Vous apprenez mieux en pratiquant. Faites des TP en laboratoire, des exercices pratiques et du codage.');
+                                    } else {
+                                      stLines.add('• Style Lecture/Écriture Dominant (${maxS.toInt()}%) : Vous apprenez mieux par le texte. Prenez des notes structurées et réécrivez les définitions clés.');
+                                    }
+                                    stLines.add('• Support Visuel : Créez des cartes mentales et schémas pour les sujets complexes.');
+                                    stLines.add('• Support Auditif : Discutez des leçons avec vos camarades et expliquez les concepts à voix haute.');
+                                    stLines.add('• Support Kinesthésique : Entraînez-vous avec des quiz interactifs et simulations pratiques.');
+                                    stLines.add('• Support Lecture/Écriture : Tenez un cahier de formules et de vocabulaire récapitulatif.');
+                                  }
+                                  aiRecText = stLines.join('\n');
+                                }
 
                                 final trendText = isCompositeMode
                                     ? (_isEn ? (_resultData!['composite']['trend_en'] ?? '') : (_resultData!['composite']['trend_fr'] ?? ''))

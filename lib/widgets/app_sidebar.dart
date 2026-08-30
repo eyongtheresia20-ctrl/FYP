@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_logo.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -101,18 +102,18 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<String> defaultItems = user.isPrincipal
+    final List<String> defaultItems = (user.isPrincipal || user.isDeanOfStudies)
         ? ['1ère TI', 'Terminale TI', '2nde C', '1ère C', 'Terminale C']
         : user.isRegionalDelegate
             ? ['DJEREM', 'VINA', 'MAYO-BANYO', 'FARO-ET-DEO', 'MBERE']
-            : user.isDivisionalDelegate
-                ? ['LYCEE TECHNIQUE DE NGAOUNDAL', 'LYCEE CLASSIQUE DE NGAOUNDAL', 'LYCEE BILINGUE DE NGAOUNDAL']
-                : user.isAdmin
-                    ? ['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST']
-                    : ['1ère TI', 'Terminale TI'];
+            : user.isAdmin
+                ? ['ADAMOUA', 'CENTRE', 'LITTORAL', 'NORD', 'EXTREME-NORD', 'OUEST', 'SUD', 'SUD-OUEST', 'NORD-OUEST', 'EST']
+                : ['1ère TI', 'Terminale TI'];
 
     final classes = tickedClasses.isNotEmpty ? tickedClasses : defaultItems;
-    final roleLabel = user.role.toUpperCase();
+    final roleLabel = user.isDeanOfStudies
+        ? (isEn ? 'DEAN OF STUDIES' : 'CENSEUR / D.E.')
+        : user.role.toUpperCase().replaceAll('_', ' ');
 
     final initials = user.fullName.trim().split(' ')
         .take(2).map((w) => w.isNotEmpty ? w[0].toUpperCase() : '').join();
@@ -140,44 +141,17 @@ class AppSidebar extends StatelessWidget {
               color: _sidebarBg,
               child: Row(
                 children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
-                    ),
-                    padding: const EdgeInsets.all(2),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/minesec_logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (ctx, _, __) => const Icon(Icons.school_rounded, color: Color(0xFF006A4E), size: 22),
-                      ),
-                    ),
-                  ),
+                  const AppLogo(size: 46, showGlow: false),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'EDU PROFILE',
-                          style: TextStyle(
-                            color: isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF006A4E),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                        Text(
-                          isEn ? 'MINESEC Cameroon' : 'MINESEC Cameroun',
-                          style: TextStyle(color: _subTextColor, fontSize: 10.5),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    child: Text(
+                      'EDU PROFILE',
+                      style: TextStyle(
+                        color: isDarkMode ? const Color(0xFFFCD116) : const Color(0xFF006A4E),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        letterSpacing: 1.1,
+                      ),
                     ),
                   ),
                 ],
@@ -269,8 +243,8 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ],
 
-                // PRINCIPAL SPECIFIC LINKS
-                if (user.isPrincipal) ...[
+                // PRINCIPAL & DEAN OF STUDIES SPECIFIC LINKS
+                if (user.isPrincipal || user.isDeanOfStudies) ...[
                   _navTile(
                     context: context,
                     index: 0,
@@ -291,7 +265,7 @@ class AppSidebar extends StatelessWidget {
                       childrenPadding: const EdgeInsets.only(left: 16),
                       leading: Icon(Icons.class_rounded, color: _subTextColor, size: 20),
                       title: Text(
-                        isEn ? 'Classes' : 'Classes',
+                        isEn ? 'All School Classes' : 'Classes de l\'Établissement',
                         style: TextStyle(
                           color: selectedIndex == 2 ? const Color(0xFF006A4E) : _textColor,
                           fontSize: 13.5,
@@ -343,8 +317,8 @@ class AppSidebar extends StatelessWidget {
                   ),
                 ],
 
-                // DELEGATE SPECIFIC LINKS (REGIONAL OR DIVISIONAL)
-                if (user.isRegionalDelegate || user.isDivisionalDelegate) ...[
+                // REGIONAL DELEGATE SPECIFIC LINKS
+                if (user.isRegionalDelegate) ...[
                   _navTile(
                     context: context,
                     index: 0,
@@ -355,9 +329,7 @@ class AppSidebar extends StatelessWidget {
                     context: context,
                     index: 1,
                     icon: Icons.map_rounded,
-                    label: user.isRegionalDelegate
-                        ? (isEn ? 'Regional VARK Analytics' : 'Analyses VARK Régionales')
-                        : (isEn ? 'Divisional VARK Analytics' : 'Analyses VARK Départementales'),
+                    label: isEn ? 'Regional VARK Analytics' : 'Analyses VARK Régionales',
                   ),
                   Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -367,9 +339,7 @@ class AppSidebar extends StatelessWidget {
                       childrenPadding: const EdgeInsets.only(left: 12),
                       leading: Icon(Icons.location_city_rounded, color: _subTextColor, size: 20),
                       title: Text(
-                        user.isRegionalDelegate
-                            ? (isEn ? 'Divisions' : 'Départements')
-                            : (isEn ? 'Schools' : 'Établissements'),
+                        isEn ? 'Divisions' : 'Départements',
                         style: TextStyle(
                           color: selectedIndex == 2 ? const Color(0xFF006A4E) : _textColor,
                           fontSize: 13.5,
