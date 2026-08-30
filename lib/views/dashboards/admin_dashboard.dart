@@ -2246,106 +2246,159 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                             if (filteredSchools.isEmpty) ...[
                                               Container(
                                                 width: double.infinity,
-                                                padding: const EdgeInsets.all(28),
-                                                decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(14)),
-                                                child: Center(
-                                                  child: Text(
-                                                    _isEn ? 'No schools matching search criteria.' : 'Aucun établissement correspondant.',
-                                                    style: TextStyle(color: _sub, fontSize: 13.5, fontStyle: FontStyle.italic),
-                                                  ),
+                                                padding: const EdgeInsets.all(36),
+                                                decoration: BoxDecoration(
+                                                  color: _bg,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  border: Border.all(color: _border),
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    Icon(Icons.school_outlined, color: _sub, size: 42),
+                                                    const SizedBox(height: 10),
+                                                    Text(
+                                                      _isEn ? 'No schools registered or matching search.' : 'Aucun établissement trouvé.',
+                                                      style: TextStyle(color: _text, fontSize: 14, fontWeight: FontWeight.bold),
+                                                    ),
+                                                    const SizedBox(height: 14),
+                                                    ElevatedButton.icon(
+                                                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white),
+                                                      onPressed: _showAddSchoolDialog,
+                                                      icon: const Icon(Icons.add_business_rounded, size: 16),
+                                                      label: Text(_isEn ? '+ Register First School' : '+ Ajouter un Établissement'),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ] else ...[
-                                              SingleChildScrollView(
-                                                scrollDirection: Axis.horizontal,
-                                                child: ConstrainedBox(
-                                                  constraints: BoxConstraints(
-                                                    minWidth: MediaQuery.of(context).size.width >= 800 ? MediaQuery.of(context).size.width - 340 : 700,
-                                                  ),
-                                                  child: DataTable(
-                                                    headingRowColor: WidgetStateProperty.all(_bg),
-                                                    dataRowMinHeight: 60,
-                                                    dataRowMaxHeight: 74,
-                                                    columnSpacing: 32,
-                                                    horizontalMargin: 18,
-                                                    columns: [
-                                                      DataColumn(label: Text(_isEn ? 'School Name' : 'Nom de l\'Établissement', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 13))),
-                                                      DataColumn(label: Text(_isEn ? 'Region' : 'Région', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 13))),
-                                                      DataColumn(label: Text(_isEn ? 'Division' : 'Département', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 13))),
-                                                      DataColumn(label: Text(_isEn ? 'Town / City' : 'Ville / Localité', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 13))),
-                                                      DataColumn(label: Text(_isEn ? 'Actions' : 'Actions', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 13))),
-                                                    ],
-                                                    rows: filteredSchools.map<DataRow>((s) {
-                                                      final scName = (s['name'] ?? '').toString();
-                                                      final scReg  = (s['region'] ?? 'ADAMOUA').toString();
-                                                      final scDiv  = (s['division'] ?? 'DJEREM').toString();
-                                                      final scTown = (s['town'] ?? '-').toString();
+                                              // Full-Width Structured Table Header
+                                              Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: _bg,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: _border),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(flex: 5, child: Text(_isEn ? 'School Name' : 'Nom de l\'Établissement', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                    Expanded(flex: 3, child: Text(_isEn ? 'Region' : 'Région', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                    Expanded(flex: 3, child: Text(_isEn ? 'Division' : 'Département', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                    Expanded(flex: 3, child: Text(_isEn ? 'Town / City' : 'Ville', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                    Expanded(flex: 2, child: Align(alignment: Alignment.centerRight, child: Text(_isEn ? 'Action' : 'Action', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5)))),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
 
-                                                      return DataRow(
-                                                        cells: [
-                                                          DataCell(
-                                                            Row(
-                                                              mainAxisSize: MainAxisSize.min,
-                                                              children: [
-                                                                Container(
-                                                                  padding: const EdgeInsets.all(8),
-                                                                  decoration: BoxDecoration(
-                                                                    color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                                                                    shape: BoxShape.circle,
-                                                                  ),
-                                                                  child: const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 18),
+                                              // Full-Width Rows
+                                              Column(
+                                                children: filteredSchools.map<Widget>((s) {
+                                                  final scName = (s['name'] ?? '').toString();
+                                                  final scReg  = (s['region'] ?? 'ADAMOUA').toString();
+                                                  final scDiv  = (s['division'] ?? 'DJEREM').toString();
+                                                  final scTown = (s['town'] ?? '-').toString();
+
+                                                  return Container(
+                                                    width: double.infinity,
+                                                    margin: const EdgeInsets.only(bottom: 8),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                                    decoration: BoxDecoration(
+                                                      color: _bg,
+                                                      borderRadius: BorderRadius.circular(12),
+                                                      border: Border.all(color: _border.withValues(alpha: 0.7)),
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        // School Name
+                                                        Expanded(
+                                                          flex: 5,
+                                                          child: Row(
+                                                            children: [
+                                                              Container(
+                                                                padding: const EdgeInsets.all(8),
+                                                                decoration: BoxDecoration(
+                                                                  color: const Color(0xFF0284C7).withValues(alpha: 0.14),
+                                                                  shape: BoxShape.circle,
                                                                 ),
-                                                                const SizedBox(width: 12),
-                                                                ConstrainedBox(
-                                                                  constraints: const BoxConstraints(maxWidth: 280),
-                                                                  child: Text(
-                                                                    scName,
-                                                                    style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 14),
-                                                                    overflow: TextOverflow.ellipsis,
-                                                                  ),
+                                                                child: const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 18),
+                                                              ),
+                                                              const SizedBox(width: 12),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  scName,
+                                                                  style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 13.5),
+                                                                  overflow: TextOverflow.ellipsis,
                                                                 ),
-                                                              ],
-                                                            ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                          DataCell(
-                                                            Container(
+                                                        ),
+
+                                                        // Region Badge
+                                                        Expanded(
+                                                          flex: 3,
+                                                          child: Align(
+                                                            alignment: Alignment.centerLeft,
+                                                            child: Container(
                                                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                                               decoration: BoxDecoration(
                                                                 color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
                                                                 borderRadius: BorderRadius.circular(8),
                                                                 border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.25)),
                                                               ),
-                                                              child: Text(scReg, style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 12)),
+                                                              child: Text(scReg, style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 11.5), overflow: TextOverflow.ellipsis),
                                                             ),
                                                           ),
-                                                          DataCell(
-                                                            Container(
+                                                        ),
+
+                                                        // Division Badge
+                                                        Expanded(
+                                                          flex: 3,
+                                                          child: Align(
+                                                            alignment: Alignment.centerLeft,
+                                                            child: Container(
                                                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                                               decoration: BoxDecoration(
                                                                 color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
                                                                 borderRadius: BorderRadius.circular(8),
                                                                 border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.25)),
                                                               ),
-                                                              child: Text(scDiv, style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 12)),
+                                                              child: Text(scDiv, style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 11.5), overflow: TextOverflow.ellipsis),
                                                             ),
                                                           ),
-                                                          DataCell(
-                                                            Row(
-                                                              mainAxisSize: MainAxisSize.min,
-                                                              children: [
-                                                                Icon(Icons.location_on_rounded, color: _sub, size: 16),
-                                                                const SizedBox(width: 6),
-                                                                Text(scTown, style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w600)),
-                                                              ],
-                                                            ),
+                                                        ),
+
+                                                        // Town
+                                                        Expanded(
+                                                          flex: 3,
+                                                          child: Row(
+                                                            children: [
+                                                              Icon(Icons.location_on_rounded, color: _sub, size: 16),
+                                                              const SizedBox(width: 5),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  scTown,
+                                                                  style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600),
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                          DataCell(
-                                                            ElevatedButton(
+                                                        ),
+
+                                                        // Action Button
+                                                        Expanded(
+                                                          flex: 2,
+                                                          child: Align(
+                                                            alignment: Alignment.centerRight,
+                                                            child: ElevatedButton(
                                                               style: ElevatedButton.styleFrom(
-                                                                backgroundColor: _green.withValues(alpha: 0.15),
-                                                                foregroundColor: _green,
+                                                                backgroundColor: _green,
+                                                                foregroundColor: Colors.white,
                                                                 elevation: 0,
-                                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                                               ),
                                                               onPressed: () {
@@ -2357,11 +2410,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                               child: Text(_isEn ? 'View Stats' : 'Voir Stats', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
                                                             ),
                                                           ),
-                                                        ],
-                                                      );
-                                                    }).toList(),
-                                                  ),
-                                                ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }).toList(),
                                               ),
                                             ],
                                           ],
