@@ -1789,7 +1789,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             ),
                           ],
 
-                          // ── TAB 2: SCHOOL & CLASS BREAKDOWN VIEW ──────────────────────
+                          // ── TAB 2: GLOBAL SCHOOL OVERVIEW & VARK ANALYTICS ──────────
                           if (_currentNavIndex == 2) ...[
                             if (_isLoadingClassDetails) ...[
                               const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())),
@@ -1797,257 +1797,181 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               Builder(
                                 builder: (ctx) {
                                   final scName  = _classDetailsData!['school_name'] ?? '';
-                                  final clsName = _classDetailsData!['class_name'] ?? '';
                                   final regName = _classDetailsData!['region'] ?? 'ADAMOUA';
                                   final divName = _classDetailsData!['division'] ?? 'DJEREM';
                                   final totSt   = _parseInt(_classDetailsData!['total_students']);
+                                  final totCls  = _parseInt(_classDetailsData!['total_classes'] ?? 2);
+                                  final totTch  = _parseInt(_classDetailsData!['total_teachers'] ?? 1);
                                   final assSt   = _parseInt(_classDetailsData!['assessed_students']);
-                                  final rate    = _classDetailsData!['assessed_rate'] ?? '0%';
 
                                   final vis = _parseInt(_classDetailsData!['visual_count']);
                                   final aud = _parseInt(_classDetailsData!['auditory_count']);
                                   final kin = _parseInt(_classDetailsData!['kinesthetic_count']);
                                   final rw  = _parseInt(_classDetailsData!['read_write_count']);
 
-                                  final students = _classDetailsData!['students'] as List? ?? [];
-
-                                  String aiRec = _isEn ? (_classDetailsData!['ai_recommendation_en'] ?? '') : (_classDetailsData!['ai_recommendation_fr'] ?? '');
-                                  final int totalC = vis + aud + kin + rw;
-
-                                  if (totalC == 0 || aiRec.isEmpty || aiRec.contains('pending') || aiRec.contains('Diagnostic evaluations') || aiRec.contains('Class VARK Assessment') || aiRec.contains('Dominant VARK Profile') || aiRec.contains('Tactical Strategy') || aiRec.contains('Teacher Action Plan') || aiRec.contains('1 out of 4')) {
-                                    if (totalC == 0) {
-                                      if (_isEn) {
-                                        aiRec = '• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress. Encourage all learning styles equally through multimodal instruction.\n'
-                                                '• Auditory Recommendation: Integrate interactive class discussions, verbal lecture summaries, audio recordings, and peer Q&A sessions.\n'
-                                                '• Visual Recommendation: Utilize color-coded visual board diagrams, mind maps, graphic organizers, and video demonstrations.\n'
-                                                '• Kinesthetic Recommendation: Incorporate hands-on problem-solving exercises, practical lab demonstrations, and interactive group activities.\n'
-                                                '• Read/Write Recommendation: Supply structured printed handouts, comprehensive reading glossaries, and bulleted note-taking frameworks.';
-                                      } else {
-                                        aiRec = '• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations VARK sont en cours. Encouragez équitablement tous les styles d\'apprentissage.\n'
-                                                '• Recommandation Auditive : Intégrez des discussions interactives en classe, des synthèses orales de cours et des enregistrements audio.\n'
-                                                '• Recommandation Visuelle : Utilisez des schémas visuels en couleurs, des cartes mentales et des diaporamas résumés.\n'
-                                                '• Recommandation Kinesthésique : Proposez des exercices pratiques de résolution de problèmes et des travaux en groupe.\n'
-                                                '• Recommandation Lecture/Écriture : Fournissez des fiches de cours imprimées structurées et des glossaires détaillés.';
-                                      }
-                                    } else {
-                                      String domC = 'Auditory';
-                                      int maxC = aud;
-                                      if (vis > maxC) { maxC = vis; domC = 'Visual'; }
-                                      if (kin > maxC) { maxC = kin; domC = 'Kinesthetic'; }
-                                      if (rw  > maxC) { maxC = rw;  domC = 'Read/Write'; }
-                                      final int pctC = ((maxC / totalC) * 100).round();
-
-                                      final List<String> rLines = [];
-                                      if (_isEn) {
-                                        if (domC == 'Auditory') {
-                                          rLines.add('• Auditory Learners (Majority): Prioritize interactive classroom discussions, verbal lecture summaries, peer debates, and audio-assisted learning toolkits across the class.');
-                                          rLines.add('• Visual Learners Support: Include color-coded board diagrams, visual mind maps, and key summary slides so visual students can follow along effectively.');
-                                          rLines.add('• Kinesthetic Learners Support: Incorporate hands-on problem-solving exercises, lab demonstrations, and interactive group activities for practical learners.');
-                                          rLines.add('• Read/Write Learners Support: Provide structured written handouts, key term glossaries, and bulleted note-taking frameworks for text-focused students.');
-                                        } else if (domC == 'Visual') {
-                                          rLines.add('• Visual Learners (Majority): Utilize color-coded visual charts, mind maps, graphic organizers, and video demonstrations to boost comprehension.');
-                                          rLines.add('• Auditory Learners Support: Facilitate verbal lecture summaries, class Q&A sessions, and interactive group discussions for auditory students.');
-                                          rLines.add('• Kinesthetic Learners Support: Incorporate hands-on practical exercises, lab demonstrations, and active learning tasks for practical learners.');
-                                          rLines.add('• Read/Write Learners Support: Provide structured reading materials, written glossaries, and bulleted note-taking frameworks for text-focused students.');
-                                        } else if (domC == 'Kinesthetic') {
-                                          rLines.add('• Kinesthetic Learners (Majority): Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.');
-                                          rLines.add('• Auditory Learners Support: Provide clear verbal explanations, oral instructions, and interactive class Q&A for auditory students.');
-                                          rLines.add('• Visual Learners Support: Supply visual step-by-step procedure diagrams and flowcharts for visual students.');
-                                          rLines.add('• Read/Write Learners Support: Provide written lab manuals and practical exercise worksheets for text-focused students.');
-                                        } else {
-                                          rLines.add('• Read/Write Learners (Majority): Provide structured printed handouts, comprehensive reading glossaries, and detailed note-taking frameworks.');
-                                          rLines.add('• Auditory Learners Support: Conduct verbal class discussions and oral summaries of key concepts for auditory students.');
-                                          rLines.add('• Visual Learners Support: Use visual summary charts and key diagrammatic models for visual students.');
-                                          rLines.add('• Kinesthetic Learners Support: Assign interactive practice exercises and written problem sets for practical learners.');
-                                        }
-                                      } else {
-                                        if (domC == 'Auditory') {
-                                          rLines.add('• Apprenants Auditifs (Majorité) : Privilégiez les discussions interactives en classe, les résumés de cours oraux, les débats et les outils audio.');
-                                          rLines.add('• Soutien aux Apprenants Visuels : Intégrez des schémas visuels en couleurs au tableau, des cartes mentales et des diaporamas résumés.');
-                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques de résolution de problèmes et démonstrations en groupe.');
-                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des fiches de cours imprimées structurées, des glossaires et guides de prise de notes.');
-                                        } else if (domC == 'Visual') {
-                                          rLines.add('• Apprenants Visuels (Majorité) : Utilisez des schémas visuels en couleurs, des cartes mentales, des organisateurs graphiques et démonstrations vidéo.');
-                                          rLines.add('• Soutien aux Apprenants Auditifs : Facilitez les synthèses de cours orales, les séances de Q/R et les discussions de groupe.');
-                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Intégrez des exercices pratiques interactifs et des travaux de groupe.');
-                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Fournissez des manuels structurés, des glossaires et des fiches de synthèse.');
-                                        } else if (domC == 'Kinesthetic') {
-                                          rLines.add('• Apprenants Kinesthésiques (Majorité) : Structurez les cours autour de travaux pratiques en laboratoire, du codage et d\'exercices pratiques.');
-                                          rLines.add('• Soutien aux Apprenants Auditifs : Proposez des explications orales claires, des instructions verbales et des échanges oraux.');
-                                          rLines.add('• Soutien aux Apprenants Visuels : Fournissez des schémas de procédure étape par étape et des organigrammes.');
-                                          rLines.add('• Soutien aux Apprenants Lecture/Écriture : Mettez à disposition des manuels de travaux pratiques et des fiches d\'exercices.');
-                                        } else {
-                                          rLines.add('• Apprenants Lecture/Écriture (Majorité) : Fournissez des fiches de cours imprimées, des glossaires détaillés et des guides de prise de notes.');
-                                          rLines.add('• Soutien aux Apprenants Auditifs : Animez des discussions de classe orales et des synthèses verbale des notions clés.');
-                                          rLines.add('• Soutien aux Apprenants Visuels : Utilisez des schémas de synthèse visuels et des modèles schématiques.');
-                                          rLines.add('• Soutien aux Apprenants Kinesthésiques : Proposez des exercices pratiques interactifs et des séries de problèmes.');
-                                        }
-                                      }
-                                      aiRec = rLines.join('\n');
-                                    }
-                                  }
+                                  final aiRec = (totSt == 0 || assSt == 0)
+                                      ? (_isEn
+                                          ? '• Multimodal Teaching Strategy (Diagnostic Phase): Diagnostic VARK assessments are in progress for $scName. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.'
+                                          : '• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Les évaluations diagnostiques VARK sont en cours pour $scName. Encouragez équitablement tous les styles d\'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.')
+                                      : (_isEn
+                                          ? (_classDetailsData!['ai_recommendation_en'] ?? '• Institutional Policy Directive: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools.')
+                                          : (_classDetailsData!['ai_recommendation_fr'] ?? '• Directive Institutionnelle : Coordonnez avec les proviseurs pour finaliser les tests VARK et allouer du matériel audio-visuel.'));
 
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // Class Header Banner Card
+                                      // Global School Statistics & Header Card
+                                      Container(
+                                        width: double.infinity,
+                                        margin: const EdgeInsets.only(bottom: 16),
+                                        padding: const EdgeInsets.all(22),
+                                        decoration: BoxDecoration(
+                                          color: _card,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: _green.withValues(alpha: 0.08),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color: _green.withValues(alpha: 0.14),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(Icons.account_balance_rounded, color: _green, size: 26),
+                                                ),
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        _isEn ? 'Global School Overview' : 'Aperçu Global de l\'Établissement',
+                                                        style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w700),
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        scName,
+                                                        style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        '${_isEn ? "Region" : "Région"}: $regName • ${_isEn ? "Division" : "Département"}: $divName',
+                                                        style: TextStyle(color: _sub, fontSize: 12),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 20),
+
+                                            // Key Metric Cards
+                                            Row(
+                                              children: [
+                                                Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Total Students' : 'Élèves', value: '$totSt', color: const Color(0xFF3B82F6))),
+                                                const SizedBox(width: 10),
+                                                Expanded(child: _overviewStatCard(icon: Icons.meeting_room_rounded, label: _isEn ? 'Classes' : 'Classes', value: '$totCls', color: const Color(0xFF006A4E))),
+                                                const SizedBox(width: 10),
+                                                Expanded(child: _overviewStatCard(icon: Icons.badge_rounded, label: _isEn ? 'Teachers' : 'Enseignants', value: '$totTch', color: const Color(0xFF8B5CF6))),
+                                                const SizedBox(width: 10),
+                                                Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed' : 'Évalués', value: '$assSt', color: const Color(0xFF10B981))),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 24),
+
+                                            // Big VARK Pie Chart & Legend for School
+                                            Text(
+                                              _isEn ? 'School-Wide VARK Learning Styles Breakdown:' : 'Répartition VARK de l\'Établissement :',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
+                                            ),
+                                            const SizedBox(height: 18),
+                                            Wrap(
+                                              alignment: WrapAlignment.center,
+                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                              spacing: 32,
+                                              runSpacing: 20,
+                                              children: [
+                                                SizedBox(
+                                                  width: 150,
+                                                  height: 150,
+                                                  child: CustomPaint(
+                                                    painter: _VarkPieChartPainter(
+                                                      visual: vis,
+                                                      auditory: aud,
+                                                      kinesthetic: kin,
+                                                      readWrite: rw,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 240,
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', vis, const Color(0xFF3B82F6)),
+                                                      _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', aud, const Color(0xFFEC4899)),
+                                                      _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kin, const Color(0xFF10B981)),
+                                                      _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Institutional Policy Directive Card
                                       Container(
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(20),
                                         decoration: BoxDecoration(
                                           color: _card,
                                           borderRadius: BorderRadius.circular(18),
-                                          border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
+                                          border: Border.all(color: _border),
                                         ),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Expanded(
-                                                  child: Row(
-                                                    children: [
-                                                      CircleAvatar(
-                                                        backgroundColor: _green.withValues(alpha: 0.15),
-                                                        child: Icon(Icons.school_rounded, color: _green, size: 22),
-                                                      ),
-                                                      const SizedBox(width: 12),
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text('$scName — Classe $clsName', style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                                            const SizedBox(height: 2),
-                                                            Text('Région : $regName • Département : $divName', style: TextStyle(color: _sub, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                                  decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                                                  child: Text(
-                                                    _isEn ? 'Assessed Rate: $rate' : 'Taux d\'Évaluation : $rate',
-                                                    style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 11.5),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Wrap(
-                                              spacing: 8, runSpacing: 8,
-                                              children: [
-                                                _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
-                                                _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
-                                                _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
-                                                _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // Class AI Recommendation Card
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(18),
-                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.psychology_rounded, color: _green, size: 20),
-                                                const SizedBox(width: 8),
+                                                Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
+                                                const SizedBox(width: 10),
                                                 Expanded(
                                                   child: Text(
-                                                    _isEn ? 'Recommendation' : 'Recommandation',
-                                                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14),
+                                                    _isEn ? 'Institutional Policy Directive for School' : 'Directives Pédagogiques pour l\'Établissement',
+                                                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15.5),
                                                   ),
                                                 ),
                                               ],
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Text(aiRec, style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500)),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // Students Roster List Table
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(18),
-                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _isEn ? 'Class Student Roster (${students.length})' : 'Liste des Élèves de la Classe (${students.length})',
-                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5),
                                             ),
                                             const SizedBox(height: 12),
-                                            if (students.isEmpty) ...[
-                                              Text(_isEn ? 'No students registered in this class.' : 'Aucun élève inscrit dans cette classe.', style: TextStyle(color: _sub, fontSize: 13, fontStyle: FontStyle.italic)),
-                                            ] else ...[
-                                              Column(
-                                                children: students.map<Widget>((s) {
-                                                  final sName  = s['full_name'] ?? '';
-                                                  final sMat   = s['mat_number'] ?? 'N/A';
-                                                  final sStyle = s['learning_style'] ?? 'Not Assessed';
-                                                  final isDiag = sStyle != 'Not Assessed';
-
-                                                  return Container(
-                                                    margin: const EdgeInsets.only(bottom: 8),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                                    decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _border)),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Expanded(
-                                                          child: Row(
-                                                            children: [
-                                                              CircleAvatar(
-                                                                radius: 16,
-                                                                backgroundColor: _green.withValues(alpha: 0.15),
-                                                                child: Text(sName.isNotEmpty ? sName[0] : 'S', style: TextStyle(color: _green, fontWeight: FontWeight.bold, fontSize: 12)),
-                                                              ),
-                                                              const SizedBox(width: 10),
-                                                              Expanded(
-                                                                child: Column(
-                                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                                  children: [
-                                                                    Text(sName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13), overflow: TextOverflow.ellipsis),
-                                                                    Text('Matricule: $sMat', style: TextStyle(color: _sub, fontSize: 11), overflow: TextOverflow.ellipsis),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 8),
-                                                        Container(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: isDiag ? const Color(0xFF10B981).withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
-                                                            borderRadius: BorderRadius.circular(8),
-                                                          ),
-                                                          child: Text(
-                                                            sStyle,
-                                                            style: TextStyle(color: isDiag ? const Color(0xFF10B981) : Colors.orange, fontWeight: FontWeight.bold, fontSize: 11.5),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }).toList(),
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: _bg,
+                                                borderRadius: BorderRadius.circular(14),
+                                                border: Border.all(color: _border),
                                               ),
-                                            ],
+                                              child: Text(
+                                                aiRec,
+                                                style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -2056,24 +1980,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 },
                               ),
                             ] else ...[
-                              // Select class message
                               Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.all(30),
+                                padding: const EdgeInsets.all(36),
                                 decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(18), border: Border.all(color: _border)),
                                 child: Column(
                                   children: [
                                     Icon(Icons.touch_app_rounded, color: _green, size: 40),
                                     const SizedBox(height: 12),
                                     Text(
-                                      _isEn ? 'Select a Class from the Left Sidebar' : 'Sélectionnez une Classe dans le Menu de Gauche',
+                                      _isEn ? 'Select a School from the Left Sidebar' : 'Sélectionnez un Établissement dans le Menu de Gauche',
                                       style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
                                       _isEn
-                                          ? 'Expand Region ➔ Division ➔ School ➔ Class to view live students & VARK AI recommendations.'
-                                          : 'Déroulez Région ➔ Département ➔ Établissement ➔ Classe pour afficher les élèves et les directives IA.',
+                                          ? 'Expand Region ➔ Division ➔ School to view live statistics and institutional VARK AI policy.'
+                                          : 'Déroulez Région ➔ Département ➔ Établissement pour afficher les statistiques et directives IA.',
                                       style: TextStyle(color: _sub, fontSize: 13),
                                       textAlign: TextAlign.center,
                                     ),
