@@ -132,7 +132,7 @@ switch ($action) {
         if (!$user) respondError('Matricule not found. Contact your administrator.', 404);
 
         respond(true, 'Matricule found.', [
-            'already_activated' => false,
+            'already_activated' => ((int)($user['is_activated'] ?? 0) === 1),
             'user_id'     => $user['id'],
             'full_name'   => $user['full_name'],
             'role'        => $user['role'],
