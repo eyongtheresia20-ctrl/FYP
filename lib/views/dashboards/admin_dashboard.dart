@@ -1472,20 +1472,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final int kinCount = _parseInt(_adminData?['kinesthetic_count'] ?? 0);
     final int rwCount  = _parseInt(_adminData?['read_write_count'] ?? 0);
 
-    final evalNational = VarkAcademicEngine.evaluate(
+    final educatorNationalRec = VarkAcademicEngine.evaluateForEducators(
       auditory: audCount,
       visual: visCount,
       kinesthetic: kinCount,
       readWrite: rwCount,
+      contextName: 'National Territory',
     );
-
-    final String aiStrategy = _isEn
-        ? "• National Pedagogical Diagnosis: Dominant profile is ${evalNational.learningStyle} (${evalNational.primaryCategoryNameEn}).\n"
-          "• Academic Prospects & Resilience: ${evalNational.prospectsSummaryEn}\n\n"
-          "${evalNational.learningStrategyEn}"
-        : "• Diagnostic Pédagogique National : Profil dominant ${evalNational.learningStyle} (${evalNational.primaryCategoryNameFr}).\n"
-          "• Perspectives Académiques & Résilience : ${evalNational.prospectsSummaryFr}\n\n"
-          "${evalNational.learningStrategyFr}";
+    final String aiStrategy = _isEn ? educatorNationalRec['en']! : educatorNationalRec['fr']!;
 
     final isWide = MediaQuery.of(context).size.width >= 800;
     final List nationalHierarchy = _adminData?['national_hierarchy'] as List? ?? [];
@@ -1763,18 +1757,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   final kin = _parseInt(_classDetailsData!['kinesthetic_count']);
                                   final rw  = _parseInt(_classDetailsData!['read_write_count']);
 
-                                  final evalSc = VarkAcademicEngine.evaluate(auditory: aud, visual: vis, kinesthetic: kin, readWrite: rw);
-                                  final aiRec = (totSt == 0 || assSt == 0)
-                                      ? (_isEn
-                                          ? '• Multimodal Diagnostic Phase: Diagnostic VARK assessments are in progress for $scName. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.'
-                                          : '• Phase Diagnostique Multimodale : Les évaluations diagnostiques VARK sont en cours pour $scName. Encouragez équitablement tous les styles d\'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.')
-                                      : (_isEn
-                                          ? "• Academic Diagnosis for $scName: ${evalSc.learningStyle} (${evalSc.primaryCategoryNameEn}).\n"
-                                            "• Academic Prospects: ${evalSc.prospectsSummaryEn}\n\n"
-                                            "${evalSc.learningStrategyEn}"
-                                          : "• Diagnostic Académique pour $scName : ${evalSc.learningStyle} (${evalSc.primaryCategoryNameFr}).\n"
-                                            "• Perspectives Académiques : ${evalSc.prospectsSummaryFr}\n\n"
-                                            "${evalSc.learningStrategyFr}");
+                                  final educatorScRec = VarkAcademicEngine.evaluateForEducators(
+                                    auditory: aud,
+                                    visual: vis,
+                                    kinesthetic: kin,
+                                    readWrite: rw,
+                                    contextName: scName,
+                                  );
+                                  final aiRec = _isEn ? educatorScRec['en']! : educatorScRec['fr']!;
 
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1911,7 +1901,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                 const SizedBox(width: 10),
                                                 Expanded(
                                                   child: Text(
-                                                    _isEn ? 'Institutional Policy Recommendation for School' : 'Recommandation Pédagogique pour l\'Établissement',
+                                                    _isEn ? 'Teaching Recommendations' : 'Recommandations pour l\'Enseignement',
                                                     style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15.5),
                                                   ),
                                                 ),

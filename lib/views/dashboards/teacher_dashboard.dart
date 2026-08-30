@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/vark_academic_engine.dart';
 import '../../widgets/app_sidebar.dart';
 import '../../core/api_config.dart';
 
@@ -845,49 +846,14 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     required String className,
     required bool isEn,
   }) {
-    final total = vis + aud + kin + rw;
-    if (total == 0) {
-      return isEn
-          ? '• Diagnostic analysis active for class $className.\n• Complete student VARK assessments to generate customized pedagogical recommendations.'
-          : '• Analyse diagnostique active pour la classe $className.\n• Complétez les évaluations VARK des élèves pour générer des recommandations pédagogiques personnalisées.';
-    }
-
-    String dominant = 'Auditory';
-    int maxCount = aud;
-    if (vis > maxCount) { maxCount = vis; dominant = 'Visual'; }
-    if (kin > maxCount) { maxCount = kin; dominant = 'Kinesthetic'; }
-    if (rw > maxCount)  { maxCount = rw;  dominant = 'Read/Write'; }
-    List<String> recsEn = [];
-    List<String> recsFr = [];
-
-    if (dominant == 'Auditory') {
-      recsEn.add('• Auditory Learning Strategy (Primary Focus) in $className: Incorporate clear verbal explanations, class discussions, audio lecture recordings, and Q&A sessions into daily lesson plans.');
-      recsFr.add('• Stratégie d\'Apprentissage Auditif (Focus Principal) en $className : Intégrez des explications orales claires, débats, enregistrements audio et séances de Q/R dans vos cours.');
-    } else if (dominant == 'Visual') {
-      recsEn.add('• Visual Learning Strategy (Primary Focus) in $className: Utilize color-coded visual charts, mind maps, flowcharts, and video demonstrations during daily instruction.');
-      recsFr.add('• Stratégie d\'Apprentissage Visuel (Focus Principal) en $className : Utilisez des schémas visuels en couleurs, cartes mentales, organigrammes et vidéos pendant les leçons.');
-    } else if (dominant == 'Kinesthetic') {
-      recsEn.add('• Kinesthetic Learning Strategy (Primary Focus) in $className: Structure lessons around hands-on laboratory experiments, interactive coding, and practical exercises.');
-      recsFr.add('• Stratégie d\'Apprentissage Kinesthésique (Focus Principal) en $className : Structurez vos cours autour de travaux pratiques en laboratoire, codage interactif et exercices.');
-    } else {
-      recsEn.add('• Read/Write Learning Strategy (Primary Focus) in $className: Provide structured printed handouts, comprehensive reading glossaries, and detailed bulleted note-taking frameworks.');
-      recsFr.add('• Stratégie d\'Apprentissage Lecture/Écriture (Focus Principal) en $className : Fournissez des fiches de cours imprimées, des glossaires détaillés et fiches de résumés.');
-    }
-
-    // Include directives for all other learning styles to encourage every student in class
-    recsEn.add('• Auditory Strategy: Encourage interactive verbal Q&A sessions and oral presentation tasks.');
-    recsFr.add('• Stratégie Auditive : Encouragez des sessions de Q/R orales interactives et exposés oraux.');
-
-    recsEn.add('• Visual Strategy: Prepare color-coded visual diagrams, mind maps, and whiteboard models.');
-    recsFr.add('• Stratégie Visuelle : Préparez des schémas visuels en couleurs et cartes mentales.');
-
-    recsEn.add('• Kinesthetic Strategy: Incorporate practical demonstrations, hands-on lab exercises, and active group work.');
-    recsFr.add('• Stratégie Kinesthésique : Intégrez des démonstrations pratiques, TP et travaux de groupe actifs.');
-
-    recsEn.add('• Read/Write Strategy: Supply written study outlines, exercise sheets, and structured reading assignments.');
-    recsFr.add('• Stratégie Lecture/Écriture : Fournissez des plans de cours écrits et fiches d\'exercices.');
-
-    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+    final educatorRec = VarkAcademicEngine.evaluateForEducators(
+      auditory: aud,
+      visual: vis,
+      kinesthetic: kin,
+      readWrite: rw,
+      contextName: className,
+    );
+    return isEn ? educatorRec['en']! : educatorRec['fr']!;
   }
 
   @override

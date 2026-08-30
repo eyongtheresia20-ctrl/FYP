@@ -1438,24 +1438,14 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                   }
                                 }
 
-                                final evalSchool = VarkAcademicEngine.evaluate(
+                                final educatorRec = VarkAcademicEngine.evaluateForEducators(
                                   auditory: scAudTotal,
                                   visual: scVisTotal,
                                   kinesthetic: scKinTotal,
                                   readWrite: scRwTotal,
+                                  contextName: scName,
                                 );
-
-                                final scRec = (finalTotalSt == 0 || scAssessedTotal == 0)
-                                    ? (_isEn
-                                        ? '• Multimodal Diagnostic Phase: Diagnostic VARK assessments are in progress for $scName. Encourage all learning styles equally through multimodal instruction.\n• Coordinate with head teachers to ensure all enrolled students complete their diagnostic VARK test on the platform.'
-                                        : '• Phase Diagnostique Multimodale : Les évaluations diagnostiques VARK sont en cours pour $scName. Encouragez équitablement tous les styles d\'apprentissage.\n• Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur test VARK sur la plateforme.')
-                                    : (_isEn
-                                        ? "• Academic Diagnosis for $scName: ${evalSchool.learningStyle} (${evalSchool.primaryCategoryNameEn}).\n"
-                                          "• Academic Prospects: ${evalSchool.prospectsSummaryEn}\n\n"
-                                          "${evalSchool.learningStrategyEn}"
-                                        : "• Diagnostic Académique pour $scName : ${evalSchool.learningStyle} (${evalSchool.primaryCategoryNameFr}).\n"
-                                          "• Perspectives Académiques : ${evalSchool.prospectsSummaryFr}\n\n"
-                                          "${evalSchool.learningStrategyFr}");
+                                final scRec = _isEn ? educatorRec['en']! : educatorRec['fr']!;
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1593,7 +1583,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Text(
-                                                  _isEn ? 'Institutional Policy Recommendation for School' : 'Recommandation Pédagogique pour l\'Établissement',
+                                                  _isEn ? 'Teaching Recommendations' : 'Recommandations pour l\'Enseignement',
                                                   style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5),
                                                 ),
                                               ),

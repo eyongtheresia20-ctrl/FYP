@@ -1,17 +1,17 @@
 <?php
 // ==============================================================================
-//  MINESEC L.S.T — Neil Fleming Standardized Academic Interpretation Engine
-//  Based on Neil Fleming's (1987) Learning Style Test (L.S.T / T.S.A)
-//  Includes: Table 3, Table 4, Table 5, Table 6, and Section 4.5.1 Strategies
+//  MINESEC L.S.T — Standardized Pedagogical Evaluation & Strategy Engine
+//  Provides:
+//   1. Student Self-Study Strategies (For Student Dashboard)
+//   2. Classroom & Institutional Teaching Strategies (For Teacher, Principal, Delegate, Admin)
 // ==============================================================================
 
 class VarkAcademicEngine {
 
     /**
-     * Evaluates raw scores for Auditory, Visual, Kinesthetic, and Read/Write.
-     * Returns full academic classification, category breakdown, Table 3 diagnostics, and 4.5.1 strategies.
+     * Evaluates scores for individual Student Self-Study.
      */
-    public static function evaluate($auditory, $visual, $kinesthetic, $readWrite, $lang = 'en') {
+    public static function evaluateForStudent($auditory, $visual, $kinesthetic, $readWrite, $lang = 'en') {
         $auditory    = floatval($auditory);
         $visual      = floatval($visual);
         $kinesthetic = floatval($kinesthetic);
@@ -24,121 +24,168 @@ class VarkAcademicEngine {
             'Read/Write'  => $readWrite,
         ];
 
-        // Find maximum score and tied modalities
         $maxScore = max($scores);
         $topModalities = [];
-        foreach ($scores as $mod => $sc) {
-            if (abs($sc - $maxScore) < 0.001 && $sc > 0) {
-                $topModalities[] = $mod;
+        if ($maxScore > 0) {
+            foreach ($scores as $mod => $sc) {
+                if (abs($sc - $maxScore) < 0.001) {
+                    $topModalities[] = $mod;
+                }
             }
         }
 
         $tiedCount = count($topModalities);
         $modalityType = 'Uni-Modal';
-        if ($tiedCount === 4) {
-            $modalityType = 'Quad-Modal';
-        } elseif ($tiedCount === 3) {
-            $modalityType = 'Tri-Modal';
-        } elseif ($tiedCount === 2) {
-            $modalityType = 'Bi-Modal';
-        } elseif ($tiedCount === 0) {
-            // All zeros
-            $modalityType = 'Diagnostic Phase';
-        }
+        if ($tiedCount === 4) $modalityType = 'Quad-Modal';
+        elseif ($tiedCount === 3) $modalityType = 'Tri-Modal';
+        elseif ($tiedCount === 2) $modalityType = 'Bi-Modal';
+        elseif ($tiedCount === 0) $modalityType = 'Diagnostic Phase';
 
-        // Determine Category for each modality
-        $categories = [];
-        if ($modalityType === 'Quad-Modal') {
-            // Table 6: Quad Graded Summary Table
-            $categories['Auditory']    = self::getQuadCategory('Auditory', $auditory);
-            $categories['Visual']      = self::getQuadCategory('Visual', $visual);
-            $categories['Kinesthetic'] = self::getQuadCategory('Kinesthetic', $kinesthetic);
-            $categories['Read/Write']  = self::getQuadCategory('Read/Write', $readWrite);
-        } elseif ($modalityType === 'Tri-Modal') {
-            // Table 5: Tri-Modal Scale
-            $categories['Auditory']    = self::getBiModalCategory('Auditory', $auditory);
-            $categories['Visual']      = self::getTriCategory('Visual', $visual);
-            $categories['Kinesthetic'] = self::getTriCategory('Kinesthetic', $kinesthetic);
-            $categories['Read/Write']  = self::getTriCategory('Read/Write', $readWrite);
-        } else {
-            // Table 4: Uni-Modal & Bi-Modal Standardized Scale
-            $categories['Auditory']    = self::getBiModalCategory('Auditory', $auditory);
-            $categories['Visual']      = self::getBiModalCategory('Visual', $visual);
-            $categories['Kinesthetic'] = self::getBiModalCategory('Kinesthetic', $kinesthetic);
-            $categories['Read/Write']  = self::getBiModalCategory('Read/Write', $readWrite);
-        }
+        $categories = [
+            'Auditory'    => self::getBiModalCategory('Auditory', $auditory),
+            'Visual'      => self::getBiModalCategory('Visual', $visual),
+            'Kinesthetic' => self::getBiModalCategory('Kinesthetic', $kinesthetic),
+            'Read/Write'  => self::getBiModalCategory('Read/Write', $readWrite),
+        ];
 
-        // Determine primary dominant category
         $primaryModality = !empty($topModalities) ? $topModalities[0] : 'Auditory';
         $primaryCategory = $categories[$primaryModality] ?? 3;
 
-        // Build Table 3 Academic Diagnostic Interpretation
         $diagnosticsEn = [];
         $diagnosticsFr = [];
-
-        $allLowPreference = true;
-        foreach ($scores as $mod => $sc) {
-            $cat = $categories[$mod];
-            if ($cat >= 3) $allLowPreference = false;
-        }
 
         foreach ($topModalities as $mod) {
             $cat = $categories[$mod];
             $t3 = self::getTable3Text($mod, $cat);
-            $diagnosticsEn[] = "• {$mod} (Category {$cat} — " . self::getCategoryName($cat, 'en') . "): {$t3['en']}";
-            $diagnosticsFr[] = "• " . self::getModalityNameFr($mod) . " (Catégorie {$cat} — " . self::getCategoryName($cat, 'fr') . ") : {$t3['fr']}";
+            $diagnosticsEn[] = "• {$mod} (" . self::getCategoryName($cat, 'en') . "): {$t3['en']}";
+            $diagnosticsFr[] = "• " . self::getModalityNameFr($mod) . " (" . self::getCategoryName($cat, 'fr') . ") : {$t3['fr']}";
         }
 
-        if ($allLowPreference && $maxScore > 0) {
-            $counselorNoteEn = "N.B.: Category I and II learners for all modalities are recommended for follow-up by a Guidance Counsellor.";
-            $counselorNoteFr = "N.B. : Les apprenants de Catégorie I et II pour toutes les modalités sont recommandés pour un suivi par un Conseiller d'Orientation.";
-            $diagnosticsEn[] = $counselorNoteEn;
-            $diagnosticsFr[] = $counselorNoteFr;
-        }
-
-        // Build Section 4.5.1 Learning Strategy
         $strategiesEn = [];
         $strategiesFr = [];
         foreach ($topModalities as $mod) {
-            $strat = self::getSection451Strategy($mod);
+            $strat = self::getStudentStudyStrategy($mod);
             $strategiesEn[] = $strat['en'];
             $strategiesFr[] = $strat['fr'];
         }
 
-        // If diagnostic phase / no score
         if (empty($topModalities)) {
-            $diagnosticsEn = ["• Multimodal Diagnostic Phase: Baseline academic assessment is in progress. Balanced sensory engagement across visual, auditory, kinesthetic, and text modalities is recommended."];
-            $diagnosticsFr = ["• Phase Diagnostique Multimodale : L'évaluation académique initiale est en cours. Une mobilisation équilibrée des modalités visuelle, auditive, kinesthésique et textuelle est recommandée."];
-            $strategiesEn = ["• Engage in multimodal study: alternate between reading notes, drawing conceptual diagrams, listening to lecture summaries, and completing practical exercises."];
-            $strategiesFr = ["• Adoptez un apprentissage multimodal : alternez lecture de fiches, schématisation visuelle, écoute de résumés oraux et exercices pratiques."];
+            $diagnosticsEn = ["• Diagnostic Phase: Assessment in progress. Multimodal study techniques are recommended."];
+            $diagnosticsFr = ["• Phase Diagnostique : Évaluation en cours. L'adoption de techniques d'étude multimodales est recommandée."];
+            $strategiesEn = ["• Study using varied methods: combine reading notes, drawing mind maps, listening to lecture recordings, and doing practical exercises."];
+            $strategiesFr = ["• Variez vos méthodes d'étude : alternez lecture de fiches, schématisation, écoute de résumés oraux et exercices pratiques."];
         }
 
-        $learningStyleLabel = count($topModalities) > 1 
+        $styleLabel = count($topModalities) > 1 
             ? implode('-', $topModalities) . " ({$modalityType})"
             : ($topModalities[0] ?? 'Multimodal');
 
         return [
-            'modality_type'       => $modalityType,
-            'primary_modality'    => $primaryModality,
-            'learning_style'      => $learningStyleLabel,
-            'primary_category'    => $primaryCategory,
+            'learning_style'           => $styleLabel,
+            'modality_type'            => $modalityType,
+            'primary_category'         => $primaryCategory,
             'primary_category_name_en' => self::getCategoryName($primaryCategory, 'en'),
             'primary_category_name_fr' => self::getCategoryName($primaryCategory, 'fr'),
-            'categories'          => $categories,
-            'prospects_summary_en' => self::getProspectsSummary($primaryCategory, 'en'),
-            'prospects_summary_fr' => self::getProspectsSummary($primaryCategory, 'fr'),
-            'academic_diagnostic_en' => implode("\n", $diagnosticsEn),
-            'academic_diagnostic_fr' => implode("\n", $diagnosticsFr),
-            'learning_strategy_en'   => implode("\n\n", $strategiesEn),
-            'learning_strategy_fr'   => implode("\n\n", $strategiesFr),
-            'full_recommendation_en' => implode("\n", $diagnosticsEn) . "\n\n" . implode("\n\n", $strategiesEn),
-            'full_recommendation_fr' => implode("\n", $diagnosticsFr) . "\n\n" . implode("\n\n", $strategiesFr),
+            'prospects_summary_en'     => self::getProspectsSummary($primaryCategory, 'en'),
+            'prospects_summary_fr'     => self::getProspectsSummary($primaryCategory, 'fr'),
+            'academic_diagnostic_en'   => implode("\n", $diagnosticsEn),
+            'academic_diagnostic_fr'   => implode("\n", $diagnosticsFr),
+            'learning_strategy_en'     => implode("\n\n", $strategiesEn),
+            'learning_strategy_fr'     => implode("\n\n", $strategiesFr),
+            'full_recommendation_en'   => implode("\n", $diagnosticsEn) . "\n\n" . implode("\n\n", $strategiesEn),
+            'full_recommendation_fr'   => implode("\n", $diagnosticsFr) . "\n\n" . implode("\n\n", $strategiesFr),
         ];
     }
 
     /**
-     * Table 4: Bi-modal / Uni-modal standardized grading scale (Neil Fleming)
+     * Evaluates scores for TEACHERS, DEANS, PRINCIPALS, DELEGATES, and ADMINS.
+     * Tells educators HOW TO TEACH THE CLASS / SCHOOL so that EVERY SINGLE STUDENT UNDERSTANDS.
      */
+    public static function evaluateForEducators($auditory, $visual, $kinesthetic, $readWrite, $contextName = '', $lang = 'en') {
+        $auditory    = intval($auditory);
+        $visual      = intval($visual);
+        $kinesthetic = intval($kinesthetic);
+        $readWrite   = intval($readWrite);
+        $totalAssessed = $auditory + $visual + $kinesthetic + $readWrite;
+
+        if ($totalAssessed === 0) {
+            $recEn = "• Diagnostic Phase: Student learning evaluations are currently in progress" . ($contextName ? " for {$contextName}" : "") . ".\n" .
+                     "• Inclusive Multimodal Teaching: Ensure all lessons integrate verbal explanations, visual diagrams, written notes, and hands-on exercises so every learner is actively engaged.\n" .
+                     "• Diagnostic Tracking: Coordinate with teachers and school heads to ensure all enrolled students complete their learning style assessment.";
+
+            $recFr = "• Phase Diagnostique : Les évaluations des élèves sont en cours" . ($contextName ? " pour {$contextName}" : "") . ".\n" .
+                     "• Enseignement Inclusif Multimodal : Veillez à ce que chaque cours intègre explications orales, schémas visuels, notes écrites et exercices pratiques pour toucher tous les élèves.\n" .
+                     "• Suivi Diagnostique : Coordonnez avec les enseignants et proviseurs pour que l'ensemble des élèves complètent leur évaluation.";
+
+            return [
+                'dominant_style' => 'Multimodal (Diagnostic Phase)',
+                'recommendation_en' => $recEn,
+                'recommendation_fr' => $recFr,
+            ];
+        }
+
+        // Determine dominant style
+        $scores = [
+            'Auditory'    => $auditory,
+            'Visual'      => $visual,
+            'Kinesthetic' => $kinesthetic,
+            'Read/Write'  => $readWrite,
+        ];
+        arsort($scores);
+        $dominant = array_key_first($scores);
+        $domCount = $scores[$dominant];
+        $domPct = round(($domCount / $totalAssessed) * 100);
+
+        // Build comprehensive classroom teaching directives that benefit EVERY student
+        $linesEn = [];
+        $linesFr = [];
+
+        // 1. Cohort Profile Summary
+        $linesEn[] = "• Class Cohort Profile: {$domPct}% of assessed students are {$dominant} learners ({$domCount} out of {$totalAssessed}).";
+        $linesFr[] = "• Profil de la Classe : {$domPct}% des élèves évalués sont de profil " . self::getModalityNameFr($dominant) . " ({$domCount} sur {$totalAssessed}).";
+
+        // 2. Dominant Teaching Strategy
+        if ($dominant === 'Auditory') {
+            $linesEn[] = "• Primary Instructional Focus (Auditory): Emphasize clear oral explanations, teacher-led discussions, and verbal summaries. Ask questions aloud and encourage students to explain concepts in their own words.";
+            $linesFr[] = "• Axe Pédagogique Principal (Auditif) : Privilégiez des explications orales claires, des débats guidés et des synthèses verbales. Posez des questions à voix haute et invitez les élèves à reformuler les notions clés.";
+        } elseif ($dominant === 'Visual') {
+            $linesEn[] = "• Primary Instructional Focus (Visual): Use the blackboard effectively with color-coded chalk, visual mind maps, diagrams, and flowcharts. Highlight key lesson headings and structured outlines.";
+            $linesFr[] = "• Axe Pédagogique Principal (Visuel) : Utilisez le tableau avec des craies de couleur, des cartes conceptuelles et des schémas. Mettez en valeur les titres et le plan structuré du cours.";
+        } elseif ($dominant === 'Kinesthetic') {
+            $linesEn[] = "• Primary Instructional Focus (Kinesthetic): Incorporate practical demonstrations, hands-on problem sets, concrete real-world examples, and interactive classroom activities.";
+            $linesFr[] = "• Axe Pédagogique Principal (Kinesthésique) : Intégrez des démonstrations pratiques, des résolutions concrètes d'exercices, des exemples du quotidien et des activités interactives.";
+        } else {
+            $linesEn[] = "• Primary Instructional Focus (Read/Write): Provide well-organized written summaries, bulleted board notes, clear definitions, and structured textbook reading exercises.";
+            $linesFr[] = "• Axe Pédagogique Principal (Lecture/Écriture) : Fournissez des résumés écrits clairs, des notes structurées au tableau, des définitions précises et des lectures guidées.";
+        }
+
+        // 3. Inclusive Multimodal Differentiated Instruction (For ALL students in the class)
+        $linesEn[] = "• Inclusive Teaching for All Students:\n" .
+                     "  - For Visual Learners ({$visual} students): Draw diagrams, charts, and summary mind maps on the board.\n" .
+                     "  - For Auditory Learners ({$auditory} students): Read key points aloud, facilitate peer discussion, and summarize verbally.\n" .
+                     "  - For Kinesthetic Learners ({$kinesthetic} students): Relate abstract formulas to real-life situations and step-by-step problem solving.\n" .
+                     "  - For Read/Write Learners ({$readWrite} students): Ensure students have sufficient time to copy structured notes and review textbook references.";
+
+        $linesFr[] = "• Enseignement Inclusif pour Tous les Élèves :\n" .
+                     "  - Pour les élèves Visuels ({$visual} élèves) : Dessinez des schémas, graphiques et cartes conceptuelles au tableau.\n" .
+                     "  - Pour les élèves Auditifs ({$auditory} élèves) : Énoncez clairement les points clés, animez des échanges oraux et récapitulez verbalement.\n" .
+                     "  - Pour les élèves Kinesthésiques ({$kinesthetic} élèves) : Reliez les formules abstraites à des applications concrètes et résolutions pas-à-pas.\n" .
+                     "  - Pour les élèves Lecture/Écriture ({$readWrite} élèves) : Laissez le temps nécessaire pour recopier des notes structurées et référencer les manuels.";
+
+        return [
+            'dominant_style'    => $dominant,
+            'recommendation_en' => implode("\n\n", $linesEn),
+            'recommendation_fr' => implode("\n\n", $linesFr),
+        ];
+    }
+
+    /**
+     * Backward-compatible evaluate method
+     */
+    public static function evaluate($auditory, $visual, $kinesthetic, $readWrite, $lang = 'en') {
+        return self::evaluateForStudent($auditory, $visual, $kinesthetic, $readWrite, $lang);
+    }
+
     public static function getBiModalCategory($modality, $score) {
         $score = floatval($score);
         switch ($modality) {
@@ -147,90 +194,30 @@ class VarkAcademicEngine {
                 if ($score <= 2) return 2;
                 if ($score <= 3) return 3;
                 if ($score <= 4) return 4;
-                return 5; // >= 5
+                return 5;
             case 'Visual':
                 if ($score <= 0) return 1;
                 if ($score <= 1) return 2;
                 if ($score <= 2) return 3;
                 if ($score <= 3) return 4;
-                return 5; // >= 4
+                return 5;
             case 'Kinesthetic':
                 if ($score <= 0) return 1;
                 if ($score <= 1.0) return 2;
                 if ($score <= 1.5) return 3;
                 if ($score <= 2.0) return 4;
-                return 5; // > 2
+                return 5;
             case 'Read/Write':
                 if ($score <= 2) return 1;
                 if ($score <= 3) return 2;
                 if ($score <= 4) return 3;
                 if ($score <= 5) return 4;
-                return 5; // > 5
+                return 5;
             default:
                 return 3;
         }
     }
 
-    /**
-     * Table 5: Summary Table for Tri-Modal Learners Scale
-     */
-    public static function getTriCategory($modality, $score) {
-        $score = floatval($score);
-        switch ($modality) {
-            case 'Visual':
-                if ($score < 0.58) return 2;
-                if ($score <= 2.04) return 3;
-                if ($score <= 4.96) return 4;
-                return 5;
-            case 'Kinesthetic':
-                if ($score < 0.04) return 2;
-                if ($score <= 1.11) return 3;
-                if ($score <= 3.25) return 4;
-                return 5;
-            case 'Read/Write':
-                if ($score < 1.98) return 2;
-                if ($score <= 3.83) return 3;
-                if ($score <= 7.53) return 4;
-                return 5;
-            default:
-                return self::getBiModalCategory($modality, $score);
-        }
-    }
-
-    /**
-     * Table 6: Quad Graded Summary Table
-     */
-    public static function getQuadCategory($modality, $score) {
-        $score = floatval($score);
-        switch ($modality) {
-            case 'Auditory':
-                if ($score < 1.4) return 2;
-                if ($score <= 3.0) return 3;
-                if ($score <= 6.0) return 4;
-                return 5;
-            case 'Visual':
-                if ($score < 0.6) return 2;
-                if ($score <= 2.0) return 3;
-                if ($score <= 4.96) return 4;
-                return 5;
-            case 'Kinesthetic':
-                if ($score < 0.04) return 2;
-                if ($score <= 1.0) return 3;
-                if ($score <= 3.0) return 4;
-                return 5;
-            case 'Read/Write':
-                if ($score < 1.98) return 2;
-                if ($score <= 3.38) return 3;
-                if ($score <= 7.53) return 4;
-                return 5;
-            default:
-                return self::getBiModalCategory($modality, $score);
-        }
-    }
-
-    /**
-     * Category Name Lookup
-     */
     public static function getCategoryName($cat, $lang = 'en') {
         if ($lang === 'fr') {
             switch ($cat) {
@@ -245,8 +232,8 @@ class VarkAcademicEngine {
             switch ($cat) {
                 case 1: return 'Very Low Preference';
                 case 2: return 'Low Preference';
-                case 3: return 'Mild / Moderate Preference';
-                case 4: return 'High / Strong Preference';
+                case 3: return 'Moderate Preference';
+                case 4: return 'Strong Preference';
                 case 5: return 'Very Strong Preference';
                 default: return 'Moderate';
             }
@@ -263,225 +250,109 @@ class VarkAcademicEngine {
         }
     }
 
-    /**
-     * Prospects and Academic Resilience Summary (Table 3 Headers)
-     */
     public static function getProspectsSummary($cat, $lang = 'en') {
         if ($cat >= 4) {
             return ($lang === 'fr')
-                ? "Perspectives élevées d'assimilation de l'information et d'engagement dans l'apprentissage. Fort potentiel d'adaptation et de résilience aux études."
-                : "High prospects of capturing information and engaging in learning. High prospects for adaptation and resilience to studies.";
+                ? "Perspectives élevées d'assimilation de l'information et d'engagement dans l'apprentissage."
+                : "High prospects of capturing information and engaging in learning.";
         } elseif ($cat === 3) {
             return ($lang === 'fr')
-                ? "Capacité équilibrée d'assimilation de l'information avec une flexibilité d'adaptation entre les différents modes d'apprentissage."
-                : "Balanced information intake with flexible adaptation across blended learning modalities.";
+                ? "Capacité équilibrée d'assimilation avec une bonne adaptabilité."
+                : "Balanced information intake with good learning adaptability.";
         } else {
             return ($lang === 'fr')
-                ? "Apprenant à faible réceptivité sur ce mode sensoriel. Un accompagnement ou une diversification des méthodes est recommandé."
-                : "Low reliance on this intake mechanism. Methodological reinforcement and multimodal support recommended.";
+                ? "Faible recours à ce mode. Un accompagnement multimodal est conseillé."
+                : "Low reliance on this mode. Multimodal learning support recommended.";
         }
     }
 
-    /**
-     * Table 3: Academic Interpretation of L.S.T Results
-     */
     public static function getTable3Text($modality, $category) {
         switch ($modality) {
             case 'Auditory':
                 switch ($category) {
-                    case 1:
-                        return [
-                            'en' => "Almost no reliance on auditory intake mechanisms.",
-                            'fr' => "Quasi-absence de recours aux mécanismes de réception auditive."
-                        ];
-                    case 2:
-                        return [
-                            'en' => "Minor (weak) auditory reliance. Rarely benefits from pure lectures or discussions.",
-                            'fr' => "Faible recours à l'auditif. Tire rarement profit des cours magistraux ou discussions pures."
-                        ];
-                    case 3:
-                        return [
-                            'en' => "Balances auditory learning with other modalities.",
-                            'fr' => "Équilibre l'apprentissage auditif avec les autres modalités pédagogiques."
-                        ];
-                    case 4:
-                        return [
-                            'en' => "Strong leaning towards verbal lectures and discussion. High prospects of capturing information and engaging in learning.",
-                            'fr' => "Forte orientation vers les cours oraux et les discussions. Perspectives élevées d'assimilation."
-                        ];
+                    case 1: return ['en' => "Almost no reliance on auditory intake.", 'fr' => "Quasi-absence de recours à l'écoute."];
+                    case 2: return ['en' => "Minor auditory reliance. Rarely benefits from pure lectures.", 'fr' => "Faible recours à l'auditif. Tire peu profit des cours magistraux."];
+                    case 3: return ['en' => "Balances auditory learning with other modalities.", 'fr' => "Équilibre l'écoute avec les autres styles."];
+                    case 4: return ['en' => "Strong leaning towards verbal explanations and discussions.", 'fr' => "Forte orientation vers les explications orales et discussions."];
                     case 5:
-                    default:
-                        return [
-                            'en' => "Extreme reliance on hearing and spoken words. High prospects of capturing information and high resilience to studies.",
-                            'fr' => "Dépendance extrême à l'écoute et à la parole. Fort potentiel d'adaptation et de résilience aux études."
-                        ];
+                    default: return ['en' => "Extreme reliance on hearing and spoken words.", 'fr' => "Forte prédominance de l'écoute et de l'expression orale."];
                 }
-
             case 'Visual':
                 switch ($category) {
-                    case 1:
-                        return [
-                            'en' => "Virtually no reliance on visual intake mechanisms.",
-                            'fr' => "Quasi-absence de recours aux mécanismes de réception visuelle."
-                        ];
-                    case 2:
-                        return [
-                            'en' => "Below average preference for charts, diagrams or graphs.",
-                            'fr' => "Préférence inférieure à la moyenne pour les graphiques, schémas ou diagrammes."
-                        ];
-                    case 3:
-                        return [
-                            'en' => "Regular and flexible use of visual layout when paired with other styles.",
-                            'fr' => "Utilisation régulière et flexible des supports visuels combinés à d'autres styles."
-                        ];
-                    case 4:
-                        return [
-                            'en' => "Clear, distinct reliance on spatial design, underlining and charts. High prospects for adaptation and resilience.",
-                            'fr' => "Recours net et distinct à l'agencement spatial, au surlignage et aux graphiques. Fort potentiel de réussite."
-                        ];
+                    case 1: return ['en' => "Virtually no reliance on visual intake.", 'fr' => "Quasi-absence de recours au visuel."];
+                    case 2: return ['en' => "Below average preference for charts and diagrams.", 'fr' => "Préférence faible pour les graphiques et schémas."];
+                    case 3: return ['en' => "Regular and flexible use of visual layouts.", 'fr' => "Utilisation équilibrée des supports visuels."];
+                    case 4: return ['en' => "Clear reliance on spatial design, underlining, and diagrams.", 'fr' => "Recours marqué à l'organisation spatiale et aux schémas."];
                     case 5:
-                    default:
-                        return [
-                            'en' => "Critical dependence on visual media. Struggles without spatial structure. High prospects of capturing information.",
-                            'fr' => "Dépendance critique aux supports visuels. Difficultés sans repères spatiaux. Très forte assimilation visuelle."
-                        ];
+                    default: return ['en' => "Critical dependence on visual media and spatial structure.", 'fr' => "Dépendance élevée aux supports visuels et structurés."];
                 }
-
             case 'Kinesthetic':
                 switch ($category) {
-                    case 1:
-                        return [
-                            'en' => "Total absence of physical or experiential reliance.",
-                            'fr' => "Absence totale de recours physique ou expérientiel."
-                        ];
-                    case 2:
-                        return [
-                            'en' => "Rarely benefits from hands-on practice, concrete examples or trials.",
-                            'fr' => "Tire rarement profit des travaux pratiques, exemples concrets ou essais."
-                        ];
-                    case 3:
-                        return [
-                            'en' => "Regular use of real world examples when blended with other modes.",
-                            'fr' => "Recours régulier aux exemples du monde réel lorsqu'ils sont associés à d'autres modes."
-                        ];
-                    case 4:
-                        return [
-                            'en' => "Distinct need for physical manipulation and real life situations. High prospects of engagement.",
-                            'fr' => "Besoin manifeste de manipulation physique et de situations concrètes du quotidien."
-                        ];
+                    case 1: return ['en' => "Total absence of physical or experiential reliance.", 'fr' => "Absence de recours aux activités pratiques."];
+                    case 2: return ['en' => "Rarely benefits from hands-on trials.", 'fr' => "Tire peu profit des manipulations physiques."];
+                    case 3: return ['en' => "Regular use of real-world examples with other modes.", 'fr' => "Recours équilibré aux exemples concrets."];
+                    case 4: return ['en' => "Distinct need for physical manipulation and practical situations.", 'fr' => "Besoin net de pratique et de situations concrètes."];
                     case 5:
-                    default:
-                        return [
-                            'en' => "Critical dependency on direct experience. Struggles with pure abstraction. High prospects of capturing practical information.",
-                            'fr' => "Dépendance critique à l'expérience directe. Difficultés avec la pure abstraction. Réussite par la pratique."
-                        ];
+                    default: return ['en' => "Critical dependency on direct hands-on experience.", 'fr' => "Apprentissage optimal par l'expérience et la pratique."];
                 }
-
             case 'Read/Write':
             default:
                 switch ($category) {
-                    case 1:
-                        return [
-                            'en' => "Complete avoidance of text-heavy or written instruction material.",
-                            'fr' => "Évitement complet des supports d'instruction denses en texte ou purement écrits."
-                        ];
-                    case 2:
-                        return [
-                            'en' => "Minimal reliance on text; prefers interactive or visual delivery modes.",
-                            'fr' => "Recours minimal au texte ; préfère les modes de transmission interactifs ou visuels."
-                        ];
-                    case 3:
-                        return [
-                            'en' => "Baseline text-literacy. Balances reading / writing with other modalities.",
-                            'fr' => "Alphabétisation textuelle de base. Équilibre la lecture/écriture avec d'autres modalités."
-                        ];
-                    case 4:
-                        return [
-                            'en' => "Highly efficient in text processing. Relies heavily on essays, glossaries and manuals. High academic resilience.",
-                            'fr' => "Grande efficacité dans le traitement du texte. S'appuie fortement sur les dissertations et manuels."
-                        ];
+                    case 1: return ['en' => "Complete avoidance of text-heavy material.", 'fr' => "Évitement des textes longs."];
+                    case 2: return ['en' => "Minimal reliance on text; prefers interactive delivery.", 'fr' => "Recours limité à l'écrit seul."];
+                    case 3: return ['en' => "Baseline text literacy balanced with other modalities.", 'fr' => "Bon équilibre entre lecture/écriture et autres styles."];
+                    case 4: return ['en' => "Highly efficient in text processing and note-taking.", 'fr' => "Grande aisance dans la prise de notes et la lecture."];
                     case 5:
-                    default:
-                        return [
-                            'en' => "Extreme preference for printed words; critical need for lists and notes. High prospects of capturing structured information.",
-                            'fr' => "Préférence extrême pour les mots imprimés ; besoin critique de listes, notes et fiches de synthèse."
-                        ];
+                    default: return ['en' => "Extreme preference for printed words and structured notes.", 'fr' => "Préférence marquée pour les synthèses écrites et listes."];
                 }
         }
     }
 
-    /**
-     * Section 4.5.1: Tailored Academic & Pedagogical Strategies by Neil Fleming (1987)
-     */
-    public static function getSection451Strategy($modality) {
+    public static function getStudentStudyStrategy($modality) {
         switch ($modality) {
             case 'Auditory':
                 return [
-                    'en' => "🎯 Neil Fleming Academic Strategy for Auditory Learners:\n" .
-                            "• Learns easily by listening to others speak. Benefits greatly from lectures, verbal explanations, and structured discussions.\n" .
-                            "• Speaking Aloud: Speak aloud when studying and reformulate lesson notes in your own words.\n" .
-                            "• Recitation: Reciting lessons to classmates or a study partner reinforces memory, checks knowledge, and sharpens precision.\n" .
-                            "• Auditory Tools: Record key lectures and use phonetic memory aids, songs, rhymes, and oral Q&A sessions.\n" .
-                            "• Freedom of Movement: If needed, walk or mime with book/notes in hand while verbalizing concepts.",
+                    'en' => "• Speaking Aloud: Read notes aloud when studying and rephrase concepts in your own words.\n" .
+                            "• Discussion: Explain lessons to classmates or study partners to check understanding.\n" .
+                            "• Audio Tools: Listen to recorded lecture summaries, rhymes, and oral Q&A reviews.",
 
-                    'fr' => "🎯 Stratégie Pédagogique de Neil Fleming pour Apprenants Auditifs :\n" .
-                            "• Apprend facilement en écoutant parler. Tire un grand bénéfice des cours magistraux, explications orales et débats.\n" .
-                            "• Verbalisation à voix haute : Parlez à voix haute pour apprendre et reformulez vos notes avec vos propres mots.\n" .
-                            "• Récitation active : Réciter vos leçons à un pair aide à mémoriser, vérifier vos connaissances et gagner en précision.\n" .
-                            "• Outils auditifs : Enregistrez les cours importants et utilisez des moyens mnémotechniques phonétiques, rimes et séances de questions/réponses.\n" .
-                            "• Liberté de mouvement : Si nécessaire, marchez ou mimez avec votre cahier en main tout en récitant."
+                    'fr' => "• Verbalisation à voix haute : Lisez vos résumés à voix haute et reformulez les leçons avec vos mots.\n" .
+                            "• Échange : Expliquez le cours à un camarade pour tester votre compréhension.\n" .
+                            "• Outils audio : Écoutez des résumés oraux et enregistrements de cours."
                 ];
 
             case 'Visual':
                 return [
-                    'en' => "🎯 Neil Fleming Academic Strategy for Visual Learners:\n" .
-                            "• Grasps knowledge through color differentiation, shapes, illustrations, mind maps, flash cards, charts, and diagrams.\n" .
-                            "• Structured Presentation: Pay close attention to notes layout—underline and color-code chapter headings and key paragraphs.\n" .
-                            "• Visual Index Cards: Create index summary cards featuring essential data, diagrams, and visual tables for each chapter.\n" .
-                            "• Visual Mnemonics: Prioritize visual patterns, flowcharts, infographics, and instructional videos.\n" .
-                            "• Active Reading: Always read new or difficult texts with a pencil in hand to sketch diagrams, highlight keywords, and map concepts.",
+                    'en' => "• Color-Coded Notes: Underline and highlight key headings and terms with distinct colors.\n" .
+                            "• Mind Maps & Diagrams: Create flowcharts, diagrams, and flashcards to visualize concepts.\n" .
+                            "• Active Reading: Sketch key points and diagrams in the margin while reading.",
 
-                    'fr' => "🎯 Stratégie Pédagogique de Neil Fleming pour Apprenants Visuels :\n" .
-                            "• Assimile aisément par la différenciation des couleurs, les formes, cartes mentales, fiches, schémas et graphiques.\n" .
-                            "• Présentation soignée : Soignez la mise en page de vos notes—surlignez et codez par couleur les titres et notions clés.\n" .
-                            "• Fiches bristol visuelles : Élaborez des fiches synthétiques claires intégrant les schémas et tableaux essentiels de chaque chapitre.\n" .
-                            "• Mnémotechnique visuelle : Privilégiez les organigrammes, infographies et supports multimédias.\n" .
-                            "• Lecture active : Lisez toujours les textes difficiles avec un crayon en main pour schématiser et noter les mots essentiels."
+                    'fr' => "• Notes en couleur : Surlignez les titres et notions clés avec des couleurs variées.\n" .
+                            "• Schémas & Cartes : Dessinez des cartes mentales, organigrammes et fiches synthétiques.\n" .
+                            "• Lecture active : Dessinez les points essentiels dans la marge lors de la lecture."
                 ];
 
             case 'Kinesthetic':
                 return [
-                    'en' => "🎯 Neil Fleming Academic Strategy for Kinesthetic Learners:\n" .
-                            "• Learns best when actively participating: touching, practicing, experimenting, exploring, and imitating real-world applications.\n" .
-                            "• Physical Activity: Walk back and forth while memorizing; physical movement enhances focus and clears emotional blocks.\n" .
-                            "• Practical Applications: Use hands-on problem sets, laboratory experiments, code implementations, and physical model building.\n" .
-                            "• Recreating Concepts: Translate abstract textbook theories into concrete physical examples and task-based simulations.\n" .
-                            "• Reinforce natural strengths: Structure study sessions around short, active intervals with tangible problem solving.",
+                    'en' => "• Hands-on Practice: Solve plenty of practical exercises, laboratory problems, and real-world cases.\n" .
+                            "• Active Movement: Walk around while memorizing to maintain high focus.\n" .
+                            "• Task Simulation: Relate textbook theories to concrete everyday applications.",
 
-                    'fr' => "🎯 Stratégie Pédagogique de Neil Fleming pour Apprenants Kinesthésiques :\n" .
-                            "• Apprend au mieux en participant activement : manipuler, pratiquer, expérimenter et imiter des applications concrètes.\n" .
-                            "• Mouvement physique : Marchez d'avant en arrière pendant l'apprentissage ; le mouvement stimule la concentration.\n" .
-                            "• Applications pratiques : Travaillez avec des exercices concrets, travaux pratiques de laboratoire, codage et maquettes.\n" .
-                            "• Reconstitution concrète : Transformez les théories abstraites en exemples physiques et simulations de cas réels.\n" .
-                            "• Renforcement stratégique : Structurez vos révisions en sessions dynamiques rythmées par la résolution d'exercices concrets."
+                    'fr' => "• Pratique active : Résolvez de nombreux exercices d'application et cas concrets.\n" .
+                            "• Mouvement : Marchez pendant la mémorisation pour maintenir une concentration élevée.\n" .
+                            "• Exemples réels : Reliez les théories du cours à des situations concrètes du quotidien."
                 ];
 
             case 'Read/Write':
             default:
                 return [
-                    'en' => "🎯 Neil Fleming Academic Strategy for Read/Write Learners:\n" .
-                            "• Prefers learning through reading, organizing, and summarizing textbooks, handouts, and structured written materials.\n" .
-                            "• Silent Rewriting: Benefit immensely from re-reading and re-writing comprehensive notes silently again and again.\n" .
-                            "• Textual Description: Translate charts, graphs, and visual diagrams into bulleted text descriptions to memorize them.\n" .
-                            "• Reference Materials: Make frequent use of dictionaries, glossaries, encyclopedias, and detailed bibliographies.\n" .
-                            "• Structured Note-Taking: Build organized bulleted lists, essay summaries, and structured revision binders.",
+                    'en' => "• Silent Rewriting: Re-read and rewrite comprehensive summary notes silently.\n" .
+                            "• Textual Descriptions: Turn diagrams and charts into structured bulleted text.\n" .
+                            "• Glossaries & Manuals: Keep organized lists of definitions and textbook references.",
 
-                    'fr' => "🎯 Stratégie Pédagogique de Neil Fleming pour Apprenants Lecture / Écriture :\n" .
-                            "• Apprend principalement en lisant, structurant et résumant manuels, polycopiés et documents écrits.\n" .
-                            "• Réécriture silencieuse : Tirez un immense profit de la relecture et de la réécriture silencieuse répétée de vos synthèses.\n" .
-                            "• Description textuelle : Décrivez littéralement par écrit les graphiques et schémas pour mieux les mémoriser.\n" .
-                            "• Matériel de référence : Utilisez activement dictionnaires, glossaires de termes et manuels de cours détaillés.\n" .
-                            "• Prise de notes structurée : Rédigez des fiches organisées en listes à puces, résumés de dissertations et synthèses soignées."
+                    'fr' => "• Réécriture silencieuse : Relisez et réécrivez vos fiches de synthèse en silence.\n" .
+                            "• Synthèse textuelle : Décrivez par écrit les schémas et graphiques.\n" .
+                            "• Glossaires : Maintenez des listes organisées de définitions et formules."
                 ];
         }
     }
