@@ -1418,32 +1418,30 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                 }
                                 if (classNamesOnly.isEmpty) classNamesOnly.addAll(['1ère TI', 'Terminale TI']);
 
-                                final activeClass = (_selectedClassFilterPerSchool[scName] != null && classNamesOnly.contains(_selectedClassFilterPerSchool[scName]))
-                                    ? _selectedClassFilterPerSchool[scName]!
-                                    : classNamesOnly.first;
+                                final scTotStudents = _parseInt(selectedSchoolObj['students_count'] ?? 0);
+                                final scTotTeachers = _parseInt(selectedSchoolObj['teachers_count'] ?? 0);
+                                final scTotClasses  = schoolClasses.length;
 
-                                final selectedClassObj = schoolClasses.firstWhere(
-                                  (c) => (c['class_name'] ?? '') == activeClass,
-                                  orElse: () => schoolClasses.isNotEmpty ? schoolClasses.first as Map<String, dynamic> : {},
-                                ) as Map<String, dynamic>;
+                                int scAssessedTotal = 0;
+                                int scVisTotal = 0;
+                                int scAudTotal = 0;
+                                int scKinTotal = 0;
+                                int scRwTotal  = 0;
 
-                                final cName = selectedClassObj['class_name'] ?? activeClass;
-                                final totSt = _parseInt(selectedClassObj['total_students'] ?? 0);
-                                final assSt = _parseInt(selectedClassObj['assessed'] ?? 0);
-                                final vis   = _parseInt(selectedClassObj['visual'] ?? 0);
-                                final aud   = _parseInt(selectedClassObj['auditory'] ?? 0);
-                                final kin   = _parseInt(selectedClassObj['kinesthetic'] ?? 0);
-                                final rw    = _parseInt(selectedClassObj['read_write'] ?? 0);
-                                final stList = selectedClassObj['students'] as List? ?? [];
+                                for (var cObj in schoolClasses) {
+                                  scAssessedTotal += _parseInt(cObj['assessed'] ?? 0);
+                                  scVisTotal      += _parseInt(cObj['visual'] ?? 0);
+                                  scAudTotal      += _parseInt(cObj['auditory'] ?? 0);
+                                  scKinTotal      += _parseInt(cObj['kinesthetic'] ?? 0);
+                                  scRwTotal       += _parseInt(cObj['read_write'] ?? 0);
+                                }
 
-                                final cRec = _generateClassroomRec(
-                                  vis: vis,
-                                  aud: aud,
-                                  kin: kin,
-                                  rw: rw,
-                                  className: '$cName ($scName)',
-                                  isEn: _isEn,
-                                );
+                                int finalTotalSt = scTotStudents;
+                                if (finalTotalSt == 0 && schoolClasses.isNotEmpty) {
+                                  for (var cObj in schoolClasses) {
+                                    finalTotalSt += _parseInt(cObj['total_students'] ?? 0);
+                                  }
+                                }
 
                                 final scRec = _isEn
                                     ? (selectedSchoolObj['ai_recommendation_en'] as String? ?? '• Institutional Policy Directive for $scName: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools across all departments.')
@@ -1453,20 +1451,20 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
 
-                                    // ── SCHOOL LEVEL POLICY RECOMMENDATION CARD ──────────────────
+                                    // ── GLOBAL SCHOOL OVERVIEW METRICS CARD ──────────────────
                                     Container(
                                       width: double.infinity,
                                       margin: const EdgeInsets.only(bottom: 16),
-                                      padding: const EdgeInsets.all(16),
+                                      padding: const EdgeInsets.all(20),
                                       decoration: BoxDecoration(
                                         color: _card,
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(20),
                                         border: Border.all(color: _green.withValues(alpha: 0.35), width: 1.5),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: _green.withValues(alpha: 0.06),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
+                                            color: _green.withValues(alpha: 0.08),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
                                           ),
                                         ],
                                       ),
@@ -1476,26 +1474,26 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                           Row(
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.all(8),
+                                                padding: const EdgeInsets.all(10),
                                                 decoration: BoxDecoration(
-                                                  color: _green.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(10),
+                                                  color: _green.withValues(alpha: 0.14),
+                                                  shape: BoxShape.circle,
                                                 ),
-                                                child: Icon(Icons.account_balance_rounded, color: _green, size: 22),
+                                                child: Icon(Icons.account_balance_rounded, color: _green, size: 24),
                                               ),
-                                              const SizedBox(width: 10),
+                                              const SizedBox(width: 12),
                                               Expanded(
                                                 child: Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      _isEn ? 'School Directive & Recommendation' : 'Directive & Recommandation par Établissement',
-                                                      style: TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w600),
+                                                      _isEn ? 'Global School Statistics' : 'Statistiques Globales de l\'Établissement',
+                                                      style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w600),
                                                     ),
                                                     const SizedBox(height: 2),
                                                     Text(
                                                       scName,
-                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 15.5),
+                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 17),
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ],
@@ -1503,155 +1501,77 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 12),
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: _bg,
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: _border),
-                                            ),
-                                            child: Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    scRec,
-                                                    style: TextStyle(color: _text, fontSize: 12.5, height: 1.5, fontWeight: FontWeight.w500),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                          const SizedBox(height: 18),
+
+                                          // School Key Metrics Grid
+                                          Row(
+                                            children: [
+                                              Expanded(child: _overviewStatCard(icon: Icons.people_alt_rounded, label: _isEn ? 'Total Students' : 'Élèves', value: '$finalTotalSt', color: const Color(0xFF3B82F6))),
+                                              const SizedBox(width: 10),
+                                              Expanded(child: _overviewStatCard(icon: Icons.meeting_room_rounded, label: _isEn ? 'Classes' : 'Classes', value: '$scTotClasses', color: const Color(0xFF006A4E))),
+                                              const SizedBox(width: 10),
+                                              Expanded(child: _overviewStatCard(icon: Icons.badge_rounded, label: _isEn ? 'Teachers' : 'Enseignants', value: '$scTotTeachers', color: const Color(0xFF8B5CF6))),
+                                              const SizedBox(width: 10),
+                                              Expanded(child: _overviewStatCard(icon: Icons.assignment_turned_in_rounded, label: _isEn ? 'Assessed' : 'Évalués', value: '$scAssessedTotal', color: const Color(0xFF10B981))),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 18),
+
+                                          // School VARK Percentages Breakdown
+                                          Text(
+                                            _isEn ? 'School-Wide VARK Learning Styles & Percentages:' : 'Répartition & Pourcentages VARK de l\'Établissement :',
+                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Wrap(
+                                            spacing: 10, runSpacing: 8,
+                                            children: [
+                                              _varkBadge(_isEn ? 'Visual' : 'Visuel', scVisTotal, const Color(0xFF3B82F6)),
+                                              _varkBadge(_isEn ? 'Auditory' : 'Auditif', scAudTotal, const Color(0xFFEC4899)),
+                                              _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', scKinTotal, const Color(0xFF10B981)),
+                                              _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', scRwTotal, const Color(0xFFF59E0B)),
+                                            ],
                                           ),
                                         ],
                                       ),
                                     ),
 
-                                    // SELECTED CLASS DETAILS & VARK BREAKDOWN CARD
+                                    // ── INSTITUTIONAL AI POLICY DIRECTIVE CARD FOR SCHOOL ──────────────────
                                     Container(
-                                      padding: const EdgeInsets.all(16),
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(18),
                                       decoration: BoxDecoration(
                                         color: _card,
-                                        borderRadius: BorderRadius.circular(16),
+                                        borderRadius: BorderRadius.circular(18),
                                         border: Border.all(color: _border),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                          Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.school_rounded, color: _green, size: 20),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      'Class: $cName',
-                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 16),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                decoration: BoxDecoration(color: _green.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                                              Icon(Icons.auto_awesome_rounded, color: _green, size: 20),
+                                              const SizedBox(width: 8),
+                                              Expanded(
                                                 child: Text(
-                                                  '${_isEn ? "Students" : "Élèves"}: $totSt ($assSt ${_isEn ? "Assessed" : "Évalués"})',
-                                                  style: TextStyle(color: _green, fontSize: 11.5, fontWeight: FontWeight.bold),
+                                                  _isEn ? 'Institutional Policy Recommendation for School' : 'Recommandation Pédagogique pour l\'Établissement',
+                                                  style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 14.5),
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          const SizedBox(height: 12),
-                                          Wrap(
-                                            spacing: 8, runSpacing: 6,
-                                            children: [
-                                              _varkBadge(_isEn ? 'Visual' : 'Visuel', vis, const Color(0xFF3B82F6)),
-                                              _varkBadge(_isEn ? 'Auditory' : 'Auditif', aud, const Color(0xFFEC4899)),
-                                              _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', kin, const Color(0xFF10B981)),
-                                              _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', rw, const Color(0xFFF59E0B)),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 14),
-                                          Text(
-                                            _isEn ? 'Students & Dominant Learning Styles:' : 'Élèves & Styles d\'Apprentissage Dominants :',
-                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Column(
-                                            children: stList.map<Widget>((st) {
-                                              final sMap = st as Map<String, dynamic>;
-                                              final sName = sMap['full_name'] ?? '';
-                                              final sMat = sMap['mat_number'] ?? '';
-                                              final sStyle = sMap['learning_style'] ?? '';
-                                              return Container(
-                                                margin: const EdgeInsets.only(bottom: 6),
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                                decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _border)),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Row(
-                                                        children: [
-                                                          CircleAvatar(
-                                                            radius: 14,
-                                                            backgroundColor: _green.withValues(alpha: 0.15),
-                                                            child: Icon(Icons.person_rounded, color: _green, size: 16),
-                                                          ),
-                                                          const SizedBox(width: 8),
-                                                          Expanded(
-                                                            child: Column(
-                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                              children: [
-                                                                Text(sName, style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                                                                Text('${_isEn ? "Matricule" : "Matricule"} : $sMat', style: TextStyle(color: _sub, fontSize: 10.5), overflow: TextOverflow.ellipsis),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                      decoration: BoxDecoration(color: const Color(0xFFEC4899).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                                                      child: Text(sStyle, style: const TextStyle(color: Color(0xFFEC4899), fontSize: 10.5, fontWeight: FontWeight.bold)),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                          const SizedBox(height: 14),
+                                          const SizedBox(height: 10),
                                           Container(
                                             width: double.infinity,
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: _green.withValues(alpha: 0.3))),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Icon(Icons.auto_awesome_rounded, color: _green, size: 18),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Text(
-                                                        _isEn ? 'Recommendation' : 'Recommandation',
-                                                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
-                                                        softWrap: true,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(cRec, style: TextStyle(color: _text, fontSize: 12, height: 1.5), softWrap: true),
-                                              ],
+                                            padding: const EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              color: _bg,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: _border),
+                                            ),
+                                            child: Text(
+                                              scRec,
+                                              style: TextStyle(color: _text, fontSize: 13, height: 1.6, fontWeight: FontWeight.w500),
                                             ),
                                           ),
                                         ],
