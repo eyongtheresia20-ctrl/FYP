@@ -2233,7 +2233,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         ),
                                       );
                                     },
-                                  );
+                                  ),
                                 ] else ...[
                                   Builder(
                                     builder: (ctx) {
