@@ -537,7 +537,7 @@ class AppSidebar extends StatelessWidget {
             collapsedIconColor: subTextColor,
             children: divSchools.map((scObj) {
               final scName = (scObj['name'] ?? '').toString();
-              final isSelected = selectedIndex == 2 && (selectedClass == scName || selectedClass.endsWith('::$scName'));
+              final isSelected = selectedIndex == 2 && (selectedClass == scName || selectedClass == '$divName::$scName' || selectedClass.endsWith('::$scName'));
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 2),

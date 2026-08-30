@@ -1037,13 +1037,20 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
           _currentNavIndex = 2;
           if (selection.contains('::')) {
             final parts = selection.split('::');
-            final scName = parts[0];
-            final clsName = parts[1];
-            _selectedSchoolFilter = scName;
-            _selectedClassFilterPerSchool[scName] = clsName;
+            if (isReg) {
+              _selectedSchoolFilter = parts[0]; // Division
+              _selectedSubSchoolFilter = parts[1]; // School
+            } else {
+              _selectedSchoolFilter = parts[0]; // School
+              _selectedClassFilterPerSchool[parts[0]] = parts[1];
+            }
           } else {
-            _selectedSchoolFilter = selection;
-            _selectedSubSchoolFilter = null;
+            if (isReg) {
+              _selectedSchoolFilter = selection;
+              _selectedSubSchoolFilter = null;
+            } else {
+              _selectedSchoolFilter = selection;
+            }
           }
         });
         _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
