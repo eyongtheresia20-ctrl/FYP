@@ -1935,6 +1935,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         ),
                                       ),
 
+                                      // Institutional Policy Recommendation for School
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: _card,
+                                          borderRadius: BorderRadius.circular(18),
+                                          border: Border.all(color: _border),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    _isEn ? 'Institutional Policy Recommendation for School' : 'Recommandation Pédagogique pour l\'Établissement',
+                                                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15.5),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Container(
+                                              width: double.infinity,
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                color: _bg,
+                                                borderRadius: BorderRadius.circular(14),
+                                                border: Border.all(color: _border),
+                                              ),
+                                              child: Text(
+                                                aiRec,
+                                                style: TextStyle(color: _text, fontSize: 13.5, height: 1.6, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
 
                                     ],
                                   );
