@@ -1485,14 +1485,19 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      _isEn ? 'Global School Statistics' : 'Statistiques Globales de l\'Établissement',
-                                                      style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w600),
+                                                      _isEn ? 'Global School Overview' : 'Aperçu Global de l\'Établissement',
+                                                      style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w700),
                                                     ),
                                                     const SizedBox(height: 2),
                                                     Text(
                                                       scName,
-                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 17),
+                                                      style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18),
                                                       overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      '${_isEn ? "Region" : "Région"}: ${_currentUser.region ?? "ADAMOUA"} • ${_isEn ? "Division" : "Département"}: ${activeDivisionName.isNotEmpty ? activeDivisionName : (_currentUser.division ?? "DJEREM")}',
+                                                      style: TextStyle(color: _sub, fontSize: 12),
                                                     ),
                                                   ],
                                                 ),
@@ -1515,19 +1520,43 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                           ),
                                           const SizedBox(height: 18),
 
-                                          // School VARK Percentages Breakdown
+                                          // School-Wide VARK Pie Chart & Legend
                                           Text(
-                                            _isEn ? 'School-Wide VARK Learning Styles & Percentages:' : 'Répartition & Pourcentages VARK de l\'Établissement :',
-                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                            _isEn ? 'School-Wide VARK Learning Styles Breakdown:' : 'Répartition VARK de l\'Établissement :',
+                                            style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
                                           ),
-                                          const SizedBox(height: 10),
+                                          const SizedBox(height: 18),
                                           Wrap(
-                                            spacing: 10, runSpacing: 8,
+                                            alignment: WrapAlignment.center,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 32,
+                                            runSpacing: 20,
                                             children: [
-                                              _varkBadge(_isEn ? 'Visual' : 'Visuel', scVisTotal, const Color(0xFF3B82F6)),
-                                              _varkBadge(_isEn ? 'Auditory' : 'Auditif', scAudTotal, const Color(0xFFEC4899)),
-                                              _varkBadge(_isEn ? 'Kinesthetic' : 'Kinesthésique', scKinTotal, const Color(0xFF10B981)),
-                                              _varkBadge(_isEn ? 'Read/Write' : 'Lecture/Écriture', scRwTotal, const Color(0xFFF59E0B)),
+                                              SizedBox(
+                                                width: 150,
+                                                height: 150,
+                                                child: CustomPaint(
+                                                  painter: _VarkPieChartPainter(
+                                                    visual: scVisTotal,
+                                                    auditory: scAudTotal,
+                                                    kinesthetic: scKinTotal,
+                                                    readWrite: scRwTotal,
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                width: 240,
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', scVisTotal, const Color(0xFF3B82F6)),
+                                                    _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', scAudTotal, const Color(0xFFEC4899)),
+                                                    _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', scKinTotal, const Color(0xFF10B981)),
+                                                    _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', scRwTotal, const Color(0xFFF59E0B)),
+                                                  ],
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ],
