@@ -99,7 +99,7 @@ class VarkAcademicEngine {
 
     /**
      * Evaluates scores for TEACHERS, DEANS, PRINCIPALS, DELEGATES, and ADMINS.
-     * Tells educators HOW TO TEACH THE CLASS / SCHOOL so that EVERY SINGLE STUDENT UNDERSTANDS.
+     * Strictly tailors recommendations ONLY to the styles present in that school/class cohort.
      */
     public static function evaluateForEducators($auditory, $visual, $kinesthetic, $readWrite, $contextName = '', $lang = 'en') {
         $auditory    = intval($auditory);
@@ -110,67 +110,104 @@ class VarkAcademicEngine {
 
         if ($totalAssessed === 0) {
             $recEn = "• Diagnostic Phase: Student learning evaluations are currently in progress" . ($contextName ? " for {$contextName}" : "") . ".\n" .
-                     "• Inclusive Multimodal Teaching: Ensure all lessons integrate verbal explanations, visual diagrams, written notes, and hands-on exercises so every learner is actively engaged.\n" .
-                     "• Diagnostic Tracking: Coordinate with teachers and school heads to ensure all enrolled students complete their learning style assessment.";
+                     "• Inclusive Multimodal Teaching: Encourage teachers to incorporate verbal explanations, visual diagrams, written notes, and hands-on exercises so all future evaluated learners benefit.\n" .
+                     "• Diagnostic Supervision: Coordinate with school heads to ensure all enrolled students complete their diagnostic assessment.";
 
             $recFr = "• Phase Diagnostique : Les évaluations des élèves sont en cours" . ($contextName ? " pour {$contextName}" : "") . ".\n" .
-                     "• Enseignement Inclusif Multimodal : Veillez à ce que chaque cours intègre explications orales, schémas visuels, notes écrites et exercices pratiques pour toucher tous les élèves.\n" .
-                     "• Suivi Diagnostique : Coordonnez avec les enseignants et proviseurs pour que l'ensemble des élèves complètent leur évaluation.";
+                     "• Enseignement Multimodal Inclusif : Encouragez les enseignants à intégrer explications orales, schémas, notes écrites et exercices pratiques pour toucher l'ensemble des futurs évalués.\n" .
+                     "• Suivi Diagnostique : Coordonnez avec les proviseurs pour que tous les élèves inscrits complètent leur évaluation.";
 
             return [
-                'dominant_style' => 'Multimodal (Diagnostic Phase)',
+                'dominant_style'    => 'Diagnostic Phase',
                 'recommendation_en' => $recEn,
                 'recommendation_fr' => $recFr,
             ];
         }
 
-        // Determine dominant style
         $scores = [
             'Auditory'    => $auditory,
             'Visual'      => $visual,
             'Kinesthetic' => $kinesthetic,
             'Read/Write'  => $readWrite,
         ];
-        arsort($scores);
-        $dominant = array_key_first($scores);
-        $domCount = $scores[$dominant];
-        $domPct = round(($domCount / $totalAssessed) * 100);
 
-        // Build comprehensive classroom teaching directives that benefit EVERY student
+        // Filter only learning styles that actually have assessed students (> 0)
+        $presentStyles = [];
+        foreach ($scores as $st => $count) {
+            if ($count > 0) {
+                $presentStyles[$st] = $count;
+            }
+        }
+
+        arsort($presentStyles);
+        $dominant = array_key_first($presentStyles);
+
         $linesEn = [];
         $linesFr = [];
 
-        // 1. Cohort Profile Summary
-        $linesEn[] = "• Class Cohort Profile: {$domPct}% of assessed students are {$dominant} learners ({$domCount} out of {$totalAssessed}).";
-        $linesFr[] = "• Profil de la Classe : {$domPct}% des élèves évalués sont de profil " . self::getModalityNameFr($dominant) . " ({$domCount} sur {$totalAssessed}).";
-
-        // 2. Dominant Teaching Strategy
-        if ($dominant === 'Auditory') {
-            $linesEn[] = "• Primary Instructional Focus (Auditory): Emphasize clear oral explanations, teacher-led discussions, and verbal summaries. Ask questions aloud and encourage students to explain concepts in their own words.";
-            $linesFr[] = "• Axe Pédagogique Principal (Auditif) : Privilégiez des explications orales claires, des débats guidés et des synthèses verbales. Posez des questions à voix haute et invitez les élèves à reformuler les notions clés.";
-        } elseif ($dominant === 'Visual') {
-            $linesEn[] = "• Primary Instructional Focus (Visual): Use the blackboard effectively with color-coded chalk, visual mind maps, diagrams, and flowcharts. Highlight key lesson headings and structured outlines.";
-            $linesFr[] = "• Axe Pédagogique Principal (Visuel) : Utilisez le tableau avec des craies de couleur, des cartes conceptuelles et des schémas. Mettez en valeur les titres et le plan structuré du cours.";
-        } elseif ($dominant === 'Kinesthetic') {
-            $linesEn[] = "• Primary Instructional Focus (Kinesthetic): Incorporate practical demonstrations, hands-on problem sets, concrete real-world examples, and interactive classroom activities.";
-            $linesFr[] = "• Axe Pédagogique Principal (Kinesthésique) : Intégrez des démonstrations pratiques, des résolutions concrètes d'exercices, des exemples du quotidien et des activités interactives.";
-        } else {
-            $linesEn[] = "• Primary Instructional Focus (Read/Write): Provide well-organized written summaries, bulleted board notes, clear definitions, and structured textbook reading exercises.";
-            $linesFr[] = "• Axe Pédagogique Principal (Lecture/Écriture) : Fournissez des résumés écrits clairs, des notes structurées au tableau, des définitions précises et des lectures guidées.";
+        // 1. Cohort Distribution Breakdown
+        $partsEn = [];
+        $partsFr = [];
+        foreach ($presentStyles as $st => $cnt) {
+            $pct = round(($cnt / $totalAssessed) * 100);
+            $partsEn[] = "{$cnt} {$st} ({$pct}%)";
+            $partsFr[] = "{$cnt} " . self::getModalityNameFr($st) . " ({$pct}%)";
         }
+        $linesEn[] = "• Profile Overview: " . implode(', ', $partsEn) . " out of {$totalAssessed} assessed students.";
+        $linesFr[] = "• Profil Global : " . implode(', ', $partsFr) . " sur {$totalAssessed} élèves évalués.";
 
-        // 3. Inclusive Multimodal Differentiated Instruction (For ALL students in the class)
-        $linesEn[] = "• Inclusive Teaching for All Students:\n" .
-                     "  - For Visual Learners ({$visual} students): Draw diagrams, charts, and summary mind maps on the board.\n" .
-                     "  - For Auditory Learners ({$auditory} students): Read key points aloud, facilitate peer discussion, and summarize verbally.\n" .
-                     "  - For Kinesthetic Learners ({$kinesthetic} students): Relate abstract formulas to real-life situations and step-by-step problem solving.\n" .
-                     "  - For Read/Write Learners ({$readWrite} students): Ensure students have sufficient time to copy structured notes and review textbook references.";
+        // 2. Actionable Directives for Each Present Style
+        foreach ($presentStyles as $st => $cnt) {
+            if ($st === 'Auditory') {
+                $linesEn[] = "• Recommendations for Auditory Learners ({$cnt} students):
+" .
+                             "  - Classroom Instruction: Emphasize clear oral explanations, structured class discussions, verbal lecture summaries, and oral Q&A reviews.
+" .
+                             "  - Institutional Support: Prioritize public address systems, audio recording tools for lesson archives, and school debate seminars.";
 
-        $linesFr[] = "• Enseignement Inclusif pour Tous les Élèves :\n" .
-                     "  - Pour les élèves Visuels ({$visual} élèves) : Dessinez des schémas, graphiques et cartes conceptuelles au tableau.\n" .
-                     "  - Pour les élèves Auditifs ({$auditory} élèves) : Énoncez clairement les points clés, animez des échanges oraux et récapitulez verbalement.\n" .
-                     "  - Pour les élèves Kinesthésiques ({$kinesthetic} élèves) : Reliez les formules abstraites à des applications concrètes et résolutions pas-à-pas.\n" .
-                     "  - Pour les élèves Lecture/Écriture ({$readWrite} élèves) : Laissez le temps nécessaire pour recopier des notes structurées et référencer les manuels.";
+                $linesFr[] = "• Recommandations pour les Apprenants Auditifs ({$cnt} élèves) :
+" .
+                             "  - Pratiques Pédagogiques : Privilégiez les explications orales structurées, les débats en classe, les synthèses verbales et les séances de questions/réponses.
+" .
+                             "  - Soutien Institutionnel : Équipez l'établissement en matériel de sonorisation, archives audio de cours et concours d'art oratoire.";
+            } elseif ($st === 'Visual') {
+                $linesEn[] = "• Recommendations for Visual Learners ({$cnt} students):
+" .
+                             "  - Classroom Instruction: Use structured blackboard layouts, color-coded diagrams, flowcharts, and visual mind maps to illustrate concepts.
+" .
+                             "  - Institutional Support: Provide digital projectors, science chart displays, and visual educational media in classrooms.";
+
+                $linesFr[] = "• Recommandations pour les Apprenants Visuels ({$cnt} élèves) :
+" .
+                             "  - Pratiques Pédagogiques : Utilisez un agencement clair au tableau, des schémas en couleurs, des organigrammes et des cartes conceptuelles.
+" .
+                             "  - Soutien Institutionnel : Mettez à disposition des vidéoprojecteurs, planches murales et supports visuels.";
+            } elseif ($st === 'Kinesthetic') {
+                $linesEn[] = "• Recommendations for Kinesthetic Learners ({$cnt} students):
+" .
+                             "  - Classroom Instruction: Incorporate practical demonstrations, hands-on problem sets, concrete real-world case studies, and active tasks.
+" .
+                             "  - Institutional Support: Equip laboratories and technical workshops with interactive kits and practical experiment supplies.";
+
+                $linesFr[] = "• Recommandations pour les Apprenants Kinesthésiques ({$cnt} élèves) :
+" .
+                             "  - Pratiques Pédagogiques : Intégrez des démonstrations pratiques, des résolutions d'exercices concrets et des cas d'application du quotidien.
+" .
+                             "  - Soutien Institutionnel : Équipez les laboratoires et ateliers de kits pratiques et matériel d'expérimentation.";
+            } elseif ($st === 'Read/Write') {
+                $linesEn[] = "• Recommendations for Read/Write Learners ({$cnt} students):
+" .
+                             "  - Classroom Instruction: Provide clear written lesson outlines, structured definitions, bulleted summaries, and guided textbook reading exercises.
+" .
+                             "  - Institutional Support: Supply school libraries with updated textbooks, reference glossaries, and comprehensive revision manuals.";
+
+                $linesFr[] = "• Recommandations pour les Apprenants Lecture/Écriture ({$cnt} élèves) :
+" .
+                             "  - Pratiques Pédagogiques : Fournissez des plans de cours écrits, des résumés structurés à puces, des définitions précises et des lectures dirigées.
+" .
+                             "  - Soutien Institutionnel : Approvisionnez les bibliothèques scolaires en manuels récents, glossaires et recueils d'exercices.";
+            }
+        }
 
         return [
             'dominant_style'    => $dominant,
@@ -179,9 +216,6 @@ class VarkAcademicEngine {
         ];
     }
 
-    /**
-     * Backward-compatible evaluate method
-     */
     public static function evaluate($auditory, $visual, $kinesthetic, $readWrite, $lang = 'en') {
         return self::evaluateForStudent($auditory, $visual, $kinesthetic, $readWrite, $lang);
     }
@@ -221,7 +255,7 @@ class VarkAcademicEngine {
     public static function getCategoryName($cat, $lang = 'en') {
         if ($lang === 'fr') {
             switch ($cat) {
-                case 1: return 'Préférence Très Faible';
+                case 1: return 'Préférence Faible';
                 case 2: return 'Préférence Faible';
                 case 3: return 'Préférence Modérée';
                 case 4: return 'Forte Préférence';
@@ -230,7 +264,7 @@ class VarkAcademicEngine {
             }
         } else {
             switch ($cat) {
-                case 1: return 'Very Low Preference';
+                case 1: return 'Low Preference';
                 case 2: return 'Low Preference';
                 case 3: return 'Moderate Preference';
                 case 4: return 'Strong Preference';

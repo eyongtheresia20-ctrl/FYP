@@ -141,7 +141,7 @@ class VarkAcademicEngine {
   }
 
   /// Evaluates scores for TEACHERS, DEANS, PRINCIPALS, DELEGATES, and ADMINS.
-  /// Tells educators HOW TO TEACH THE CLASS / SCHOOL so that EVERY SINGLE STUDENT UNDERSTANDS.
+  /// Strictly tailors recommendations ONLY to the styles present in that school/class cohort.
   static Map<String, String> evaluateForEducators({
     required num auditory,
     required num visual,
@@ -160,11 +160,11 @@ class VarkAcademicEngine {
       final nameSuffixFr = contextName.isNotEmpty ? ' pour $contextName' : '';
       return {
         'en': "• Diagnostic Phase: Student evaluations are in progress$nameSuffix.\n\n"
-              "• Inclusive Multimodal Teaching: Structure every lesson to integrate verbal explanations, blackboard diagrams, structured notes, and practical exercises so every student is engaged.\n\n"
-              "• Diagnostic Tracking: Coordinate with teachers and school heads to ensure all enrolled students complete their diagnostic test.",
+              "• Inclusive Multimodal Teaching: Encourage teachers to integrate verbal explanations, blackboard diagrams, structured notes, and practical exercises so all future evaluated learners benefit.\n\n"
+              "• Diagnostic Supervision: Coordinate with teachers and school heads to ensure all enrolled students complete their diagnostic test.",
         'fr': "• Phase Diagnostique : Les évaluations des élèves sont en cours$nameSuffixFr.\n\n"
-              "• Enseignement Inclusif Multimodal : Veillez à ce que chaque cours intègre explications orales, schémas au tableau, notes écrites et exercices pratiques pour toucher tous les élèves.\n\n"
-              "• Suivi Diagnostique : Coordonnez avec les enseignants et proviseurs pour que l'ensemble des élèves complètent leur test.",
+              "• Enseignement Multimodal Inclusif : Encouragez les enseignants à intégrer explications orales, schémas, notes écrites et exercices pratiques pour toucher l'ensemble des futurs évalués.\n\n"
+              "• Suivi Diagnostique : Coordonnez avec les enseignants et proviseurs pour que tous les élèves inscrits complètent leur test.",
       };
     }
 
@@ -174,45 +174,71 @@ class VarkAcademicEngine {
       'Kinesthetic': kin,
       'Read/Write': rw,
     };
-    final sorted = scores.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    // Only include learning styles that actually have assessed students (> 0)
+    final Map<String, int> presentStyles = {};
+    scores.forEach((st, count) {
+      if (count > 0) {
+        presentStyles[st] = count;
+      }
+    });
+
+    final sorted = presentStyles.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final dominant = sorted.first.key;
-    final domCount = sorted.first.value;
-    final domPct = ((domCount / totalAssessed) * 100).round();
 
     final List<String> linesEn = [];
     final List<String> linesFr = [];
 
-    // 1. Cohort Profile Summary
-    linesEn.add("• Class Cohort Profile: $domPct% of assessed students are $dominant learners ($domCount out of $totalAssessed).");
-    linesFr.add("• Profil de la Classe : $domPct% des élèves évalués sont de profil ${getModalityNameFr(dominant)} ($domCount sur $totalAssessed).");
-
-    // 2. Primary Instructional Focus for the majority
-    if (dominant == 'Auditory') {
-      linesEn.add("• Primary Instructional Focus (Auditory): Emphasize clear oral explanations, teacher-led discussions, and verbal summaries. Ask questions aloud and encourage students to explain concepts in their own words.");
-      linesFr.add("• Axe Pédagogique Principal (Auditif) : Privilégiez des explications orales claires, des débats guidés et des synthèses verbales. Posez des questions à voix haute et invitez les élèves à reformuler les notions clés.");
-    } else if (dominant == 'Visual') {
-      linesEn.add("• Primary Instructional Focus (Visual): Use the blackboard effectively with color-coded chalk, visual mind maps, diagrams, and flowcharts. Highlight key lesson headings and structured outlines.");
-      linesFr.add("• Axe Pédagogique Principal (Visuel) : Utilisez le tableau avec des craies de couleur, des cartes conceptuelles et des schémas. Mettez en valeur les titres et le plan structuré du cours.");
-    } else if (dominant == 'Kinesthetic') {
-      linesEn.add("• Primary Instructional Focus (Kinesthetic): Incorporate practical demonstrations, hands-on problem sets, concrete real-world examples, and interactive classroom activities.");
-      linesFr.add("• Axe Pédagogique Principal (Kinesthésique) : Intégrez des démonstrations pratiques, des résolutions concrètes d'exercices, des exemples du quotidien et des activités interactives.");
-    } else {
-      linesEn.add("• Primary Instructional Focus (Read/Write): Provide well-organized written summaries, bulleted board notes, clear definitions, and structured textbook reading exercises.");
-      linesFr.add("• Axe Pédagogique Principal (Lecture/Écriture) : Fournissez des résumés écrits clairs, des notes structurées au tableau, des définitions précises et des lectures guidées.");
+    // 1. Cohort Distribution Breakdown
+    final List<String> partsEn = [];
+    final List<String> partsFr = [];
+    for (var entry in sorted) {
+      final pct = ((entry.value / totalAssessed) * 100).round();
+      partsEn.add('${entry.value} ${entry.key} ($pct%)');
+      partsFr.add('${entry.value} ${getModalityNameFr(entry.key)} ($pct%)');
     }
+    linesEn.add("• Profile Overview: ${partsEn.join(', ')} out of $totalAssessed assessed students.");
+    linesFr.add("• Profil Global : ${partsFr.join(', ')} sur $totalAssessed élèves évalués.");
 
-    // 3. Inclusive Differentiated Instruction (For ALL students in the class)
-    linesEn.add("• Inclusive Teaching for All Students:\n"
-                 "  - For Visual Learners ($vis students): Draw diagrams, charts, and summary mind maps on the board.\n"
-                 "  - For Auditory Learners ($aud students): Read key points aloud, facilitate peer discussion, and summarize verbally.\n"
-                 "  - For Kinesthetic Learners ($kin students): Relate abstract formulas to real-life situations and step-by-step problem solving.\n"
-                 "  - For Read/Write Learners ($rw students): Ensure students have sufficient time to copy structured notes and review textbook references.");
+    // 2. Actionable Directives for Each Present Style
+    for (var entry in sorted) {
+      final st = entry.key;
+      final cnt = entry.value;
 
-    linesFr.add("• Enseignement Inclusif pour Tous les Élèves :\n"
-                 "  - Pour les élèves Visuels ($vis élèves) : Dessinez des schémas, graphiques et cartes conceptuelles au tableau.\n"
-                 "  - Pour les élèves Auditifs ($aud élèves) : Énoncez clairement les points clés, animez des échanges oraux et récapitulez verbalement.\n"
-                 "  - Pour les élèves Kinesthésiques ($kin élèves) : Reliez les formules abstraites à des applications concrètes et résolutions pas-à-pas.\n"
-                 "  - Pour les élèves Lecture/Écriture ($rw élèves) : Laissez le temps nécessaire pour recopier des notes structurées et référencer les manuels.");
+      if (st == 'Auditory') {
+        linesEn.add("• Recommendations for Auditory Learners ($cnt students):\n"
+                     "  - Classroom Instruction: Emphasize clear oral explanations, structured class discussions, verbal lecture summaries, and oral Q&A reviews.\n"
+                     "  - Institutional Support: Prioritize public address systems, audio recording tools for lesson archives, and school debate seminars.");
+
+        linesFr.add("• Recommandations pour les Apprenants Auditifs ($cnt élèves) :\n"
+                     "  - Pratiques Pédagogiques : Privilégiez les explications orales structurées, les débats en classe, les synthèses verbales et les séances de questions/réponses.\n"
+                     "  - Soutien Institutionnel : Équipez l'établissement en matériel de sonorisation, archives audio de cours et concours d'art oratoire.");
+      } else if (st == 'Visual') {
+        linesEn.add("• Recommendations for Visual Learners ($cnt students):\n"
+                     "  - Classroom Instruction: Use structured blackboard layouts, color-coded diagrams, flowcharts, and visual mind maps to illustrate concepts.\n"
+                     "  - Institutional Support: Provide digital projectors, science chart displays, and visual educational media in classrooms.");
+
+        linesFr.add("• Recommandations pour les Apprenants Visuels ($cnt élèves) :\n"
+                     "  - Pratiques Pédagogiques : Utilisez un agencement clair au tableau, des schémas en couleurs, des organigrammes et des cartes conceptuelles.\n"
+                     "  - Soutien Institutionnel : Mettez à disposition des vidéoprojecteurs, planches murales et supports visuels.");
+      } else if (st == 'Kinesthetic') {
+        linesEn.add("• Recommendations for Kinesthetic Learners ($cnt students):\n"
+                     "  - Classroom Instruction: Incorporate practical demonstrations, hands-on problem sets, concrete real-world case studies, and active tasks.\n"
+                     "  - Institutional Support: Equip laboratories and technical workshops with interactive kits and practical experiment supplies.");
+
+        linesFr.add("• Recommandations pour les Apprenants Kinesthésiques ($cnt élèves) :\n"
+                     "  - Pratiques Pédagogiques : Intégrez des démonstrations pratiques, des résolutions d'exercices concrets et des cas d'application du quotidien.\n"
+                     "  - Soutien Institutionnel : Équipez les laboratoires et ateliers de kits pratiques et matériel d'expérimentation.");
+      } else if (st == 'Read/Write') {
+        linesEn.add("• Recommendations for Read/Write Learners ($cnt students):\n"
+                     "  - Classroom Instruction: Provide clear written lesson outlines, structured definitions, bulleted summaries, and guided textbook reading exercises.\n"
+                     "  - Institutional Support: Supply school libraries with updated textbooks, reference glossaries, and comprehensive revision manuals.");
+
+        linesFr.add("• Recommandations pour les Apprenants Lecture/Écriture ($cnt élèves) :\n"
+                     "  - Pratiques Pédagogiques : Fournissez des plans de cours écrits, des résumés structurés à puces, des définitions précises et des lectures dirigées.\n"
+                     "  - Soutien Institutionnel : Approvisionnez les bibliothèques scolaires en manuels récents, glossaires et recueils d'exercices.");
+      }
+    }
 
     return {
       'en': linesEn.join('\n\n'),
@@ -220,7 +246,6 @@ class VarkAcademicEngine {
     };
   }
 
-  /// Backward-compatible evaluate method
   static VarkEvaluationResult evaluate({
     required num auditory,
     required num visual,
@@ -320,7 +345,7 @@ class VarkAcademicEngine {
         switch (category) {
           case 1: return {'en': "Almost no reliance on auditory intake.", 'fr': "Quasi-absence de recours à l'écoute."};
           case 2: return {'en': "Minor auditory reliance. Rarely benefits from pure lectures.", 'fr': "Faible recours à l'auditif. Tire peu profit des cours magistraux."};
-          case 3: return {'en': "Balances auditory learning with other modalities.", 'fr': "Équilibre l'écoute avec les autres styles."};
+          case 3: return {'en': "Balances auditory learning with other modalities.", 'fr' : "Équilibre l'écoute avec les autres styles."};
           case 4: return {'en': "Strong leaning towards verbal explanations and discussions.", 'fr': "Forte orientation vers les explications orales et discussions."};
           case 5:
           default: return {'en': "Extreme reliance on hearing and spoken words.", 'fr': "Forte prédominance de l'écoute et de l'expression orale."};
