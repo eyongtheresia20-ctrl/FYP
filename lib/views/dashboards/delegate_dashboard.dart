@@ -1282,10 +1282,10 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                            crossAxisAlignment: CrossAxisAlignment.start,
                                            mainAxisSize: MainAxisSize.min,
                                            children: [
-                                             _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', visSt, assessed, const Color(0xFF3B82F6)),
-                                             _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', audSt, assessed, const Color(0xFFEC4899)),
-                                             _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kinesSt, assessed, const Color(0xFF10B981)),
-                                             _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rwSt, assessed, const Color(0xFFF59E0B)),
+                                             _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', visSt, const Color(0xFF3B82F6)),
+                                             _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', audSt, const Color(0xFFEC4899)),
+                                             _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kinesSt, const Color(0xFF10B981)),
+                                             _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rwSt, const Color(0xFFF59E0B)),
                                            ],
                                          ),
                                        ),
@@ -1613,8 +1613,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     );
   }
 
-  Widget _pieLegendItem(String label, int count, int total, Color color) {
-    final int pct = total > 0 ? ((count / total) * 100).round() : 0;
+  Widget _pieLegendItem(String label, int count, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1640,15 +1639,15 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Text(
-              '$count${total > 0 ? " ($pct%)" : ""}',
-              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+              '$count',
+              style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold),
             ),
           ),
         ],
