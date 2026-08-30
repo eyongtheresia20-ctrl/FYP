@@ -1246,26 +1246,48 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                    ),
                                    const SizedBox(height: 20),
                                    Wrap(
-                                     alignment: WrapAlignment.spaceAround,
+                                     alignment: WrapAlignment.center,
                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                     spacing: 20,
-                                     runSpacing: 16,
+                                     spacing: 28,
+                                     runSpacing: 20,
                                      children: [
-                                       SizedBox(
-                                         width: 140, height: 140,
-                                         child: CustomPaint(painter: _VarkPieChartPainter(visual: visSt, auditory: audSt, kinesthetic: kinesSt, readWrite: rwSt)),
+                                       Container(
+                                         width: 150,
+                                         height: 150,
+                                         padding: const EdgeInsets.all(8),
+                                         decoration: BoxDecoration(
+                                           color: _bg,
+                                           shape: BoxShape.circle,
+                                           border: Border.all(color: _border.withValues(alpha: 0.6)),
+                                           boxShadow: [
+                                             BoxShadow(
+                                               color: _green.withValues(alpha: 0.08),
+                                               blurRadius: 16,
+                                               spreadRadius: 2,
+                                             ),
+                                           ],
+                                         ),
+                                         child: CustomPaint(
+                                           painter: _VarkPieChartPainter(
+                                             visual: visSt,
+                                             auditory: audSt,
+                                             kinesthetic: kinesSt,
+                                             readWrite: rwSt,
+                                           ),
+                                         ),
                                        ),
-                                       Column(
-                                         crossAxisAlignment: CrossAxisAlignment.start,
-                                         children: [
-                                           _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', visSt, const Color(0xFF3B82F6)),
-                                           const SizedBox(height: 10),
-                                           _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', audSt, const Color(0xFFEC4899)),
-                                           const SizedBox(height: 10),
-                                           _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kinesSt, const Color(0xFF10B981)),
-                                           const SizedBox(height: 10),
-                                           _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rwSt, const Color(0xFFF59E0B)),
-                                         ],
+                                       ConstrainedBox(
+                                         constraints: const BoxConstraints(maxWidth: 320),
+                                         child: Column(
+                                           crossAxisAlignment: CrossAxisAlignment.start,
+                                           mainAxisSize: MainAxisSize.min,
+                                           children: [
+                                             _pieLegendItem(_isEn ? 'Visual Learner' : 'Visuel', visSt, assessed, const Color(0xFF3B82F6)),
+                                             _pieLegendItem(_isEn ? 'Auditory Learner' : 'Auditif', audSt, assessed, const Color(0xFFEC4899)),
+                                             _pieLegendItem(_isEn ? 'Kinesthetic Learner' : 'Kinesthésique', kinesSt, assessed, const Color(0xFF10B981)),
+                                             _pieLegendItem(_isEn ? 'Read/Write Learner' : 'Lecture/Écriture', rwSt, assessed, const Color(0xFFF59E0B)),
+                                           ],
+                                         ),
                                        ),
                                      ],
                                    ),
@@ -1671,14 +1693,46 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
     );
   }
 
-  Widget _pieLegendItem(String label, int count, Color color) {
-    return Row(
-      children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Expanded(child: Text(label, style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600))),
-        Text('$count', style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
-      ],
+  Widget _pieLegendItem(String label, int count, int total, Color color) {
+    final int pct = total > 0 ? ((count / total) * 100).round() : 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _border.withValues(alpha: 0.7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              '$count${total > 0 ? " ($pct%)" : ""}',
+              style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
