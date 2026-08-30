@@ -104,12 +104,12 @@ switch ($action) {
             $email = strtolower(str_replace(' ', '.', $fullName)) . '@minesec.cm';
         }
 
-        // Insert into users table
+        // Insert into users table (UNACTIVATED by default, no pre-set password or security code)
         $stmtIns = $pdo->prepare("
             INSERT INTO users (full_name, matricule, email, phone, password_hash, security_code, role, is_activated, region, division, school_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            VALUES (?, ?, ?, NULL, NULL, NULL, ?, 0, ?, ?, ?)
         ");
-        $stmtIns->execute([$fullName, $matricule, $email, $phone, $passHash, $secCode, $role, $region, $division, $schoolId]);
+        $stmtIns->execute([$fullName, $matricule, $email, $role, $region, $division, $schoolId]);
         $newUserId = $pdo->lastInsertId();
 
         // Fetch school name for school-level roles based on schoolId
