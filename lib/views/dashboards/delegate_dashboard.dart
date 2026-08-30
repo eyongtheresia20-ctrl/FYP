@@ -1251,31 +1251,18 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                      spacing: 28,
                                      runSpacing: 20,
                                      children: [
-                                       Container(
-                                         width: 150,
-                                         height: 150,
-                                         padding: const EdgeInsets.all(8),
-                                         decoration: BoxDecoration(
-                                           color: _bg,
-                                           shape: BoxShape.circle,
-                                           border: Border.all(color: _border.withValues(alpha: 0.6)),
-                                           boxShadow: [
-                                             BoxShadow(
-                                               color: _green.withValues(alpha: 0.08),
-                                               blurRadius: 16,
-                                               spreadRadius: 2,
-                                             ),
-                                           ],
-                                         ),
-                                         child: CustomPaint(
-                                           painter: _VarkPieChartPainter(
-                                             visual: visSt,
-                                             auditory: audSt,
-                                             kinesthetic: kinesSt,
-                                             readWrite: rwSt,
-                                           ),
-                                         ),
-                                       ),
+                                        SizedBox(
+                                          width: 140,
+                                          height: 140,
+                                          child: CustomPaint(
+                                            painter: _VarkPieChartPainter(
+                                              visual: visSt,
+                                              auditory: audSt,
+                                              kinesthetic: kinesSt,
+                                              readWrite: rwSt,
+                                            ),
+                                          ),
+                                        ),
                                        SizedBox(
                                          width: 230,
                                          child: Column(

@@ -325,6 +325,102 @@ switch ($action) {
         ]);
         break;
 
+    // ── 5B. GET DETAILED SCHOOL DATA & RECOMMENDATIONS FOR SELECTED SCHOOL ──
+    case 'get_school_details':
+        $schoolName = trim($_GET['school_name'] ?? $body['school_name'] ?? '');
+
+        if (empty($schoolName)) {
+            $stmtFirst = $pdo->query("SELECT name FROM schools ORDER BY id ASC LIMIT 1");
+            $firstRow = $stmtFirst->fetch(PDO::FETCH_ASSOC);
+            $schoolName = $firstRow['name'] ?? 'LYCEE TECHNIQUE DE NGAOUNDAL';
+        }
+
+        // Find school ID
+        $stmtSc = $pdo->prepare("SELECT id, name, region, division, town FROM schools WHERE name = ?");
+        $stmtSc->execute([$schoolName]);
+        $school = $stmtSc->fetch(PDO::FETCH_ASSOC);
+        $schoolId = $school['id'] ?? 1;
+
+        // Fetch total classes in this school
+        $stmtCls = $pdo->prepare("SELECT DISTINCT class_name FROM students WHERE user_id IN (SELECT id FROM users WHERE school_id = ?)");
+        $stmtCls->execute([$schoolId]);
+        $classesList = $stmtCls->fetchAll(PDO::FETCH_COLUMN);
+        $classesCount = count($classesList);
+        if ($classesCount == 0) $classesCount = 2;
+
+        // Fetch teachers count
+        $stmtT = $pdo->prepare("SELECT COUNT(*) FROM teachers t JOIN users u ON u.id = t.user_id WHERE u.school_id = ?");
+        $stmtT->execute([$schoolId]);
+        $teachersCount = (int)$stmtT->fetchColumn();
+
+        // Fetch students in this school
+        $stmtSt = $pdo->prepare("
+            SELECT st.id AS student_id,
+                   COALESCE(
+                       (SELECT a.learning_style 
+                        FROM assessments a 
+                        WHERE a.student_id = st.id 
+                        ORDER BY a.id DESC LIMIT 1),
+                       'Not Assessed'
+                   ) AS learning_style
+            FROM students st
+            JOIN users u ON u.id = st.user_id
+            WHERE u.school_id = ?
+        ");
+        $stmtSt->execute([$schoolId]);
+        $students = $stmtSt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalSt  = count($students);
+        $assessed = 0;
+        $visCount = 0;
+        $audCount = 0;
+        $kinCount = 0;
+        $rwCount  = 0;
+
+        foreach ($students as $s) {
+            $style = $s['learning_style'] ?? null;
+            if ($style && $style !== 'Not Assessed') {
+                $assessed++;
+                if (stripos($style, 'Visual') !== false) $visCount++;
+                if (stripos($style, 'Auditory') !== false) $audCount++;
+                if (stripos($style, 'Kinesthetic') !== false) $kinCount++;
+                if (stripos($style, 'Read') !== false) $rwCount++;
+            }
+        }
+
+        $assessedRate = $totalSt > 0 ? round(($assessed / $totalSt) * 100) . '%' : '0%';
+
+        $aiRecEn = "• Institutional Policy Directive for {$schoolName}: Coordinate with head teachers to complete VARK diagnostics and allocate audio-visual tools across all departments.\n• Pedagogical Supervision: Conduct quarterly assessments to ensure auditory and visual learners receive balanced instruction.";
+        $aiRecFr = "• Directive Institutionnelle pour {$schoolName} : Coordonnez avec les proviseurs pour finaliser les tests VARK et allouer du matériel audio-visuel.\n• Supervision Pédagogique : Réalisez des bilans trimestriels pour assurer un enseignement multimodal adapté.";
+
+        if ($assessed > 0) {
+            if ($audCount >= $visCount && $audCount >= $kinCount && $audCount >= $rwCount) {
+                $aiRecEn = "• Prioritize audio-visual equipment, public address systems, and recorded lecture archives for {$schoolName}.\n• Organize school-wide debate competitions and verbal presentation seminars.";
+                $aiRecFr = "• Priorisez les équipements audio-visuels, sonorisation et archives de cours pour {$schoolName}.\n• Organisez des concours de débats et séminaires d'expression orale.";
+            } elseif ($visCount >= $audCount && $visCount >= $kinCount && $visCount >= $rwCount) {
+                $aiRecEn = "• Equip school libraries and classrooms with visual charts, projectors, and digital slide resources for {$schoolName}.\n• Deploy infographic learning modules across science and technical departments.";
+                $aiRecFr = "• Équipez les bibliothèques et salles de projecteurs et supports visuels pour {$schoolName}.\n• Déployez des modules infographiques dans les départements scientifiques et techniques.";
+            }
+        }
+
+        respond(true, 'School details fetched successfully.', [
+            'school_name' => $schoolName,
+            'region' => $school['region'] ?? 'ADAMOUA',
+            'division' => $school['division'] ?? 'DJEREM',
+            'total_students' => $totalSt,
+            'total_classes' => $classesCount,
+            'total_teachers' => $teachersCount,
+            'assessed_students' => $assessed,
+            'assessed_rate' => $assessedRate,
+            'visual_count' => $visCount,
+            'auditory_count' => $audCount,
+            'kinesthetic_count' => $kinCount,
+            'read_write_count' => $rwCount,
+            'ai_recommendation_en' => $aiRecEn,
+            'ai_recommendation_fr' => $aiRecFr,
+        ]);
+        break;
+
     // ── 6. TOGGLE USER ACTIVATED/BLOCKED STATUS ──────────────────
     case 'toggle_user_status':
         $userId    = intval($body['user_id'] ?? $_GET['user_id'] ?? 0);

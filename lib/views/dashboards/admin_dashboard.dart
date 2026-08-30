@@ -70,7 +70,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _isEn = widget.isEn;
     _fetchAdminData();
     _fetchAllUsersAndSchools();
-    _fetchClassDetails('LYCEE TECHNIQUE DE NGAOUNDAL', '1ère TI');
+    _fetchSchoolDetails('LYCEE TECHNIQUE DE NGAOUNDAL');
   }
 
   @override
@@ -100,15 +100,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  Future<void> _fetchClassDetails(String schoolName, String className) async {
+  Future<void> _fetchSchoolDetails(String schoolName) async {
     setState(() {
       _selectedSchoolFilter = schoolName;
-      _selectedClassFilter  = className;
       _isLoadingClassDetails = true;
     });
     try {
       final resp = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/admin.php?action=get_class_details&school_name=${Uri.encodeComponent(schoolName)}&class_name=${Uri.encodeComponent(className)}'),
+        Uri.parse('${ApiConfig.baseUrl}/admin.php?action=get_school_details&school_name=${Uri.encodeComponent(schoolName)}'),
       );
       final data = jsonDecode(resp.body);
       if (data['success'] == true && data['data'] != null) {
@@ -1352,9 +1351,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _currentNavIndex = 2;
           if (selection.contains('::')) {
             final parts = selection.split('::');
-            final scName = parts[parts.length - 2];
-            final clsName = parts[parts.length - 1];
-            _fetchClassDetails(scName, clsName);
+            final scName = parts.last;
+            _fetchSchoolDetails(scName);
           } else {
             _selectedRegionFilter = selection;
           }

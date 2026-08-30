@@ -660,62 +660,34 @@ class AppSidebar extends StatelessWidget {
                         children: divSchools.isNotEmpty
                             ? divSchools.map((scObj) {
                                 final scName = (scObj['name'] ?? '').toString();
-                                final rawClsList = scObj['classes'] as List? ?? [];
-                                final scClasses = rawClsList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+                                final isSelected = selectedIndex == 2 && (selectedClass == scName || selectedClass.endsWith('::$scName'));
 
-                                return Theme(
-                                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                  child: ExpansionTile(
-                                    tilePadding: const EdgeInsets.only(left: 8, right: 8),
-                                    childrenPadding: const EdgeInsets.only(left: 12),
-                                    leading: Icon(Icons.school_rounded, color: subTextColor, size: 14),
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 2),
+                                  child: ListTile(
+                                    dense: true,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    leading: Icon(
+                                      isSelected ? Icons.check_circle_rounded : Icons.school_rounded,
+                                      color: isSelected ? const Color(0xFF34D399) : subTextColor,
+                                      size: 14,
+                                    ),
                                     title: Text(
                                       scName,
                                       style: TextStyle(
-                                        color: textColor,
-                                        fontWeight: FontWeight.w600,
+                                        color: isSelected ? const Color(0xFF34D399) : textColor,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                         fontSize: 11.5,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    iconColor: subTextColor,
-                                    collapsedIconColor: subTextColor,
-                                    children: scClasses.isNotEmpty
-                                        ? scClasses.map((clsObj) {
-                                            final clsName = (clsObj['class_name'] ?? '').toString();
-                                            return Container(
-                                              margin: const EdgeInsets.only(bottom: 2),
-                                              child: ListTile(
-                                                dense: true,
-                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                leading: const Icon(Icons.class_rounded, color: Color(0xFF006A4E), size: 13),
-                                                title: Text(
-                                                  'Classe $clsName',
-                                                  style: TextStyle(
-                                                    color: textColor,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 11.0,
-                                                  ),
-                                                ),
-                                                onTap: () {
-                                                  _closeDrawerIfOpen(context);
-                                                  onItemSelected(2);
-                                                  if (onClassSelected != null) {
-                                                    onClassSelected!('$scName::$clsName');
-                                                  }
-                                                },
-                                              ),
-                                            );
-                                          }).toList()
-                                        : [
-                                            Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                              child: Text(
-                                                isEn ? '(No classes in DB)' : '(Aucune classe en BD)',
-                                                style: TextStyle(color: subTextColor, fontSize: 10.5, fontStyle: FontStyle.italic),
-                                              ),
-                                            ),
-                                          ],
+                                    onTap: () {
+                                      _closeDrawerIfOpen(context);
+                                      onItemSelected(2);
+                                      if (onClassSelected != null) {
+                                        onClassSelected!('$regName::$divName::$scName');
+                                      }
+                                    },
                                   ),
                                 );
                               }).toList()
