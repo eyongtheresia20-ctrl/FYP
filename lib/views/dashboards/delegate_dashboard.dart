@@ -1276,8 +1276,8 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                            ),
                                          ),
                                        ),
-                                       ConstrainedBox(
-                                         constraints: const BoxConstraints(maxWidth: 320),
+                                       SizedBox(
+                                         width: 230,
                                          child: Column(
                                            crossAxisAlignment: CrossAxisAlignment.start,
                                            mainAxisSize: MainAxisSize.min,
@@ -1614,16 +1614,9 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
   }
 
   Widget _pieLegendItem(String label, int count, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border.withValues(alpha: 0.7)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 10,
@@ -1634,21 +1627,13 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600),
+              style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withValues(alpha: 0.3)),
-            ),
-            child: Text(
-              '$count',
-              style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold),
-            ),
+          const SizedBox(width: 16),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
