@@ -43,6 +43,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<dynamic> _allSchoolsList = [];
   bool _isLoadingUsers = false;
   String _userRoleFilter = 'ALL';
+  bool _showSchoolsSection = false;
   String _userSearchQuery = '';
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -174,6 +175,186 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case 'SUD-OUEST': return ['FAKO', 'MEME', 'NDIAN', 'LEBIALEM', 'MANYU', 'KUPE-MANENGUBA'];
       default: return ['DJEREM', 'VINA', 'MAYO-BANYO', 'FARO-ET-DEO', 'MBERE'];
     }
+  }
+
+  void _showAddSchoolDialog() {
+    final nameCtrl = TextEditingController();
+    final townCtrl = TextEditingController();
+    String selectedRegion = 'ADAMOUA';
+    List<String> currentDivisions = _getDivisionsForRegion(selectedRegion);
+    String selectedDivision = currentDivisions.first;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: _card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            title: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  color: _sub,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: _isEn ? 'Back' : 'Retour',
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.add_business_rounded, color: _green, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _isEn ? 'Register New School' : 'Ajouter un Établissement',
+                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: SizedBox(
+                width: 440,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // School Name
+                    Text(_isEn ? 'School Name:' : 'Nom de l\'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: nameCtrl,
+                      style: TextStyle(color: _text, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. LYCEE BILINGUE DE BAFOUSSAM',
+                        prefixIcon: Icon(Icons.school_outlined, color: _green, size: 18),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Region Dropdown
+                    Text(_isEn ? 'Region:' : 'Région :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      value: selectedRegion,
+                      isExpanded: true,
+                      dropdownColor: _card,
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      items: ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'].map((r) {
+                        return DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() {
+                            selectedRegion = val;
+                            currentDivisions = _getDivisionsForRegion(selectedRegion);
+                            selectedDivision = currentDivisions.first;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Division Dropdown
+                    Text(_isEn ? 'Division / Department:' : 'Département :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      value: selectedDivision,
+                      isExpanded: true,
+                      dropdownColor: _card,
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                      decoration: InputDecoration(
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                      items: currentDivisions.map((d) {
+                        return DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis));
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedDivision = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Town
+                    Text(_isEn ? 'Town / City:' : 'Ville :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: townCtrl,
+                      style: TextStyle(color: _text, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Ngaoundal',
+                        prefixIcon: Icon(Icons.location_on_outlined, color: _green, size: 18),
+                        filled: true, fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                onPressed: () async {
+                  final name = nameCtrl.text.trim();
+                  final town = townCtrl.text.trim();
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please enter a school name' : 'Veuillez saisir un nom d\'établissement')));
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  try {
+                    final resp = await http.post(
+                      Uri.parse('${ApiConfig.baseUrl}/admin.php?action=create_school'),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'name': name,
+                        'region': selectedRegion,
+                        'division': selectedDivision,
+                        'town': town,
+                      }),
+                    );
+                    final res = jsonDecode(resp.body);
+                    if (res['success'] == true) {
+                      _fetchAllUsersAndSchools();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: _green, content: Text(_isEn ? 'School created successfully!' : 'Établissement créé avec succès !')));
+                      }
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text(res['message'] ?? 'Failed to create school')));
+                      }
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')));
+                    }
+                  }
+                },
+                child: Text(_isEn ? 'Create School' : 'Créer Établissement', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _showAddUserDialog() {
@@ -1951,9 +2132,108 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ),
                                 const SizedBox(height: 16),
 
-                                // Users Live Database List Table
+                                // Toggle between Users & Schools
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 14),
+                                  child: Row(
+                                    children: [
+                                      ChoiceChip(
+                                        label: Text(_isEn ? 'Users (${_allUsersList.length})' : 'Utilisateurs (${_allUsersList.length})', style: TextStyle(color: !_showSchoolsSection ? Colors.white : _text, fontWeight: FontWeight.bold)),
+                                        selected: !_showSchoolsSection,
+                                        selectedColor: _green,
+                                        backgroundColor: _card,
+                                        onSelected: (val) => setState(() => _showSchoolsSection = false),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      ChoiceChip(
+                                        label: Text(_isEn ? 'Schools (${_allSchoolsList.length})' : 'Établissements (${_allSchoolsList.length})', style: TextStyle(color: _showSchoolsSection ? Colors.white : _text, fontWeight: FontWeight.bold)),
+                                        selected: _showSchoolsSection,
+                                        selectedColor: const Color(0xFF0284C7),
+                                        backgroundColor: _card,
+                                        onSelected: (val) => setState(() => _showSchoolsSection = true),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Live Database List Table (Users or Schools)
                                 if (_isLoadingUsers) ...[
                                   const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator())),
+                                ] else if (_showSchoolsSection) ...[
+                                  Builder(
+                                    builder: (ctx) {
+                                      final filteredSchools = _allSchoolsList.where((s) {
+                                        final name = (s['name'] ?? '').toString().toLowerCase();
+                                        final reg  = (s['region'] ?? '').toString().toLowerCase();
+                                        final div  = (s['division'] ?? '').toString().toLowerCase();
+                                        final town = (s['town'] ?? '').toString().toLowerCase();
+                                        final q    = _userSearchQuery.toLowerCase();
+                                        return q.isEmpty || name.contains(q) || reg.contains(q) || div.contains(q) || town.contains(q);
+                                      }).toList();
+
+                                      return Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _isEn ? 'Registered Schools Directory (${filteredSchools.length})' : 'Répertoire des Établissements Enregistrés (${filteredSchools.length})',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
+                                            ),
+                                            const SizedBox(height: 14),
+                                            if (filteredSchools.isEmpty) ...[
+                                              Text(_isEn ? 'No schools matching search.' : 'Aucun établissement correspondant.', style: TextStyle(color: _sub, fontSize: 13)),
+                                            ] else ...[
+                                              SingleChildScrollView(
+                                                scrollDirection: Axis.horizontal,
+                                                child: DataTable(
+                                                  headingRowColor: WidgetStateProperty.all(_bg),
+                                                  dataRowMinHeight: 52,
+                                                  dataRowMaxHeight: 64,
+                                                  columnSpacing: 24,
+                                                  columns: [
+                                                    DataColumn(label: Text(_isEn ? 'School Name' : 'Nom de l\'Établissement', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Region' : 'Région', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Division' : 'Département', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Town' : 'Ville', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                  ],
+                                                  rows: filteredSchools.map<DataRow>((s) {
+                                                    final scName = (s['name'] ?? '').toString();
+                                                    final scReg  = (s['region'] ?? 'ADAMOUA').toString();
+                                                    final scDiv  = (s['division'] ?? 'DJEREM').toString();
+                                                    final scTown = (s['town'] ?? '-').toString();
+
+                                                    return DataRow(
+                                                      cells: [
+                                                        DataCell(
+                                                          Row(
+                                                            children: [
+                                                              const CircleAvatar(
+                                                                radius: 14,
+                                                                backgroundColor: Color(0x260284C7),
+                                                                child: Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 16),
+                                                              ),
+                                                              const SizedBox(width: 10),
+                                                              Text(scName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        DataCell(Text(scReg, style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 12.5))),
+                                                        DataCell(Text(scDiv, style: TextStyle(color: _sub, fontSize: 12))),
+                                                        DataCell(Text(scTown, style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w500))),
+                                                      ],
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
                                 ] else ...[
                                   Builder(
                                     builder: (ctx) {
@@ -2155,4 +2435,76 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
+  Widget _pieLegendItem(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VarkPieChartPainter extends CustomPainter {
+  final int visual;
+  final int auditory;
+  final int kinesthetic;
+  final int readWrite;
+
+  _VarkPieChartPainter({required this.visual, required this.auditory, required this.kinesthetic, required this.readWrite});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final int total = visual + auditory + kinesthetic + readWrite;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    if (total == 0) {
+      final paint = Paint()..color = Colors.grey.withValues(alpha: 0.3);
+      canvas.drawCircle(center, radius, paint);
+      return;
+    }
+
+    final double visAngle = (visual / total) * 2 * 3.141592653589793;
+    final double audAngle = (auditory / total) * 2 * 3.141592653589793;
+    final double kinAngle = (kinesthetic / total) * 2 * 3.141592653589793;
+    final double rwAngle  = (readWrite / total) * 2 * 3.141592653589793;
+
+    double startAngle = -3.141592653589793 / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    void drawSlice(double sweepAngle, Color color) {
+      if (sweepAngle <= 0) return;
+      final paint = Paint()..color = color..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
+      startAngle += sweepAngle;
+    }
+
+    drawSlice(visAngle, const Color(0xFF3B82F6));
+    drawSlice(audAngle, const Color(0xFFEC4899));
+    drawSlice(kinAngle, const Color(0xFF10B981));
+    drawSlice(rwAngle,  const Color(0xFFF59E0B));
+  }
+
+  @override
+  bool shouldRepaint(covariant _VarkPieChartPainter oldDelegate) =>
+      oldDelegate.visual != visual || oldDelegate.auditory != auditory || oldDelegate.kinesthetic != kinesthetic || oldDelegate.readWrite != readWrite;
 }
