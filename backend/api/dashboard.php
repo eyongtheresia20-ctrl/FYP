@@ -454,13 +454,6 @@ switch ($action) {
                 $scAssessed += $cData['assessed'];
                 $scVis += $cData['visual']; $scAud += $cData['auditory']; $scKin += $cData['kinesthetic']; $scRw += $cData['read_write'];
 
-                $scClassesData[] = [
-                    'class_name' => $clsName,
-                    'total_students' => $cData['total_students'],
-                    'assessed' => $cData['assessed'],
-                    'visual' => $cData['visual'],
-                    'auditory' => $cData['auditory'],
-                    'kinesthetic' => $cData['kinesthetic'],
                 $clsRec = generateClassroomRecommendation($cData['visual'], $cData['auditory'], $cData['kinesthetic'], $cData['read_write'], "$clsName ($scName)");
 
                 $scClassesData[] = [
@@ -495,12 +488,6 @@ switch ($action) {
                 'ai_recommendation_fr' => $scRec['fr'],
             ];
         }
-
-        respond(true, 'Divisional analytics fetched from live database.', [
-            'title' => 'DÉLÉGATION DÉPARTEMENTALE DE L\'ENSEIGNEMENT SECONDAIRE',
-            'delegate_name' => $authUser['full_name'] ?? 'M. Bikoi Joseph',
-            'region' => $region,
-            'division' => $division,
         $divPolicyRec = generateDelegatePolicyRecommendation($divVis, $divAud, $divKin, $divRw, $division, false);
 
         respond(true, 'Divisional analytics fetched from live database.', [
@@ -756,11 +743,6 @@ switch ($action) {
                 'divisions' => $divItems,
             ];
         }
-
-        respond(true, 'Admin analytics fetched from live database.', [
-            'admin_name' => $authUser['full_name'] ?? 'Dr. Tchatchouang Paul',
-            'title' => 'MINISTÈRE DE L\'ENSEIGNEMENT SECONDAIRE — DIRECTION GÉNÉRALE',
-            'total_regions' => $totalRegions,
         $visCount = intval($vark['visual'] ?? 0);
         $audCount = intval($vark['auditory'] ?? 0);
         $kinCount = intval($vark['kinesthetic'] ?? 0);
