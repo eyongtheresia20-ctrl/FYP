@@ -244,8 +244,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                       items: [
                         DropdownMenuItem(value: 'regional_delegate', child: Text(_isEn ? 'Regional Delegate' : 'Délégué Régional', overflow: TextOverflow.ellipsis)),
-                        DropdownMenuItem(value: 'divisional_delegate', child: Text(_isEn ? 'Divisional Delegate' : 'Délégué Départemental', overflow: TextOverflow.ellipsis)),
                         DropdownMenuItem(value: 'principal', child: Text(_isEn ? 'Principal' : 'Proviseur', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'dean_of_studies', child: Text(_isEn ? 'Dean of Studies' : 'Censeur', overflow: TextOverflow.ellipsis)),
                         DropdownMenuItem(value: 'teacher', child: Text(_isEn ? 'Teacher' : 'Enseignant', overflow: TextOverflow.ellipsis)),
                         DropdownMenuItem(value: 'student', child: Text(_isEn ? 'Student' : 'Élève', overflow: TextOverflow.ellipsis)),
                       ],
