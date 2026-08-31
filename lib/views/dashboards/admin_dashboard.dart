@@ -2100,7 +2100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                           // ── TAB 1: NATIONAL VARK ANALYTICS & POLICY ──────────────────
                           if (_currentNavIndex == 1) ...[
-                            Text(_isEn ? 'National Educational Policy' : 'Directives Pédagogiques Nationales', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
+                            Text(_isEn ? 'Recommendations' : 'Recommandations', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
                             const SizedBox(height: 16),
                             Container(
                               width: double.infinity,
@@ -2113,7 +2113,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     children: [
                                       Icon(Icons.auto_awesome_rounded, color: _green, size: 22),
                                       const SizedBox(width: 8),
-                                      Text(_isEn ? 'National Pedagogical Strategy' : 'Stratégie Pédagogique Nationale', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
+                                      Text(_isEn ? 'Strategic Recommendations' : 'Recommandations Stratégiques', style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 15.5)),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
@@ -2134,8 +2134,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   final regName = _classDetailsData!['region'] ?? 'ADAMOUA';
                                   final divName = _classDetailsData!['division'] ?? 'DJEREM';
                                   final totSt   = _parseInt(_classDetailsData!['total_students']);
-                                  final totCls  = _parseInt(_classDetailsData!['total_classes'] ?? 2);
-                                  final totTch  = _parseInt(_classDetailsData!['total_teachers'] ?? 1);
+                                  final totCls  = _parseInt(_classDetailsData!['total_classes'] ?? 0);
+                                  final totTch  = _parseInt(_classDetailsData!['total_teachers'] ?? 0);
                                   final assSt   = _parseInt(_classDetailsData!['assessed_students']);
 
                                   final vis = _parseInt(_classDetailsData!['visual_count']);
@@ -2149,6 +2149,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     kinesthetic: kin,
                                     readWrite: rw,
                                     contextName: scName,
+                                    isSchoolLevel: true,
                                   );
                                   final aiRec = _isEn ? educatorScRec['en']! : educatorScRec['fr']!;
 
@@ -3041,8 +3042,34 @@ class _VarkPieChartPainter extends CustomPainter {
     final radius = size.width / 2;
 
     if (total == 0) {
-      final paint = Paint()..color = Colors.grey.withValues(alpha: 0.3);
-      canvas.drawCircle(center, radius, paint);
+      // Draw a 4-color balanced multimodal preview ring (25% each) with dashed/soft appearance
+      final rect = Rect.fromCircle(center: center, radius: radius);
+      final colors = [
+        const Color(0xFF3B82F6).withValues(alpha: 0.45), // Visual
+        const Color(0xFFEC4899).withValues(alpha: 0.45), // Auditory
+        const Color(0xFF10B981).withValues(alpha: 0.45), // Kinesthetic
+        const Color(0xFFF59E0B).withValues(alpha: 0.45), // Read/Write
+      ];
+      const quarter = 3.141592653589793 / 2;
+      double start = -3.141592653589793 / 2;
+      for (int i = 0; i < 4; i++) {
+        final p = Paint()..color = colors[i]..style = PaintingStyle.fill;
+        canvas.drawArc(rect, start, quarter, true, p);
+        start += quarter;
+      }
+      // Inner circle hole (donut effect) with 0% text
+      final innerPaint = Paint()..color = const Color(0xFF1E293B);
+      canvas.drawCircle(center, radius * 0.55, innerPaint);
+
+      final textPainter = TextPainter(
+        text: const TextSpan(
+          text: '0%',
+          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2));
       return;
     }
 

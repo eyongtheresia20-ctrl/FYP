@@ -1791,8 +1791,34 @@ class _VarkPieChartPainter extends CustomPainter {
     final radius = size.width / 2;
 
     if (total == 0) {
-      final paint = Paint()..color = Colors.grey.withValues(alpha: 0.3);
-      canvas.drawCircle(center, radius, paint);
+      // Draw a 4-color balanced multimodal preview ring (25% each) with dashed/soft appearance
+      final rect = Rect.fromCircle(center: center, radius: radius);
+      final colors = [
+        const Color(0xFF3B82F6).withValues(alpha: 0.45), // Visual
+        const Color(0xFFEC4899).withValues(alpha: 0.45), // Auditory
+        const Color(0xFF10B981).withValues(alpha: 0.45), // Kinesthetic
+        const Color(0xFFF59E0B).withValues(alpha: 0.45), // Read/Write
+      ];
+      const quarter = 3.141592653589793 / 2;
+      double start = -3.141592653589793 / 2;
+      for (int i = 0; i < 4; i++) {
+        final p = Paint()..color = colors[i]..style = PaintingStyle.fill;
+        canvas.drawArc(rect, start, quarter, true, p);
+        start += quarter;
+      }
+      // Inner circle hole (donut effect) with 0% text
+      final innerPaint = Paint()..color = const Color(0xFF1E293B);
+      canvas.drawCircle(center, radius * 0.55, innerPaint);
+
+      final textPainter = TextPainter(
+        text: const TextSpan(
+          text: '0%',
+          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2));
       return;
     }
 
