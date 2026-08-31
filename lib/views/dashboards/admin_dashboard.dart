@@ -2728,7 +2728,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                             ],
                                           ],
                                         ),
-] else ...[
+                                       );
+                                     },
+                                   ),
+                                 ] else ...[
                                   Builder(
                                     builder: (ctx) {
                                       final filteredUsers = _allUsersList.where((u) {
