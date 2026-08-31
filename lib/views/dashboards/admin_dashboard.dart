@@ -182,13 +182,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final schoolId = _parseInt(school['id']);
     final nameCtrl = TextEditingController(text: (school['name'] ?? '').toString());
     final townCtrl = TextEditingController(text: (school['town'] ?? '').toString());
-
+    final divisionCtrl = TextEditingController(text: (school['division'] ?? '').toString());
     String selectedRegion = (school['region'] ?? 'ADAMOUA').toString();
-    List<String> currentDivisions = _getDivisionsForRegion(selectedRegion);
-    String selectedDivision = (school['division'] ?? '').toString();
-    if (!currentDivisions.contains(selectedDivision)) {
-      selectedDivision = currentDivisions.isNotEmpty ? currentDivisions.first : 'DJEREM';
-    }
 
     showDialog(
       context: context,
@@ -196,129 +191,175 @@ class _AdminDashboardState extends State<AdminDashboard> {
         builder: (context, setModalState) {
           return AlertDialog(
             backgroundColor: _card,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
             title: Row(
               children: [
-                const Icon(Icons.edit_note_rounded, color: Color(0xFF0284C7), size: 22),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.edit_note_rounded, color: Color(0xFF0284C7), size: 24),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _isEn ? "Modify School Details" : "Modifier l'Établissement",
-                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEn ? "Modify School Record" : "Modifier l'Établissement",
+                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEn ? "Update institutional details & administrative location" : "Mettre à jour les informations et l'emplacement administratif",
+                        style: TextStyle(color: _sub, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             content: SingleChildScrollView(
               child: Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 480),
+                width: 580,
+                constraints: const BoxConstraints(maxWidth: 580),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_isEn ? "School Name:" : "Nom de l'Établissement :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
+
+                    // School Name
+                    Row(
+                      children: [
+                        const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "School Name *" : "Nom de l'Établissement *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     TextField(
                       controller: nameCtrl,
-                      style: TextStyle(color: _text, fontSize: 13),
+                      style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.school_outlined, color: Color(0xFF0284C7), size: 18),
+                        hintText: _isEn ? "e.g. LYCEE CLASSIQUE DE BAFOUSSAM" : "ex: LYCEE CLASSIQUE DE BAFOUSSAM",
+                        prefixIcon: const Icon(Icons.business_rounded, color: Color(0xFF0284C7), size: 18),
                         filled: true,
                         fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    Text(_isEn ? "Region:" : "Région :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    // Region Dropdown
+                    Row(
+                      children: [
+                        const Icon(Icons.map_rounded, color: Color(0xFF3B82F6), size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Region *" : "Région *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
                       initialValue: selectedRegion,
                       isExpanded: true,
                       dropdownColor: _card,
-                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                       items: ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'].map((r) {
                         return DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() {
-                            selectedRegion = val;
-                            currentDivisions = _getDivisionsForRegion(selectedRegion);
-                            selectedDivision = currentDivisions.first;
-                          });
-                        }
+                        if (val != null) setModalState(() => selectedRegion = val);
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    Text(_isEn ? "Division / Department:" : "Département :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedDivision,
-                      isExpanded: true,
-                      dropdownColor: _card,
-                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                    // Division / Department (Open Text Input)
+                    Row(
+                      children: [
+                        const Icon(Icons.account_balance_rounded, color: Color(0xFF8B5CF6), size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Division / Department *" : "Département *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: divisionCtrl,
+                      style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
+                        hintText: _isEn ? "e.g. MEZAM, MIFI, FAKO, WOURI, DJEREM" : "ex: MEZAM, MIFI, FAKO, WOURI, DJEREM",
+                        helperText: _isEn ? "Type any division name. New divisions are automatically registered." : "Saisissez le département. Tout nouveau département est enregistré.",
+                        helperStyle: TextStyle(color: _sub, fontSize: 11),
+                        prefixIcon: const Icon(Icons.apartment_rounded, color: Color(0xFF8B5CF6), size: 18),
                         filled: true,
                         fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
-                      items: currentDivisions.map((d) {
-                        return DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis));
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => selectedDivision = val);
-                      },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    Text(_isEn ? "Town / City:" : "Ville :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    // Town / City
+                    Row(
+                      children: [
+                        Icon(Icons.location_city_rounded, color: _green, size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Town / City :" : "Ville / Localité :", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     TextField(
                       controller: townCtrl,
-                      style: TextStyle(color: _text, fontSize: 13),
+                      style: TextStyle(color: _text, fontSize: 13.5),
                       decoration: InputDecoration(
+                        hintText: _isEn ? "e.g. Bafoussam, Bamenda, Buea, Yaounde" : "ex: Bafoussam, Bamenda, Buea, Yaoundé",
                         prefixIcon: Icon(Icons.location_on_outlined, color: _green, size: 18),
                         filled: true,
                         fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(_isEn ? "Cancel" : "Annuler", style: TextStyle(color: _sub)),
+                child: Text(_isEn ? "Cancel" : "Annuler", style: TextStyle(color: _sub, fontWeight: FontWeight.bold)),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0284C7),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: const Icon(Icons.check_circle_rounded, size: 16),
-                label: Text(_isEn ? "Save Changes" : "Enregistrer", style: const TextStyle(fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.check_circle_rounded, size: 18),
+                label: Text(_isEn ? "Save Changes" : "Enregistrer", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                 onPressed: () async {
                   final name = nameCtrl.text.trim();
+                  final div  = divisionCtrl.text.trim().toUpperCase();
                   final town = townCtrl.text.trim();
                   if (name.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please enter a school name" : "Veuillez saisir un nom")));
+                    return;
+                  }
+                  if (div.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please specify a division" : "Veuillez préciser le département")));
                     return;
                   }
                   Navigator.pop(ctx);
@@ -330,7 +371,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         'id': schoolId,
                         'name': name,
                         'region': selectedRegion,
-                        'division': selectedDivision,
+                        'division': div,
                         'town': town,
                       }),
                     );
@@ -472,9 +513,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _showAddSchoolDialog() {
     final nameCtrl = TextEditingController();
     final townCtrl = TextEditingController();
+    final divisionCtrl = TextEditingController();
     String selectedRegion = 'ADAMOUA';
-    List<String> currentDivisions = _getDivisionsForRegion(selectedRegion);
-    String selectedDivision = currentDivisions.first;
 
     showDialog(
       context: context,
@@ -482,8 +522,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         builder: (context, setModalState) {
           return AlertDialog(
             backgroundColor: _card,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
             title: Row(
               children: [
                 IconButton(
@@ -491,124 +531,175 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   color: _sub,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  tooltip: _isEn ? 'Back' : 'Retour',
+                  tooltip: _isEn ? "Back" : "Retour",
                   onPressed: () => Navigator.pop(ctx),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.add_business_rounded, color: _green, size: 20),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _green.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.add_business_rounded, color: _green, size: 22),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    _isEn ? 'Register New School' : 'Ajouter un Établissement',
-                    style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEn ? "Register New School" : "Ajouter un Établissement",
+                        style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _isEn ? "Enroll a new secondary or technical school into the national system" : "Enregistrer un établissement secondaire ou technique",
+                        style: TextStyle(color: _sub, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             content: SingleChildScrollView(
-              child: SizedBox(
-                width: 440,
+              child: Container(
+                width: 580,
+                constraints: const BoxConstraints(maxWidth: 580),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 8),
+
                     // School Name
-                    Text(_isEn ? 'School Name:' : 'Nom de l\'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.school_rounded, color: _green, size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "School Name *" : "Nom de l'Établissement *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     TextField(
                       controller: nameCtrl,
-                      style: TextStyle(color: _text, fontSize: 13),
+                      style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
-                        hintText: 'e.g. LYCEE BILINGUE DE BAFOUSSAM',
-                        prefixIcon: Icon(Icons.school_outlined, color: _green, size: 18),
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        hintText: _isEn ? "e.g. LYCEE BILINGUE DE BAFOUSSAM" : "ex: LYCEE BILINGUE DE BAFOUSSAM",
+                        prefixIcon: Icon(Icons.business_rounded, color: _green, size: 18),
+                        filled: true,
+                        fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     // Region Dropdown
-                    Text(_isEn ? 'Region:' : 'Région :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.map_rounded, color: Color(0xFF3B82F6), size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Region *" : "Région *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: selectedRegion,
+                      initialValue: selectedRegion,
                       isExpanded: true,
                       dropdownColor: _card,
-                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13.5),
                       decoration: InputDecoration(
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        filled: true,
+                        fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                       items: ['ADAMOUA', 'CENTRE', 'EST', 'EXTREME-NORD', 'LITTORAL', 'NORD', 'NORD-OUEST', 'OUEST', 'SUD', 'SUD-OUEST'].map((r) {
                         return DropdownMenuItem(value: r, child: Text(r, overflow: TextOverflow.ellipsis));
                       }).toList(),
                       onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() {
-                            selectedRegion = val;
-                            currentDivisions = _getDivisionsForRegion(selectedRegion);
-                            selectedDivision = currentDivisions.first;
-                          });
-                        }
+                        if (val != null) setModalState(() => selectedRegion = val);
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // Division Dropdown
-                    Text(_isEn ? 'Division / Department:' : 'Département :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    DropdownButtonFormField<String>(
-                      value: selectedDivision,
-                      isExpanded: true,
-                      dropdownColor: _card,
-                      style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
+                    // Division / Department (Open Text Input)
+                    Row(
+                      children: [
+                        const Icon(Icons.account_balance_rounded, color: Color(0xFF8B5CF6), size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Division / Department *" : "Département *", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: divisionCtrl,
+                      style: TextStyle(color: _text, fontSize: 13.5, fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        hintText: _isEn ? "e.g. MEZAM, MIFI, FAKO, WOURI, DJEREM" : "ex: MEZAM, MIFI, FAKO, WOURI, DJEREM",
+                        helperText: _isEn ? "Type any division name. New divisions are automatically registered." : "Saisissez le département. Tout nouveau département est enregistré.",
+                        helperStyle: TextStyle(color: _sub, fontSize: 11),
+                        prefixIcon: const Icon(Icons.apartment_rounded, color: Color(0xFF8B5CF6), size: 18),
+                        filled: true,
+                        fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
-                      items: currentDivisions.map((d) {
-                        return DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis));
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => selectedDivision = val);
-                      },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // Town
-                    Text(_isEn ? 'Town / City:' : 'Ville :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    // Town / City
+                    Row(
+                      children: [
+                        Icon(Icons.location_city_rounded, color: _green, size: 16),
+                        const SizedBox(width: 6),
+                        Text(_isEn ? "Town / City :" : "Ville / Localité :", style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     TextField(
                       controller: townCtrl,
-                      style: TextStyle(color: _text, fontSize: 13),
+                      style: TextStyle(color: _text, fontSize: 13.5),
                       decoration: InputDecoration(
-                        hintText: 'e.g. Ngaoundal',
+                        hintText: _isEn ? "e.g. Ngaoundal, Bafoussam, Yaounde" : "ex: Ngaoundal, Bafoussam, Yaoundé",
                         prefixIcon: Icon(Icons.location_on_outlined, color: _green, size: 18),
-                        filled: true, fillColor: _bg,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        filled: true,
+                        fillColor: _bg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
+                child: Text(_isEn ? "Cancel" : "Annuler", style: TextStyle(color: _sub, fontWeight: FontWeight.bold)),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.add_business_rounded, size: 18),
+                label: Text(_isEn ? "Create School" : "Créer l'Établissement", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                 onPressed: () async {
                   final name = nameCtrl.text.trim();
+                  final div  = divisionCtrl.text.trim().toUpperCase();
                   final town = townCtrl.text.trim();
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please enter a school name' : 'Veuillez saisir un nom d\'établissement')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please enter a school name" : "Veuillez saisir un nom")));
+                    return;
+                  }
+                  if (div.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please specify a division" : "Veuillez préciser le département")));
                     return;
                   }
                   Navigator.pop(ctx);
@@ -619,7 +710,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       body: jsonEncode({
                         'name': name,
                         'region': selectedRegion,
-                        'division': selectedDivision,
+                        'division': div,
                         'town': town,
                       }),
                     );
@@ -627,11 +718,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     if (res['success'] == true) {
                       _fetchAllUsersAndSchools();
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: _green, content: Text(_isEn ? 'School created successfully!' : 'Établissement créé avec succès !')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: _green, content: Text(_isEn ? "School created successfully!" : "Établissement créé avec succès !")),
+                        );
                       }
                     } else {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text(res['message'] ?? 'Failed to create school')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: Colors.redAccent, content: Text(res['message'] ?? 'Failed to create school')),
+                        );
                       }
                     }
                   } catch (e) {
@@ -640,7 +735,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     }
                   }
                 },
-                child: Text(_isEn ? 'Create School' : 'Créer Établissement', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           );
