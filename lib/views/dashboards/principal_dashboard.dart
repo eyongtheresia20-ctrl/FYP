@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/vark_academic_engine.dart';
 import '../../widgets/app_sidebar.dart';
 import '../../core/api_config.dart';
 
@@ -1803,46 +1804,15 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
     required String className,
     required bool isEn,
   }) {
-    final total = vis + aud + kin + rw;
-    if (total == 0) {
-      return isEn
-          ? '• Diagnostic analysis in progress for class $className.\n• Complete student VARK assessments to generate customized pedagogical recommendations.'
-          : '• Analyse diagnostique en cours pour la classe $className.\n• Complétez les évaluations VARK des élèves pour générer des recommandations pédagogiques personnalisées.';
-    }
-
-    final counts = {'Visual': vis, 'Auditory': aud, 'Kinesthetic': kin, 'Read/Write': rw};
-    final maxCount = counts.values.reduce((a, b) => a > b ? a : b);
-    final topStyles = counts.entries.where((e) => e.value == maxCount && e.value > 0).map((e) => e.key).toList();
-
-    List<String> recsEn = [];
-    List<String> recsFr = [];
-
-    if (topStyles.contains('Auditory')) {
-      recsEn.add('• Incorporate clear verbal explanations, class discussions, and Q&A sessions into daily lesson notes for class $className.');
-      recsEn.add('• Provide audio recordings and spoken summaries of key lecture topics for student review.');
-      recsFr.add('• Intégrez des explications orales claires, des débats et séances de Q/R dans vos fiches de cours pour la classe $className.');
-      recsFr.add('• Mettez à disposition des enregistrements audio et synthèses orales des leçons.');
-    }
-    if (topStyles.contains('Visual')) {
-      recsEn.add('• Utilize color-coded visual charts, mind maps, flowcharts, and board diagrams when preparing lesson notes for class $className.');
-      recsEn.add('• Incorporate video demonstrations, slides, and graphical models into classroom teaching.');
-      recsFr.add('• Utilisez des schémas visuels en couleur, des cartes mentales et organigrammes pour la classe de $className.');
-      recsFr.add('• Intégrez des démonstrations vidéo, des diaporamas et modèles graphiques en cours.');
-    }
-    if (topStyles.contains('Kinesthetic')) {
-      recsEn.add('• Structure lessons around hands-on lab experiments, interactive coding, and practical exercises for class $className.');
-      recsEn.add('• Provide step-by-step practical demonstrations and assign project-based learning tasks.');
-      recsFr.add('• Structurez vos cours autour de travaux pratiques, du codage interactif et d\'exercices pour $className.');
-      recsFr.add('• Proposez des démonstrations pratiques étape par étape et attribuez des projets pratiques.');
-    }
-    if (topStyles.contains('Read/Write')) {
-      recsEn.add('• Provide structured printed handouts, comprehensive reading glossaries, and written exercise sets for class $className.');
-      recsEn.add('• Guide students in writing out clear summaries, definitions, and detailed bulleted notes.');
-      recsFr.add('• Fournissez des fiches de cours imprimées, des glossaires détaillés et exercices écrits pour $className.');
-      recsFr.add('• Guidez les élèves dans la rédaction de résumés clairs et de notes structurées à puces.');
-    }
-
-    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+    final rec = VarkAcademicEngine.evaluateForEducators(
+      auditory: aud,
+      visual: vis,
+      kinesthetic: kin,
+      readWrite: rw,
+      contextName: className,
+      isSchoolLevel: false,
+    );
+    return isEn ? rec['en']! : rec['fr']!;
   }
 
   String _generateSchoolPolicyRec({
@@ -1853,51 +1823,15 @@ class _PrincipalDashboardState extends State<PrincipalDashboard> {
     required String schoolName,
     required bool isEn,
   }) {
-    final total = vis + aud + kin + rw;
-    if (total == 0) {
-      return isEn
-          ? '• Strategic Institutional Directive for $schoolName: Student diagnostic assessment coverage in progress. Coordinate with department heads to complete student VARK testing.'
-          : '• Directive Stratégique Institutionnelle pour $schoolName : Couverture des évaluations diagnostiques en cours. Coordonnez avec les chefs de travaux pour finaliser les tests VARK.';
-    }
-
-    String dominant = 'Auditory';
-    int maxCount = aud;
-    if (vis > maxCount) { maxCount = vis; dominant = 'Visual'; }
-    if (kin > maxCount) { maxCount = kin; dominant = 'Kinesthetic'; }
-    if (rw > maxCount)  { maxCount = rw;  dominant = 'Read/Write'; }
-
-    final int pct = total > 0 ? ((maxCount / total) * 100).round() : 0;
-
-    List<String> recsEn = [];
-    List<String> recsFr = [];
-
-    if (dominant == 'Auditory') {
-      recsEn.add('• Auditory Learning Strategy (Primary Focus) at $schoolName: Prioritize audio-visual equipment, recorded lecture archives, peer debates, and verbal instruction toolkits across classrooms.');
-      recsFr.add('• Stratégie d\'Apprentissage Auditif (Focus Principal) au $schoolName : Priorisez les équipements audiovisuels, cours enregistrés, débats et outils d\'enseignement oral.');
-    } else if (dominant == 'Visual') {
-      recsEn.add('• Visual Learning Strategy (Primary Focus) at $schoolName: Allocate digital projectors, interactive smartboards, visual simulation software, and color-coded study guides.');
-      recsFr.add('• Stratégie d\'Apprentissage Visuel (Focus Principal) au $schoolName : Allouez des vidéoprojecteurs, tableaux interactifs et fiches synthétiques en couleurs.');
-    } else if (dominant == 'Kinesthetic') {
-      recsEn.add('• Kinesthetic Learning Strategy (Primary Focus) at $schoolName: Expand practical computer science laboratories, technical hardware workshops, and practical field training.');
-      recsFr.add('• Stratégie d\'Apprentissage Kinesthésique (Focus Principal) au $schoolName : Développez les laboratoires informatiques pratiques, ateliers de maintenance et stages techniques.');
-    } else {
-      recsEn.add('• Read/Write Learning Strategy (Primary Focus) at $schoolName: Enrich school library with updated textbooks, digital reference manuals, e-libraries, and essay competitions.');
-      recsFr.add('• Stratégie d\'Apprentissage Lecture/Écriture (Focus Principal) au $schoolName : Enrichissez la bibliothèque en manuels, répertoires numériques et concours de rédaction.');
-    }
-
-    recsEn.add('• Auditory Directive: Facilitate interactive classroom discussions, oral presentations, and group debates.');
-    recsFr.add('• Directive Auditive : Facilitez les discussions interactives en classe, exposés oraux et débats.');
-
-    recsEn.add('• Visual Directive: Equip classrooms with visual charts, multi-colored whiteboards, and mind-mapping tools.');
-    recsFr.add('• Directive Visuelle : Équipez les classes de graphiques visuels et schémas.');
-
-    recsEn.add('• Kinesthetic Directive: Provide hands-on laboratory equipment, practical ICT workshops, and active learning exercises.');
-    recsFr.add('• Directive Kinesthésique : Fournissez du matériel de laboratoire pratique et des ateliers informatiques.');
-
-    recsEn.add('• Read/Write Directive: Supply comprehensive textbook reference guides, structured note-taking frameworks, and library resources.');
-    recsFr.add('• Directive Lecture/Écriture : Mettez à disposition des manuels de référence complets et des fiches de synthèse.');
-
-    return isEn ? recsEn.join('\n') : recsFr.join('\n');
+    final rec = VarkAcademicEngine.evaluateForEducators(
+      auditory: aud,
+      visual: vis,
+      kinesthetic: kin,
+      readWrite: rw,
+      contextName: schoolName,
+      isSchoolLevel: true,
+    );
+    return isEn ? rec['en']! : rec['fr']!;
   }
 
   @override

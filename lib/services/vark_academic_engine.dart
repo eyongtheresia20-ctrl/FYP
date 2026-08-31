@@ -42,7 +42,6 @@ class VarkEvaluationResult {
 }
 
 class VarkAcademicEngine {
-  /// Evaluates scores for individual Student Self-Study.
   static VarkEvaluationResult evaluateForStudent({
     required num auditory,
     required num visual,
@@ -140,14 +139,13 @@ class VarkAcademicEngine {
     );
   }
 
-  /// Evaluates scores for TEACHERS, DEANS, PRINCIPALS, DELEGATES, and ADMINS.
-  /// Strictly tailors recommendations ONLY to the styles present in that school/class cohort.
   static Map<String, String> evaluateForEducators({
     required num auditory,
     required num visual,
     required num kinesthetic,
     required num readWrite,
     String contextName = '',
+    bool isSchoolLevel = false,
   }) {
     final int aud = auditory.toInt();
     final int vis = visual.toInt();
@@ -156,16 +154,25 @@ class VarkAcademicEngine {
     final int totalAssessed = aud + vis + kin + rw;
 
     if (totalAssessed == 0) {
-      final nameSuffix = contextName.isNotEmpty ? ' for $contextName' : '';
-      final nameSuffixFr = contextName.isNotEmpty ? ' pour $contextName' : '';
-      return {
-        'en': "• Diagnostic Phase: Student evaluations are in progress$nameSuffix.\n\n"
-              "• Inclusive Multimodal Teaching: Encourage teachers to integrate verbal explanations, blackboard diagrams, structured notes, and practical exercises so all future evaluated learners benefit.\n\n"
-              "• Diagnostic Supervision: Coordinate with teachers and school heads to ensure all enrolled students complete their diagnostic test.",
-        'fr': "• Phase Diagnostique : Les évaluations des élèves sont en cours$nameSuffixFr.\n\n"
-              "• Enseignement Multimodal Inclusif : Encouragez les enseignants à intégrer explications orales, schémas, notes écrites et exercices pratiques pour toucher l'ensemble des futurs évalués.\n\n"
-              "• Suivi Diagnostique : Coordonnez avec les enseignants et proviseurs pour que tous les élèves inscrits complètent leur test.",
-      };
+      if (isSchoolLevel) {
+        return {
+          'en': "• Multimodal Strategy (Diagnostic Phase): Diagnostic VARK assessments are currently in progress across classes in $contextName.\n\n"
+                "• School-Wide Multimodal Instruction: Head teachers and pedagogical staff should encourage all learning styles equally by ensuring every subject incorporates verbal lectures, visual diagrams, structured texts, and practical exercises.\n\n"
+                "• Diagnostic Supervision: Coordinate with class teachers to ensure all enrolled students complete their diagnostic VARK test.",
+          'fr': "• Stratégie Multimodale (Phase Diagnostique) : Les évaluations diagnostiques VARK sont en cours dans les classes de $contextName.\n\n"
+                "• Enseignement Multimodal Global : Les équipes pédagogiques doivent encourager équitablement tous les styles d'apprentissage en combinant explications orales, supports visuels, fiches écrites et travaux pratiques.\n\n"
+                "• Suivi Diagnostique : Coordonnez avec les professeurs principaux pour que l'ensemble des élèves complètent leur évaluation.",
+        };
+      } else {
+        return {
+          'en': "• Multimodal Teaching Strategy (Diagnostic Phase): No students have completed the VARK assessment in $contextName yet.\n\n"
+                "• Differentiated Classroom Engagement: Encourage and stimulate all learning styles equally through multimodal instruction—combining oral explanations, whiteboard diagrams, written notes, and hands-on exercises.\n\n"
+                "• Assessment Coordination: Encourage all students in this class to complete their diagnostic test on the platform.",
+          'fr': "• Stratégie Pédagogique Multimodale (Phase Diagnostique) : Aucun élève n'a encore complété le test VARK en $contextName.\n\n"
+                "• Enseignement Inclusif & Équilibré : Encouragez et mobilisez équitablement tous les styles d'apprentissage (explications orales, schémas au tableau, notes écrites et exercices pratiques).\n\n"
+                "• Coordination Diagnostique : Invitez tous les élèves de cette classe à passer leur évaluation sur la plateforme.",
+        };
+      }
     }
 
     final Map<String, int> scores = {
@@ -175,7 +182,6 @@ class VarkAcademicEngine {
       'Read/Write': rw,
     };
 
-    // Only include learning styles that actually have assessed students (> 0)
     final Map<String, int> presentStyles = {};
     scores.forEach((st, count) {
       if (count > 0) {
@@ -189,7 +195,6 @@ class VarkAcademicEngine {
     final List<String> linesEn = [];
     final List<String> linesFr = [];
 
-    // 1. Cohort Distribution Breakdown
     final List<String> partsEn = [];
     final List<String> partsFr = [];
     for (var entry in sorted) {
@@ -197,10 +202,13 @@ class VarkAcademicEngine {
       partsEn.add('${entry.value} ${entry.key} ($pct%)');
       partsFr.add('${entry.value} ${getModalityNameFr(entry.key)} ($pct%)');
     }
-    linesEn.add("• Profile Overview: ${partsEn.join(', ')} out of $totalAssessed assessed students.");
-    linesFr.add("• Profil Global : ${partsFr.join(', ')} sur $totalAssessed élèves évalués.");
 
-    // 2. Actionable Directives for Each Present Style
+    final headerPrefixEn = isSchoolLevel ? '• School Global Profile' : '• Class Profile Overview';
+    final headerPrefixFr = isSchoolLevel ? '• Profil Global de l\'Établissement' : '• Profil de la Classe';
+
+    linesEn.add("$headerPrefixEn: ${partsEn.join(', ')} out of $totalAssessed assessed students.");
+    linesFr.add("$headerPrefixFr : ${partsFr.join(', ')} sur $totalAssessed élèves évalués.");
+
     for (var entry in sorted) {
       final st = entry.key;
       final cnt = entry.value;
@@ -345,7 +353,7 @@ class VarkAcademicEngine {
         switch (category) {
           case 1: return {'en': "Almost no reliance on auditory intake.", 'fr': "Quasi-absence de recours à l'écoute."};
           case 2: return {'en': "Minor auditory reliance. Rarely benefits from pure lectures.", 'fr': "Faible recours à l'auditif. Tire peu profit des cours magistraux."};
-          case 3: return {'en': "Balances auditory learning with other modalities.", 'fr' : "Équilibre l'écoute avec les autres styles."};
+          case 3: return {'en': "Balances auditory learning with other modalities.", 'fr': "Équilibre l'écoute avec les autres styles."};
           case 4: return {'en': "Strong leaning towards verbal explanations and discussions.", 'fr': "Forte orientation vers les explications orales et discussions."};
           case 5:
           default: return {'en': "Extreme reliance on hearing and spoken words.", 'fr': "Forte prédominance de l'écoute et de l'expression orale."};
