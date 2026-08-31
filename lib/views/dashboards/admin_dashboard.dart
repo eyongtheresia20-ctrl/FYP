@@ -2346,6 +2346,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           if (_currentNavIndex == 3) ...[
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 // Top Action Bar: [Users / Schools Toggle on LEFT] & [Create User / Add School on RIGHT]
                                 LayoutBuilder(
                                   builder: (context, headerConstraints) {
