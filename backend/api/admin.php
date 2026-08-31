@@ -178,6 +178,19 @@ switch ($action) {
             respondError('School Name, Region, and Division are required.');
         }
 
+        // Auto-register division into divisions table if missing
+        $stmtRegId = $pdo->prepare("SELECT id FROM regions WHERE UPPER(name_fr) = UPPER(?) OR UPPER(name_en) = UPPER(?) OR UPPER(code) = UPPER(?) LIMIT 1");
+        $stmtRegId->execute([$region, $region, $region]);
+        $regId = $stmtRegId->fetchColumn();
+        if ($regId && !empty($division)) {
+            $stmtChkDiv = $pdo->prepare("SELECT id FROM divisions WHERE region_id = ? AND (UPPER(code) = UPPER(?) OR UPPER(name_en) = UPPER(?) OR UPPER(name_fr) = UPPER(?))");
+            $stmtChkDiv->execute([$regId, $division, $division, $division]);
+            if (!$stmtChkDiv->fetch()) {
+                $divCode = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '_', $division));
+                $pdo->prepare("INSERT INTO divisions (region_id, code, name_en, name_fr, created_at) VALUES (?, ?, ?, ?, NOW())")
+                    ->execute([$regId, $divCode, ucfirst(strtolower($division)), ucfirst(strtolower($division))]);
+            }
+        }
         $stmt = $pdo->prepare("INSERT INTO schools (name, region, division, town) VALUES (?, ?, ?, ?)");
         $stmt->execute([$name, $region, $division, $town]);
         $newSchoolId = $pdo->lastInsertId();
@@ -347,7 +360,7 @@ switch ($action) {
         $stmtCls->execute([$schoolId]);
         $classesList = $stmtCls->fetchAll(PDO::FETCH_COLUMN);
         $classesCount = count($classesList);
-        if ($classesCount == 0) $classesCount = 2;
+        // $classesCount stays 0 if no classes enrolled yet
 
         // Fetch teachers count
         $stmtT = $pdo->prepare("SELECT COUNT(*) FROM teachers t JOIN users u ON u.id = t.user_id WHERE u.school_id = ?");
@@ -499,6 +512,19 @@ switch ($action) {
             respondError("A school with the name '$schoolName' already exists.");
         }
 
+        // Auto-register division into divisions table if missing
+        $stmtRegId = $pdo->prepare("SELECT id FROM regions WHERE UPPER(name_fr) = UPPER(?) OR UPPER(name_en) = UPPER(?) OR UPPER(code) = UPPER(?) LIMIT 1");
+        $stmtRegId->execute([$region, $region, $region]);
+        $regId = $stmtRegId->fetchColumn();
+        if ($regId && !empty($division)) {
+            $stmtChkDiv = $pdo->prepare("SELECT id FROM divisions WHERE region_id = ? AND (UPPER(code) = UPPER(?) OR UPPER(name_en) = UPPER(?) OR UPPER(name_fr) = UPPER(?))");
+            $stmtChkDiv->execute([$regId, $division, $division, $division]);
+            if (!$stmtChkDiv->fetch()) {
+                $divCode = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '_', $division));
+                $pdo->prepare("INSERT INTO divisions (region_id, code, name_en, name_fr, created_at) VALUES (?, ?, ?, ?, NOW())")
+                    ->execute([$regId, $divCode, ucfirst(strtolower($division)), ucfirst(strtolower($division))]);
+            }
+        }
         $stmt = $pdo->prepare("INSERT INTO schools (code, name, region, division, town, is_active, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())");
         $stmt->execute([$code, $schoolName, $region, $division, $town]);
         $newId = $pdo->lastInsertId();

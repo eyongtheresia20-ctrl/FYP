@@ -716,14 +716,24 @@ switch ($action) {
         // Build full national hierarchy for all 10 Regions: Region -> Division -> School -> Class
         $nationalItems = [];
         foreach ($allCameroonRegions as $regName) {
-            $stmtDivs = $pdo->prepare("SELECT DISTINCT division FROM schools WHERE region = ? AND division IS NOT NULL AND division != '' ORDER BY division");
-            $stmtDivs->execute([$regName]);
+            $stmtDivs = $pdo->prepare("
+                SELECT DISTINCT division_name FROM (
+                    SELECT UPPER(d.code) AS division_name FROM divisions d JOIN regions r ON r.id = d.region_id 
+                    WHERE UPPER(r.name_fr) = UPPER(?) OR UPPER(r.name_en) = UPPER(?) OR UPPER(r.code) = UPPER(?) OR UPPER(r.name_fr) = UPPER(REPLACE(?, '-', ' '))
+                    UNION
+                    SELECT UPPER(division) AS division_name FROM schools 
+                    WHERE (UPPER(region) = UPPER(?) OR UPPER(region) = UPPER(REPLACE(?, '-', ' '))) AND division IS NOT NULL AND division != ''
+                ) AS combined_divs
+                WHERE division_name IS NOT NULL AND division_name != ''
+                ORDER BY division_name
+            ");
+            $stmtDivs->execute([$regName, $regName, $regName, $regName, $regName, $regName]);
             $divList = $stmtDivs->fetchAll(PDO::FETCH_COLUMN);
 
             $divItems = [];
             foreach ($divList as $divName) {
-                $stmtSc = $pdo->prepare("SELECT id, name FROM schools WHERE region = ? AND division = ? ORDER BY name");
-                $stmtSc->execute([$regName, $divName]);
+                $stmtSc = $pdo->prepare("SELECT id, name FROM schools WHERE (UPPER(region) = UPPER(?) OR UPPER(region) = UPPER(REPLACE(?, '-', ' '))) AND (UPPER(division) = UPPER(?) OR UPPER(division) = UPPER(REPLACE(?, '_', '-'))) ORDER BY name");
+                $stmtSc->execute([$regName, $regName, $divName, $divName]);
                 $schoolsList = $stmtSc->fetchAll(PDO::FETCH_ASSOC);
 
                 $scItems = [];

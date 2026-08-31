@@ -147,6 +147,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         }
         _isLoadingUsers = false;
       });
+      _fetchAdminData(); // Refresh sidebar regional hierarchy dynamically
     } catch (_) {
       setState(() => _isLoadingUsers = false);
     }
