@@ -146,6 +146,8 @@ class VarkAcademicEngine {
     required num readWrite,
     String contextName = '',
     bool isSchoolLevel = false,
+    bool isNationalLevel = false,
+    bool isRegionalLevel = false,
   }) {
     final int aud = auditory.toInt();
     final int vis = visual.toInt();
@@ -154,7 +156,16 @@ class VarkAcademicEngine {
     final int totalAssessed = aud + vis + kin + rw;
 
     if (totalAssessed == 0) {
-      if (isSchoolLevel) {
+      if (isNationalLevel) {
+        return {
+          'en': "• National Multimodal Strategy (Diagnostic Phase): Diagnostic VARK assessments are currently underway nationwide across secondary and technical schools.\n\n"
+                "• Universal Multimodal Educational Policy: All pedagogical inspectors, regional delegates, and educators must encourage and balance all 4 learning modalities equally (Visual, Auditory, Read/Write, Kinesthetic) across all academic curricula.\n\n"
+                "• National Assessment Supervision: Mobilize regional and divisional delegations to ensure all enrolled secondary students complete their diagnostic VARK test.",
+          'fr': "• Stratégie Multimodale Nationale (Phase Diagnostique) : Les évaluations diagnostiques VARK sont en cours dans l'ensemble des établissements secondaires et techniques du territoire.\n\n"
+                "• Politique Éducative Multimodale Globale : L'ensemble des inspecteurs pédagogiques, délégués régionaux et enseignants doivent encourager équitablement les 4 modalités d'apprentissage (Visuel, Auditif, Lecture/Écriture, Kinesthésique).\n\n"
+                "• Suivi National des Évaluations : Mobiliser les délégations régionales et départementales pour que l'ensemble des élèves complètent leur test diagnostique.",
+        };
+      } else if (isSchoolLevel) {
         return {
           'en': "• Multimodal Strategy (Diagnostic Phase): Diagnostic VARK assessments are currently in progress across classes in $contextName.\n\n"
                 "• School-Wide Multimodal Instruction: Head teachers and pedagogical staff should encourage all learning styles equally by ensuring every subject incorporates verbal lectures, visual diagrams, structured texts, and practical exercises.\n\n"
@@ -190,7 +201,6 @@ class VarkAcademicEngine {
     });
 
     final sorted = presentStyles.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final dominant = sorted.first.key;
 
     final List<String> linesEn = [];
     final List<String> linesFr = [];
@@ -203,8 +213,18 @@ class VarkAcademicEngine {
       partsFr.add('${entry.value} ${getModalityNameFr(entry.key)} ($pct%)');
     }
 
-    final headerPrefixEn = isSchoolLevel ? '• School Global Profile' : '• Class Profile Overview';
-    final headerPrefixFr = isSchoolLevel ? '• Profil Global de l\'Établissement' : '• Profil de la Classe';
+    String headerPrefixEn = '• Class Profile Overview';
+    String headerPrefixFr = '• Profil de la Classe';
+    if (isNationalLevel) {
+      headerPrefixEn = '• National Evaluated Cohort Profile';
+      headerPrefixFr = '• Profil de la Cohorte Évaluée au Niveau National';
+    } else if (isRegionalLevel) {
+      headerPrefixEn = '• Regional Evaluated Cohort Profile';
+      headerPrefixFr = '• Profil de la Cohorte Évaluée au Niveau Régional';
+    } else if (isSchoolLevel) {
+      headerPrefixEn = '• School Evaluated Cohort Profile';
+      headerPrefixFr = '• Profil de la Cohorte Évaluée de l\'Établissement';
+    }
 
     linesEn.add("$headerPrefixEn: ${partsEn.join(', ')} out of $totalAssessed assessed students.");
     linesFr.add("$headerPrefixFr : ${partsFr.join(', ')} sur $totalAssessed élèves évalués.");
@@ -246,6 +266,28 @@ class VarkAcademicEngine {
                      "  - Pratiques Pédagogiques : Fournissez des plans de cours écrits, des résumés structurés à puces, des définitions précises et des lectures dirigées.\n"
                      "  - Soutien Institutionnel : Approvisionnez les bibliothèques scolaires en manuels récents, glossaires et recueils d'exercices.");
       }
+    }
+
+    // Append Territorial Multimodal Directive for Unassessed Classes / Schools
+    if (isNationalLevel || isRegionalLevel || isSchoolLevel) {
+      final scopeEn = isNationalLevel ? "Nationwide & Across Unassessed Classes" : (isRegionalLevel ? "Region-Wide & Across Unassessed Classes" : "School-Wide for Ongoing & Unassessed Classes");
+      final scopeFr = isNationalLevel ? "À l'Échelle Nationale & Pour les Classes Non Évaluées" : (isRegionalLevel ? "À l'Échelle Régionale & Pour les Classes Non Évaluées" : "Pour les Classes en Cours d'Évaluation");
+
+      linesEn.add("• Universal Multimodal Pedagogical Directive ($scopeEn):\n"
+                  "  Since diagnostic testing is progressively rolling out and several classes/schools are yet to complete their VARK assessment, educators must encourage and balance all 4 learning modalities:\n"
+                  "  - Visual: Integrate structured diagrams, schema boards, and visual summaries.\n"
+                  "  - Auditory: Maintain interactive oral lectures, verbal recaps, and structured discussions.\n"
+                  "  - Read/Write: Guide textbook readings, concise glossary notes, and written synthesis.\n"
+                  "  - Kinesthetic: Utilize lab demonstrations, practical exercises, and tangible problem sets.\n"
+                  "  - Diagnostic Action: Coordinate with teachers and delegates to ensure 100% assessment coverage across all student cohorts.");
+
+      linesFr.add("• Directive Pédagogique Multimodale Globale ($scopeFr) :\n"
+                  "  Comme le déploiement diagnostique est en cours et que certaines classes/établissements n'ont pas encore finalisé le test VARK, les enseignants doivent encourager et équilibrer les 4 modalités d'apprentissage :\n"
+                  "  - Visuel : Intégrer des schémas clairs au tableau, des synthèses visuelles et des graphiques.\n"
+                  "  - Auditif : Maintenir des explications orales dynamiques, des récapitulatifs verbaux et des débats.\n"
+                  "  - Lecture/Écriture : Guider la lecture des manuels, les définitions structurées et les prises de notes.\n"
+                  "  - Kinesthésique : Proposer des travaux pratiques, des manipulations concrètes et des résolutions actives.\n"
+                  "  - Action Diagnostique : Coordonner avec les enseignants et délégués pour atteindre 100% de couverture de l'évaluation.");
     }
 
     return {

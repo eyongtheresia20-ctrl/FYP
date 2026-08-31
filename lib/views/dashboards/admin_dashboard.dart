@@ -1863,6 +1863,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       kinesthetic: kinCount,
       readWrite: rwCount,
       contextName: 'National Territory',
+      isNationalLevel: true,
     );
     final String aiStrategy = _isEn ? educatorNationalRec['en']! : educatorNationalRec['fr']!;
 
@@ -2346,7 +2347,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Action Header Bar
+                                // Action Header Bar (Dynamic for Users vs Schools)
                                 LayoutBuilder(
                                   builder: (context, headerConstraints) {
                                     final isCompact = headerConstraints.maxWidth < 600;
@@ -2354,20 +2355,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       return Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(_isEn ? 'User & System Governance' : 'Gestion des Utilisateurs & Sécurité', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 17)),
-                                          const SizedBox(height: 2),
+                                          Text(
+                                            !_showSchoolsSection
+                                                ? (_isEn ? "User & System Governance" : "Gestion des Utilisateurs & Sécurité")
+                                                : (_isEn ? "Schools & Institutions Directory" : "Répertoire des Établissements"),
+                                            style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 17),
+                                          ),
+                                          const SizedBox(height: 4),
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: ElevatedButton.icon(
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: _green,
+                                                backgroundColor: !_showSchoolsSection ? _green : const Color(0xFF0284C7),
                                                 foregroundColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                               ),
-                                              onPressed: _showAddUserDialog,
-                                              icon: const Icon(Icons.person_add_rounded, size: 16),
-                                              label: Text(_isEn ? '+ Create User' : '+ Créer un Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                                              onPressed: !_showSchoolsSection ? _showAddUserDialog : _showAddSchoolDialog,
+                                              icon: Icon(!_showSchoolsSection ? Icons.person_add_rounded : Icons.add_business_rounded, size: 16),
+                                              label: Text(
+                                                !_showSchoolsSection
+                                                    ? (_isEn ? "+ Create User" : "+ Créer un Utilisateur")
+                                                    : (_isEn ? "+ Add School" : "+ Ajouter un Établissement"),
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -2380,18 +2391,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(_isEn ? 'User & System Governance' : 'Gestion des Utilisateurs & Sécurité', style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18)),
+                                              Text(
+                                                !_showSchoolsSection
+                                                    ? (_isEn ? "User & System Governance" : "Gestion des Utilisateurs & Sécurité")
+                                                    : (_isEn ? "Schools & Institutions Directory" : "Répertoire des Établissements"),
+                                                style: TextStyle(color: _text, fontWeight: FontWeight.w900, fontSize: 18),
+                                              ),
                                               const SizedBox(height: 2),
-                                              Text(_isEn ? 'Direct database access for account creation & role assignment' : 'Accès direct à la base de données pour la création des comptes', style: TextStyle(color: _sub, fontSize: 12.5)),
+                                              Text(
+                                                !_showSchoolsSection
+                                                    ? (_isEn ? "Direct database access for account creation & role assignment" : "Accès direct à la base de données pour la création des comptes")
+                                                    : (_isEn ? "Institutional secondary & technical schools database" : "Base de données des établissements scolaires enregistrés"),
+                                                style: TextStyle(color: _sub, fontSize: 12.5),
+                                              ),
                                             ],
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                                          onPressed: _showAddUserDialog,
-                                          icon: const Icon(Icons.person_add_rounded, size: 18),
-                                          label: Text(_isEn ? '+ Create User' : '+ Créer un Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: !_showSchoolsSection ? _green : const Color(0xFF0284C7),
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          ),
+                                          onPressed: !_showSchoolsSection ? _showAddUserDialog : _showAddSchoolDialog,
+                                          icon: Icon(!_showSchoolsSection ? Icons.person_add_rounded : Icons.add_business_rounded, size: 18),
+                                          label: Text(
+                                            !_showSchoolsSection
+                                                ? (_isEn ? "+ Create User" : "+ Créer un Utilisateur")
+                                                : (_isEn ? "+ Add School" : "+ Ajouter un Établissement"),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                          ),
                                         ),
                                       ],
                                     );
@@ -2399,7 +2430,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ),
                                 const SizedBox(height: 16),
 
-                                // Users Filter & Search Row
+                                // Search & Filter Row (Role dropdown only visible for Users)
                                 LayoutBuilder(
                                   builder: (context, filterConstraints) {
                                     final isMobileFilter = filterConstraints.maxWidth < 500;
@@ -2407,7 +2438,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       onChanged: (val) => setState(() => _userSearchQuery = val),
                                       style: TextStyle(color: _text),
                                       decoration: InputDecoration(
-                                        hintText: _isEn ? 'Search by name or matricule...' : 'Rechercher par nom ou matricule...',
+                                        hintText: !_showSchoolsSection
+                                            ? (_isEn ? "Search by name or matricule..." : "Rechercher par nom ou matricule...")
+                                            : (_isEn ? "Search by school name, region, division, town..." : "Rechercher par nom d'établissement, région, département, ville..."),
                                         hintStyle: TextStyle(color: _sub, fontSize: 12.5),
                                         prefixIcon: Icon(Icons.search_rounded, color: _sub, size: 20),
                                         filled: true, fillColor: _bg,
@@ -2415,6 +2448,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                                       ),
                                     );
+
+                                    if (_showSchoolsSection) {
+                                      // Clean full-width search without irrelevant role dropdown
+                                      return Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14), border: Border.all(color: _border)),
+                                        child: searchField,
+                                      );
+                                    }
 
                                     final roleDropdown = Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -2462,7 +2504,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   },
                                 ),
                                 const SizedBox(height: 16),
-
                                 // Toggle between Users & Schools
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 14),
