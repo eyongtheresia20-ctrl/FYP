@@ -200,11 +200,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             title: Row(
               children: [
-                Icon(Icons.edit_note_rounded, color: const Color(0xFF0284C7), size: 22),
+                const Icon(Icons.edit_note_rounded, color: Color(0xFF0284C7), size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _isEn ? 'Modify School Details' : 'Modifier l'Établissement',
+                    _isEn ? "Modify School Details" : "Modifier l'Établissement",
                     style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -219,7 +219,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_isEn ? 'School Name:' : 'Nom de l'Établissement :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(_isEn ? "School Name:" : "Nom de l'Établissement :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: nameCtrl,
@@ -234,10 +234,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    Text(_isEn ? 'Region:' : 'Région :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(_isEn ? "Region:" : "Région :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: selectedRegion,
+                      initialValue: selectedRegion,
                       isExpanded: true,
                       dropdownColor: _card,
                       style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
@@ -262,10 +262,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    Text(_isEn ? 'Division / Department:' : 'Département :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(_isEn ? "Division / Department:" : "Département :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     DropdownButtonFormField<String>(
-                      value: selectedDivision,
+                      initialValue: selectedDivision,
                       isExpanded: true,
                       dropdownColor: _card,
                       style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13),
@@ -284,7 +284,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                     const SizedBox(height: 12),
 
-                    Text(_isEn ? 'Town / City:' : 'Ville :', style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(_isEn ? "Town / City:" : "Ville :", style: TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     TextField(
                       controller: townCtrl,
@@ -304,7 +304,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
+                child: Text(_isEn ? "Cancel" : "Annuler", style: TextStyle(color: _sub)),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -313,12 +313,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 icon: const Icon(Icons.check_circle_rounded, size: 16),
-                label: Text(_isEn ? 'Save Changes' : 'Enregistrer', style: const TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(_isEn ? "Save Changes" : "Enregistrer", style: const TextStyle(fontWeight: FontWeight.bold)),
                 onPressed: () async {
                   final name = nameCtrl.text.trim();
                   final town = townCtrl.text.trim();
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please enter a school name' : 'Veuillez saisir un nom')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please enter a school name" : "Veuillez saisir un nom")));
                     return;
                   }
                   Navigator.pop(ctx);
@@ -339,7 +339,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       _fetchAllUsersAndSchools();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: _green, content: Text(_isEn ? 'School updated successfully!' : 'Établissement mis à jour avec succès !')),
+                          SnackBar(backgroundColor: _green, content: Text(_isEn ? "School updated successfully!" : "Établissement mis à jour avec succès !")),
                         );
                       }
                     } else {
@@ -380,8 +380,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       if (data['success'] == true) {
         if (mounted) {
           final msg = newStatus == 1 
-              ? (_isEn ? 'School unblocked / activated!' : 'Établissement débloqué / activé !')
-              : (_isEn ? 'School blocked / suspended!' : 'Établissement bloqué / suspendu !');
+              ? (_isEn ? "School unblocked / activated!" : "Établissement débloqué / activé !")
+              : (_isEn ? "School blocked / suspended!" : "Établissement bloqué / suspendu !");
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: newStatus == 1 ? _green : Colors.orange, content: Text(msg)));
           _fetchAllUsersAndSchools();
         }
@@ -404,7 +404,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                _isEn ? 'Delete School Record' : 'Supprimer l'Établissement',
+                _isEn ? "Delete School Record" : "Supprimer l'Établissement",
                 style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 16),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -420,7 +420,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(_isEn ? 'Cancel' : 'Annuler', style: TextStyle(color: _sub)),
+            child: Text(_isEn ? "Cancel" : "Annuler", style: TextStyle(color: _sub)),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -430,7 +430,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.delete_forever_rounded, size: 18),
-            label: Text(_isEn ? 'Delete Permanently' : 'Supprimer Définitivement'),
+            label: Text(_isEn ? "Delete Permanently" : "Supprimer Définitivement"),
           ),
         ],
       ),
@@ -450,7 +450,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         if (data['success'] == true) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(backgroundColor: _green, content: Text(_isEn ? 'School deleted successfully!' : 'Établissement supprimé avec succès !')),
+              SnackBar(backgroundColor: _green, content: Text(_isEn ? "School deleted successfully!" : "Établissement supprimé avec succès !")),
             );
             _fetchAllUsersAndSchools();
           }
@@ -2501,12 +2501,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                  ),
                                                  child: Row(
                                                    children: [
-                                                     Expanded(flex: 4, child: Text(_isEn ? 'School Name' : 'Nom de l\'Établissement', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
-                                                     Expanded(flex: 2, child: Text(_isEn ? 'Region' : 'Région', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
-                                                     Expanded(flex: 2, child: Text(_isEn ? 'Division' : 'Département', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
-                                                     Expanded(flex: 2, child: Text(_isEn ? 'Town / City' : 'Ville', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
-                                                     Expanded(flex: 2, child: Align(alignment: Alignment.centerLeft, child: Text(_isEn ? 'Status' : 'Statut', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5)))),
-                                                     Expanded(flex: 4, child: Align(alignment: Alignment.centerRight, child: Text(_isEn ? 'Actions' : 'Actions', style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5)))),
+                                                     Expanded(flex: 4, child: Text(_isEn ? "School Name" : "Nom de l'Établissement", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                     Expanded(flex: 2, child: Text(_isEn ? "Region" : "Région", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                     Expanded(flex: 2, child: Text(_isEn ? "Division" : "Département", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                     Expanded(flex: 2, child: Text(_isEn ? "Town / City" : "Ville", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5))),
+                                                     Expanded(flex: 2, child: Align(alignment: Alignment.centerLeft, child: Text(_isEn ? "Status" : "Statut", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5)))),
+                                                     Expanded(flex: 4, child: Align(alignment: Alignment.centerRight, child: Text(_isEn ? "Actions" : "Actions", style: TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 12.5)))),
                                                    ],
                                                  ),
                                                ),
@@ -2637,7 +2637,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                                    Icon(isActive ? Icons.check_circle_rounded : Icons.cancel_rounded, color: isActive ? _green : Colors.redAccent, size: 13),
                                                                    const SizedBox(width: 4),
                                                                    Text(
-                                                                     isActive ? (_isEn ? 'Active' : 'Actif') : (_isEn ? 'Blocked' : 'Bloqué'),
+                                                                     isActive ? (_isEn ? "Active" : "Actif") : (_isEn ? "Blocked" : "Bloqué"),
                                                                      style: TextStyle(color: isActive ? _green : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
                                                                    ),
                                                                  ],
@@ -2667,7 +2667,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                                      _fetchSchoolDetails(scName);
                                                                    });
                                                                  },
-                                                                 child: Text(_isEn ? 'View Stats' : 'Stats', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                                                 child: Text(_isEn ? "View Stats" : "Stats", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                                                                ),
                                                                const SizedBox(width: 6),
 
@@ -2681,7 +2681,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                                                    padding: const EdgeInsets.all(6),
                                                                    icon: const Icon(Icons.edit_rounded, color: Color(0xFF0284C7), size: 16),
-                                                                   tooltip: _isEn ? 'Modify School' : 'Modifier l\'Établissement',
+                                                                   tooltip: _isEn ? "Modify School" : "Modifier l'Établissement",
                                                                    onPressed: () => _showEditSchoolDialog(s),
                                                                  ),
                                                                ),
@@ -2697,7 +2697,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                                                    padding: const EdgeInsets.all(6),
                                                                    icon: Icon(isActive ? Icons.block_rounded : Icons.check_circle_outline_rounded, color: isActive ? Colors.orange : _green, size: 16),
-                                                                   tooltip: isActive ? (_isEn ? 'Block School' : 'Bloquer l\'Établissement') : (_isEn ? 'Unblock School' : 'Débloquer l\'Établissement'),
+                                                                   tooltip: isActive ? (_isEn ? "Block School" : "Bloquer l'Établissement") : (_isEn ? "Unblock School" : "Débloquer l'Établissement"),
                                                                    onPressed: () => _toggleSchoolStatus(s, isActive ? 0 : 1),
                                                                  ),
                                                                ),
@@ -2713,7 +2713,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                                                    padding: const EdgeInsets.all(6),
                                                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 16),
-                                                                   tooltip: _isEn ? 'Delete School' : 'Supprimer l\'Établissement',
+                                                                   tooltip: _isEn ? "Delete School" : "Supprimer l'Établissement",
                                                                    onPressed: () => _deleteSchool(s),
                                                                  ),
                                                                ),
@@ -2725,270 +2725,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                    );
                                                  }).toList(),
                                                ),
-                                             ]                                          ],
-                                                ),
-                                              ),
-                                              const SizedBox(height: 8),
-
-                                              // Full-Width Rows
-                                              Column(
-                                                children: filteredSchools.map<Widget>((s) {
-                                                  final scName = (s['name'] ?? '').toString();
-                                                  final scReg  = (s['region'] ?? 'ADAMOUA').toString();
-                                                  final scDiv  = (s['division'] ?? 'DJEREM').toString();
-                                                  final scTown = (s['town'] ?? '-').toString();
-
-                                                  return Container(
-                                                    width: double.infinity,
-                                                    margin: const EdgeInsets.only(bottom: 8),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                                    decoration: BoxDecoration(
-                                                      color: _bg,
-                                                      borderRadius: BorderRadius.circular(12),
-                                                      border: Border.all(color: _border.withValues(alpha: 0.7)),
-                                                    ),
-                                                    child: Row(
-                                                      children: [
-                                                        // School Name
-                                                        Expanded(
-                                                          flex: 5,
-                                                          child: Row(
-                                                            children: [
-                                                              Container(
-                                                                padding: const EdgeInsets.all(8),
-                                                                decoration: BoxDecoration(
-                                                                  color: const Color(0xFF0284C7).withValues(alpha: 0.14),
-                                                                  shape: BoxShape.circle,
-                                                                ),
-                                                                child: const Icon(Icons.school_rounded, color: Color(0xFF0284C7), size: 18),
-                                                              ),
-                                                              const SizedBox(width: 12),
-                                                              Expanded(
-                                                                child: Text(
-                                                                  scName,
-                                                                  style: TextStyle(color: _text, fontWeight: FontWeight.w800, fontSize: 13.5),
-                                                                  overflow: TextOverflow.ellipsis,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-
-                                                        // Region Badge
-                                                        Expanded(
-                                                          flex: 3,
-                                                          child: Align(
-                                                            alignment: Alignment.centerLeft,
-                                                            child: Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                                              decoration: BoxDecoration(
-                                                                color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                                                                borderRadius: BorderRadius.circular(8),
-                                                                border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.25)),
-                                                              ),
-                                                              child: Text(scReg, style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 11.5), overflow: TextOverflow.ellipsis),
-                                                            ),
-                                                          ),
-                                                        ),
-
-                                                        // Division Badge
-                                                        Expanded(
-                                                          flex: 3,
-                                                          child: Align(
-                                                            alignment: Alignment.centerLeft,
-                                                            child: Container(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                                              decoration: BoxDecoration(
-                                                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
-                                                                borderRadius: BorderRadius.circular(8),
-                                                                border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.25)),
-                                                              ),
-                                                              child: Text(scDiv, style: const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold, fontSize: 11.5), overflow: TextOverflow.ellipsis),
-                                                            ),
-                                                          ),
-                                                        ),
-
-                                                        // Town
-                                                        Expanded(
-                                                          flex: 3,
-                                                          child: Row(
-                                                            children: [
-                                                              Icon(Icons.location_on_rounded, color: _sub, size: 16),
-                                                              const SizedBox(width: 5),
-                                                              Expanded(
-                                                                child: Text(
-                                                                  scTown,
-                                                                  style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600),
-                                                                  overflow: TextOverflow.ellipsis,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-
-                                                        // Action Button
-                                                        Expanded(
-                                                          flex: 2,
-                                                          child: Align(
-                                                            alignment: Alignment.centerRight,
-                                                            child: ElevatedButton(
-                                                              style: ElevatedButton.styleFrom(
-                                                                backgroundColor: _green,
-                                                                foregroundColor: Colors.white,
-                                                                elevation: 0,
-                                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                              ),
-                                                              onPressed: () {
-                                                                setState(() {
-                                                                  _currentNavIndex = 2;
-                                                                  _fetchSchoolDetails(scName);
-                                                                });
-                                                              },
-                                                              child: Text(_isEn ? 'View Stats' : 'Voir Stats', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }).toList(),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ] else ...[
-                                  Builder(
-                                    builder: (ctx) {
-                                      final filteredUsers = _allUsersList.where((u) {
-                                        final r = (u['role'] ?? '').toString();
-                                        if (r == 'admin') return false;
-
-                                        final name = (u['full_name'] ?? '').toString().toLowerCase();
-                                        final mat  = (u['matricule'] ?? '').toString().toLowerCase();
-
-                                        final matchesRole = (_userRoleFilter == 'ALL') || (r == _userRoleFilter);
-                                        final matchesSearch = _userSearchQuery.isEmpty || name.contains(_userSearchQuery.toLowerCase()) || mat.contains(_userSearchQuery.toLowerCase());
-
-                                        return matchesRole && matchesSearch;
-                                      }).toList();
-
-                                      return Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(18),
-                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _isEn ? 'Registered Users Directory (${filteredUsers.length})' : 'Répertoire des Utilisateurs Enregistrés (${filteredUsers.length})',
-                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
-                                            ),
-                                            const SizedBox(height: 14),
-                                            if (filteredUsers.isEmpty) ...[
-                                              Text(_isEn ? 'No users matching criteria.' : 'Aucun utilisateur correspondant.', style: TextStyle(color: _sub, fontSize: 13)),
-                                            ] else ...[
-                                              SingleChildScrollView(
-                                                scrollDirection: Axis.horizontal,
-                                                child: DataTable(
-                                                  headingRowColor: WidgetStateProperty.all(_bg),
-                                                  dataRowMinHeight: 52,
-                                                  dataRowMaxHeight: 64,
-                                                  columnSpacing: 24,
-                                                  columns: [
-                                                    DataColumn(label: Text(_isEn ? 'User Name' : 'Nom & Utilisateur', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'Role' : 'Rôle', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'Matricule' : 'Matricule', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'Region / Division' : 'Région / Dép.', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'School / Governance Entity' : 'Établissement / Structure', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'Status' : 'Statut', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                    DataColumn(label: Text(_isEn ? 'Actions' : 'Actions', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
-                                                  ],
-                                                  rows: filteredUsers.map<DataRow>((u) {
-                                                    final uId     = _parseInt(u['id']);
-                                                    final uName   = (u['full_name'] ?? '').toString();
-                                                    final uRole   = (u['role'] ?? '').toString();
-                                                    final uMat    = (u['matricule'] ?? 'N/A').toString();
-                                                    final uReg    = (u['region'] ?? 'ADAMOUA').toString();
-                                                    final uDiv    = (u['division'] ?? 'DJEREM').toString();
-                                                    final uSchool = (u['school_name'] ?? '').toString();
-                                                    final isAct   = _parseInt(u['is_activated']) == 1;
-
-                                                    Color roleColor = Colors.teal;
-                                                    if (uRole == 'regional_delegate') roleColor = const Color(0xFF2563EB);
-                                                    if (uRole == 'divisional_delegate') roleColor = const Color(0xFF8B5CF6);
-                                                    if (uRole == 'principal') roleColor = const Color(0xFFF59E0B);
-                                                    if (uRole == 'teacher') roleColor = const Color(0xFF10B981);
-
-                                                    return DataRow(
-                                                      cells: [
-                                                        DataCell(
-                                                          Row(
-                                                            children: [
-                                                              CircleAvatar(
-                                                                radius: 14,
-                                                                backgroundColor: roleColor.withValues(alpha: 0.15),
-                                                                child: Text(uName.isNotEmpty ? uName[0] : 'U', style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11.5)),
-                                                              ),
-                                                              const SizedBox(width: 10),
-                                                              Text(uName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                            decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                                                            child: Text(
-                                                              uRole.toUpperCase().replaceAll('_', ' '),
-                                                              style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        DataCell(Text(uMat, style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 12.5))),
-                                                        DataCell(Text('$uReg / $uDiv', style: TextStyle(color: _sub, fontSize: 12))),
-                                                        DataCell(Text(uSchool.isNotEmpty ? uSchool : 'N/A', style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w500))),
-                                                        DataCell(
-                                                          Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                            decoration: BoxDecoration(
-                                                              color: isAct ? _green.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
-                                                              borderRadius: BorderRadius.circular(8),
-                                                            ),
-                                                            child: Text(
-                                                              isAct ? (_isEn ? 'Active' : 'Actif') : (_isEn ? 'Blocked' : 'Bloqué'),
-                                                              style: TextStyle(color: isAct ? _green : Colors.red, fontWeight: FontWeight.bold, fontSize: 11.5),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Row(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            children: [
-                                                              IconButton(
-                                                                icon: Icon(
-                                                                  isAct ? Icons.block_rounded : Icons.check_circle_outline_rounded,
-                                                                  color: isAct ? Colors.orange : _green,
-                                                                  size: 20,
-                                                                ),
-                                                                tooltip: isAct ? (_isEn ? 'Block Account' : 'Bloquer le Compte') : (_isEn ? 'Activate Account' : 'Activer le Compte'),
-                                                                onPressed: () => _toggleUserStatus(uId, isAct ? 0 : 1),
-                                                              ),
-                                                              IconButton(
-                                                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                                                                tooltip: _isEn ? 'Delete Account' : 'Supprimer le Compte',
-                                                                onPressed: () => _deleteUserAccount(uId, uName),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  }).toList(),
-                                                ),
                                               ),
                                             ],
                                           ],
