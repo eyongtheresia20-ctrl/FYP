@@ -1444,6 +1444,7 @@ class _DelegateDashboardState extends State<DelegateDashboard> {
                                   kinesthetic: scKinTotal,
                                   readWrite: scRwTotal,
                                   contextName: scName,
+                                  isSchoolLevel: true,
                                 );
                                 final scRec = _isEn ? educatorRec['en']! : educatorRec['fr']!;
 
