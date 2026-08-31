@@ -2728,6 +2728,139 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                             ],
                                           ],
                                         ),
+] else ...[
+                                  Builder(
+                                    builder: (ctx) {
+                                      final filteredUsers = _allUsersList.where((u) {
+                                        final r = (u['role'] ?? '').toString();
+                                        if (r == 'admin') return false;
+
+                                        final name = (u['full_name'] ?? '').toString().toLowerCase();
+                                        final mat  = (u['matricule'] ?? '').toString().toLowerCase();
+
+                                        final matchesRole = (_userRoleFilter == 'ALL') || (r == _userRoleFilter);
+                                        final matchesSearch = _userSearchQuery.isEmpty || name.contains(_userSearchQuery.toLowerCase()) || mat.contains(_userSearchQuery.toLowerCase());
+
+                                        return matchesRole && matchesSearch;
+                                      }).toList();
+
+                                      return Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(18),
+                                        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: _border)),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _isEn ? 'Registered Users Directory (${filteredUsers.length})' : 'Répertoire des Utilisateurs Enregistrés (${filteredUsers.length})',
+                                              style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 15),
+                                            ),
+                                            const SizedBox(height: 14),
+                                            if (filteredUsers.isEmpty) ...[
+                                              Text(_isEn ? 'No users matching criteria.' : 'Aucun utilisateur correspondant.', style: TextStyle(color: _sub, fontSize: 13)),
+                                            ] else ...[
+                                              SingleChildScrollView(
+                                                scrollDirection: Axis.horizontal,
+                                                child: DataTable(
+                                                  headingRowColor: WidgetStateProperty.all(_bg),
+                                                  dataRowMinHeight: 52,
+                                                  dataRowMaxHeight: 64,
+                                                  columnSpacing: 24,
+                                                  columns: [
+                                                    DataColumn(label: Text(_isEn ? 'User Name' : 'Nom & Utilisateur', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Role' : 'Rôle', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Matricule' : 'Matricule', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Region / Division' : 'Région / Dép.', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'School / Governance Entity' : 'Établissement / Structure', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Status' : 'Statut', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                    DataColumn(label: Text(_isEn ? 'Actions' : 'Actions', style: TextStyle(color: _sub, fontWeight: FontWeight.bold, fontSize: 12.5))),
+                                                  ],
+                                                  rows: filteredUsers.map<DataRow>((u) {
+                                                    final uId     = _parseInt(u['id']);
+                                                    final uName   = (u['full_name'] ?? '').toString();
+                                                    final uRole   = (u['role'] ?? '').toString();
+                                                    final uMat    = (u['matricule'] ?? 'N/A').toString();
+                                                    final uReg    = (u['region'] ?? 'ADAMOUA').toString();
+                                                    final uDiv    = (u['division'] ?? 'DJEREM').toString();
+                                                    final uSchool = (u['school_name'] ?? '').toString();
+                                                    final isAct   = _parseInt(u['is_activated']) == 1;
+
+                                                    Color roleColor = Colors.teal;
+                                                    if (uRole == 'regional_delegate') roleColor = const Color(0xFF2563EB);
+                                                    if (uRole == 'divisional_delegate') roleColor = const Color(0xFF8B5CF6);
+                                                    if (uRole == 'principal') roleColor = const Color(0xFFF59E0B);
+                                                    if (uRole == 'teacher') roleColor = const Color(0xFF10B981);
+
+                                                    return DataRow(
+                                                      cells: [
+                                                        DataCell(
+                                                          Row(
+                                                            children: [
+                                                              CircleAvatar(
+                                                                radius: 14,
+                                                                backgroundColor: roleColor.withValues(alpha: 0.15),
+                                                                child: Text(uName.isNotEmpty ? uName[0] : 'U', style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11.5)),
+                                                              ),
+                                                              const SizedBox(width: 10),
+                                                              Text(uName, style: TextStyle(color: _text, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                            decoration: BoxDecoration(color: roleColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                                                            child: Text(
+                                                              uRole.toUpperCase().replaceAll('_', ' '),
+                                                              style: TextStyle(color: roleColor, fontWeight: FontWeight.bold, fontSize: 11),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        DataCell(Text(uMat, style: TextStyle(color: _text, fontWeight: FontWeight.w600, fontSize: 12.5))),
+                                                        DataCell(Text('$uReg / $uDiv', style: TextStyle(color: _sub, fontSize: 12))),
+                                                        DataCell(Text(uSchool.isNotEmpty ? uSchool : 'N/A', style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w500))),
+                                                        DataCell(
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                            decoration: BoxDecoration(
+                                                              color: isAct ? _green.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                                                              borderRadius: BorderRadius.circular(8),
+                                                            ),
+                                                            child: Text(
+                                                              isAct ? (_isEn ? 'Active' : 'Actif') : (_isEn ? 'Blocked' : 'Bloqué'),
+                                                              style: TextStyle(color: isAct ? _green : Colors.red, fontWeight: FontWeight.bold, fontSize: 11.5),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        DataCell(
+                                                          Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              IconButton(
+                                                                icon: Icon(
+                                                                  isAct ? Icons.block_rounded : Icons.check_circle_outline_rounded,
+                                                                  color: isAct ? Colors.orange : _green,
+                                                                  size: 20,
+                                                                ),
+                                                                tooltip: isAct ? (_isEn ? 'Block Account' : 'Bloquer le Compte') : (_isEn ? 'Activate Account' : 'Activer le Compte'),
+                                                                onPressed: () => _toggleUserStatus(uId, isAct ? 0 : 1),
+                                                              ),
+                                                              IconButton(
+                                                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                                                tooltip: _isEn ? 'Delete Account' : 'Supprimer le Compte',
+                                                                onPressed: () => _deleteUserAccount(uId, uName),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       );
                                     },
                                   ),
