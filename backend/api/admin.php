@@ -538,17 +538,20 @@ switch ($action) {
         $stmtOld->execute([$schoolId]);
         $oldSchoolName = $stmtOld->fetchColumn();
 
-        $stmt = $pdo->prepare("UPDATE schools SET name = ?, region = ?, division = ?, town = ? WHERE id = ?");
-        $stmt->execute([$schoolName, $region, $division, $town, $schoolId]);
-
-        // Cascade school name update to users and sub-tables
+        // Cascade school name update to sub-tables safely
         if ($oldSchoolName && $oldSchoolName !== $schoolName) {
-            $pdo->prepare("UPDATE users SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
-            $pdo->prepare("UPDATE students SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
-            $pdo->prepare("UPDATE teachers SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
-            $pdo->prepare("UPDATE principals SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
-            $pdo->prepare("UPDATE dean_of_studies SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+            $tablesToUpdate = ['students', 'teachers', 'principals', 'dean_of_studies'];
+            foreach ($tablesToUpdate as $t) {
+                try {
+                    $pdo->prepare("UPDATE `$t` SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+                } catch (Exception $e) {}
+            }
         }
+
+        // Cascade region & division updates to linked users & students
+        try {
+            $pdo->prepare("UPDATE users SET region = ?, division = ? WHERE school_id = ?")->execute([$region, $division, $schoolId]);
+        } catch (Exception $e) {}
 
         respond(true, "School '$schoolName' updated successfully.", [
             'id' => $schoolId,

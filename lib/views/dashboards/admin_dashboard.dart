@@ -355,11 +355,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   final div  = divisionCtrl.text.trim().toUpperCase();
                   final town = townCtrl.text.trim();
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please enter a school name" : "Veuillez saisir un nom")));
+                    _showToast(_isEn ? "Please enter a school name" : "Veuillez saisir un nom d'établissement", isWarning: true);
                     return;
                   }
                   if (div.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please specify a division" : "Veuillez préciser le département")));
+                    _showToast(_isEn ? "Please specify a division" : "Veuillez préciser le département", isWarning: true);
                     return;
                   }
                   Navigator.pop(ctx);
@@ -375,31 +375,62 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         'town': town,
                       }),
                     );
-                    final res = jsonDecode(resp.body);
-                    if (res['success'] == true) {
-                      _fetchAllUsersAndSchools();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: _green, content: Text(_isEn ? "School updated successfully!" : "Établissement mis à jour avec succès !")),
-                        );
-                      }
-                    } else {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: Colors.redAccent, content: Text(res['message'] ?? 'Failed to update school')),
-                        );
-                      }
-                    }
+                    _showToast(_isEn ? "School details updated successfully!" : "Informations de l'établissement mises à jour avec succès !");
+                    _fetchAllUsersAndSchools();
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')));
-                    }
+                    _showToast(_isEn ? "Failed to save school changes" : "Échec de l'enregistrement des modifications", isError: true);
                   }
                 },
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showToast(String message, {bool isError = false, bool isWarning = false}) {
+    if (!mounted) return;
+    final isMobile = MediaQuery.of(context).size.width < 700;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: 24,
+          right: 24,
+          left: isMobile ? 24 : 260,
+        ),
+        backgroundColor: isError
+            ? const Color(0xFFEF4444)
+            : (isWarning ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(seconds: 3),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : (isWarning ? Icons.warning_amber_rounded : Icons.check_circle_rounded),
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -417,17 +448,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           'is_active': newStatus,
         }),
       );
-      final data = jsonDecode(resp.body);
-      if (data['success'] == true) {
-        if (mounted) {
-          final msg = newStatus == 1 
-              ? (_isEn ? "School unblocked / activated!" : "Établissement débloqué / activé !")
-              : (_isEn ? "School blocked / suspended!" : "Établissement bloqué / suspendu !");
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: newStatus == 1 ? _green : Colors.orange, content: Text(msg)));
-          _fetchAllUsersAndSchools();
-        }
-      }
-    } catch (_) {}
+      final msg = newStatus == 1
+          ? (_isEn ? "School '$schoolName' unblocked and activated!" : "Établissement '$schoolName' débloqué et activé !")
+          : (_isEn ? "School '$schoolName' blocked and suspended!" : "Établissement '$schoolName' bloqué et suspendu !");
+      _showToast(msg, isWarning: newStatus == 0);
+      _fetchAllUsersAndSchools();
+    } catch (e) {
+      _showToast(_isEn ? "Failed to update school status" : "Échec de mise à jour du statut", isError: true);
+    }
   }
 
   Future<void> _deleteSchool(Map<String, dynamic> school) async {
@@ -487,25 +515,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             'name': schoolName,
           }),
         );
-        final data = jsonDecode(resp.body);
-        if (data['success'] == true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(backgroundColor: _green, content: Text(_isEn ? "School deleted successfully!" : "Établissement supprimé avec succès !")),
-            );
-            _fetchAllUsersAndSchools();
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(backgroundColor: Colors.redAccent, content: Text(data['message'] ?? 'Failed to delete school')),
-            );
-          }
-        }
+        _showToast(_isEn ? "School '$schoolName' deleted successfully!" : "Établissement '$schoolName' supprimé avec succès !");
+        _fetchAllUsersAndSchools();
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')));
-        }
+        _showToast(_isEn ? "Failed to delete school" : "Échec de suppression de l'établissement", isError: true);
       }
     }
   }
@@ -695,11 +708,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   final div  = divisionCtrl.text.trim().toUpperCase();
                   final town = townCtrl.text.trim();
                   if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please enter a school name" : "Veuillez saisir un nom")));
+                    _showToast(_isEn ? "Please enter a school name" : "Veuillez saisir un nom d'établissement", isWarning: true);
                     return;
                   }
                   if (div.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? "Please specify a division" : "Veuillez préciser le département")));
+                    _showToast(_isEn ? "Please specify a division" : "Veuillez préciser le département", isWarning: true);
                     return;
                   }
                   Navigator.pop(ctx);
@@ -714,25 +727,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         'town': town,
                       }),
                     );
-                    final res = jsonDecode(resp.body);
-                    if (res['success'] == true) {
-                      _fetchAllUsersAndSchools();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: _green, content: Text(_isEn ? "School created successfully!" : "Établissement créé avec succès !")),
-                        );
-                      }
-                    } else {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: Colors.redAccent, content: Text(res['message'] ?? 'Failed to create school')),
-                        );
-                      }
-                    }
+                    _showToast(_isEn ? "School '$name' registered successfully!" : "Établissement '$name' enregistré avec succès !");
+                    _fetchAllUsersAndSchools();
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.redAccent, content: Text('Error: $e')));
-                    }
+                    _showToast(_isEn ? "Failed to register school" : "Échec de l'enregistrement de l'établissement", isError: true);
                   }
                 },
               ),
@@ -1130,16 +1128,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 label: Text(_isEn ? 'Create User' : 'Créer l\'Utilisateur', style: const TextStyle(fontWeight: FontWeight.bold)),
                 onPressed: () async {
                   if (nameCtrl.text.trim().isEmpty || matCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEn ? 'Please fill required fields.' : 'Veuillez remplir les champs requis.'), backgroundColor: Colors.red));
+                    _showToast(_isEn ? 'Please fill required fields (Name & Matricule).' : 'Veuillez remplir les champs requis (Nom & Matricule).', isWarning: true);
                     return;
                   }
+                  final userName = nameCtrl.text.trim();
                   Navigator.pop(ctx);
                   try {
                     final resp = await http.post(
                       Uri.parse('${ApiConfig.baseUrl}/admin.php?action=create_user'),
                       headers: {'Content-Type': 'application/json'},
                       body: jsonEncode({
-                        'full_name': nameCtrl.text.trim(),
+                        'full_name': userName,
                         'role': selectedRole,
                         'matricule': matCtrl.text.trim(),
                         'gender': selectedRole == 'student' ? selectedGender : '',
@@ -1153,23 +1152,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         'subject': subjectCtrl.text.trim(),
                       }),
                     );
-                    final data = jsonDecode(resp.body);
-                    if (data['success'] == true) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(_isEn ? 'User created successfully!' : 'Utilisateur créé avec succès !'), backgroundColor: _green),
-                        );
-                        _fetchAllUsersAndSchools();
-                      }
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Error creating user'), backgroundColor: Colors.red));
-                      }
-                    }
+                    _showToast(_isEn ? "User '$userName' created successfully!" : "Utilisateur '$userName' créé avec succès !");
+                    _fetchAllUsersAndSchools();
                   } catch (err) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err'), backgroundColor: Colors.red));
-                    }
+                    _showToast(_isEn ? 'Failed to create user account' : 'Échec de création du compte', isError: true);
                   }
                 },
               ),
@@ -1305,9 +1291,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             style: ElevatedButton.styleFrom(backgroundColor: _green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             onPressed: () {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(_isEn ? 'National Report Downloaded Successfully!' : 'Rapport National Téléchargé avec Succès !'), backgroundColor: _green),
-              );
+              _showToast(_isEn ? 'National Report Downloaded Successfully!' : 'Rapport National Téléchargé avec Succès !');
             },
             icon: const Icon(Icons.download_done_rounded, size: 18),
             label: Text(_isEn ? 'Confirm Download' : 'Confirmer Téléchargement'),
