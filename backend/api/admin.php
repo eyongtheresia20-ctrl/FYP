@@ -162,7 +162,7 @@ switch ($action) {
 
     // ── 3. GET ALL SCHOOLS IN SYSTEM ─────────────────────────────
     case 'get_all_schools':
-        $stmt = $pdo->query("SELECT id, name, region, division, town FROM schools ORDER BY region, division, name");
+        $stmt = $pdo->query("SELECT id, name, region, division, town, COALESCE(is_active, 1) AS is_active FROM schools ORDER BY region, division, name");
         $schools = $stmt->fetchAll(PDO::FETCH_ASSOC);
         respond(true, 'Schools fetched successfully.', $schools);
         break;
@@ -480,6 +480,125 @@ switch ($action) {
         $stmtS->execute([$fullName, $matricule, $matricule, $className, $gender, $birthDate, $userId]);
 
         respond(true, "Student '$fullName' updated successfully.", ['user_id' => $userId]);
+        break;
+
+    // ── 9. ADD SCHOOL ──────────────────────────────────────────
+    case 'add_school':
+        $schoolName = trim($body['name'] ?? $body['school_name'] ?? '');
+        $region     = trim($body['region'] ?? 'ADAMOUA');
+        $division   = trim($body['division'] ?? 'DJEREM');
+        $town       = trim($body['town'] ?? '');
+        $code       = trim($body['code'] ?? 'SCH' . str_pad(rand(10, 999), 3, '0', STR_PAD_LEFT));
+
+        if (empty($schoolName)) respondError('School name is required.');
+
+        // Check duplicate
+        $stmtCheck = $pdo->prepare("SELECT id FROM schools WHERE LOWER(name) = LOWER(?)");
+        $stmtCheck->execute([$schoolName]);
+        if ($stmtCheck->fetch()) {
+            respondError("A school with the name '$schoolName' already exists.");
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO schools (code, name, region, division, town, is_active, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())");
+        $stmt->execute([$code, $schoolName, $region, $division, $town]);
+        $newId = $pdo->lastInsertId();
+
+        respond(true, "School '$schoolName' registered successfully.", [
+            'id' => $newId,
+            'name' => $schoolName,
+            'region' => $region,
+            'division' => $division,
+            'town' => $town,
+            'is_active' => 1
+        ]);
+        break;
+
+    // ── 10. UPDATE / MODIFY SCHOOL ──────────────────────────────
+    case 'update_school':
+    case 'edit_school':
+        $schoolId   = intval($body['id'] ?? $body['school_id'] ?? 0);
+        $schoolName = trim($body['name'] ?? $body['school_name'] ?? '');
+        $region     = trim($body['region'] ?? 'ADAMOUA');
+        $division   = trim($body['division'] ?? 'DJEREM');
+        $town       = trim($body['town'] ?? '');
+
+        if ($schoolId <= 0 && !empty($schoolName)) {
+            // Find by name if id not sent
+            $stmtFind = $pdo->prepare("SELECT id FROM schools WHERE LOWER(name) = LOWER(?)");
+            $stmtFind->execute([$schoolName]);
+            $schoolId = intval($stmtFind->fetchColumn());
+        }
+
+        if ($schoolId <= 0 || empty($schoolName)) {
+            respondError('Valid School ID and School Name are required.');
+        }
+
+        // Get old name for cascading user/student/teacher records
+        $stmtOld = $pdo->prepare("SELECT name FROM schools WHERE id = ?");
+        $stmtOld->execute([$schoolId]);
+        $oldSchoolName = $stmtOld->fetchColumn();
+
+        $stmt = $pdo->prepare("UPDATE schools SET name = ?, region = ?, division = ?, town = ? WHERE id = ?");
+        $stmt->execute([$schoolName, $region, $division, $town, $schoolId]);
+
+        // Cascade school name update to users and sub-tables
+        if ($oldSchoolName && $oldSchoolName !== $schoolName) {
+            $pdo->prepare("UPDATE users SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+            $pdo->prepare("UPDATE students SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+            $pdo->prepare("UPDATE teachers SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+            $pdo->prepare("UPDATE principals SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+            $pdo->prepare("UPDATE dean_of_studies SET school_name = ? WHERE school_name = ?")->execute([$schoolName, $oldSchoolName]);
+        }
+
+        respond(true, "School '$schoolName' updated successfully.", [
+            'id' => $schoolId,
+            'name' => $schoolName,
+            'region' => $region,
+            'division' => $division,
+            'town' => $town
+        ]);
+        break;
+
+    // ── 11. DELETE SCHOOL ───────────────────────────────────────
+    case 'delete_school':
+        $schoolId   = intval($body['id'] ?? $body['school_id'] ?? $_GET['id'] ?? 0);
+        $schoolName = trim($body['name'] ?? $body['school_name'] ?? $_GET['school_name'] ?? '');
+
+        if ($schoolId <= 0 && !empty($schoolName)) {
+            $stmtFind = $pdo->prepare("SELECT id FROM schools WHERE LOWER(name) = LOWER(?)");
+            $stmtFind->execute([$schoolName]);
+            $schoolId = intval($stmtFind->fetchColumn());
+        }
+
+        if ($schoolId <= 0) {
+            respondError('School ID or School Name is required.');
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM schools WHERE id = ?");
+        $stmt->execute([$schoolId]);
+
+        respond(true, "School deleted successfully from directory.", ['deleted_id' => $schoolId]);
+        break;
+
+    // ── 12. TOGGLE SCHOOL STATUS (BLOCK / UNBLOCK) ──────────────
+    case 'toggle_school_status':
+        $schoolId  = intval($body['id'] ?? $body['school_id'] ?? $_GET['id'] ?? 0);
+        $statusVal = intval($body['is_active'] ?? $_GET['is_active'] ?? 1);
+        $schoolName= trim($body['name'] ?? $body['school_name'] ?? '');
+
+        if ($schoolId <= 0 && !empty($schoolName)) {
+            $stmtFind = $pdo->prepare("SELECT id FROM schools WHERE LOWER(name) = LOWER(?)");
+            $stmtFind->execute([$schoolName]);
+            $schoolId = intval($stmtFind->fetchColumn());
+        }
+
+        if ($schoolId <= 0) respondError('School ID is required.');
+
+        $stmt = $pdo->prepare("UPDATE schools SET is_active = ? WHERE id = ?");
+        $stmt->execute([$statusVal, $schoolId]);
+
+        $statusMsg = $statusVal === 1 ? 'activated/unblocked' : 'blocked/suspended';
+        respond(true, "School status updated to $statusMsg.", ['id' => $schoolId, 'is_active' => $statusVal]);
         break;
 
     default:
