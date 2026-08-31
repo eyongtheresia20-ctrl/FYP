@@ -213,7 +213,7 @@ if ($action === 'submit_assessment') {
         ? implode('-', $topAvgStyles) . ' (Dual Style)'
         : $topAvgStyles[0];
 
-    $compositeRec = generateAIRecommendations($compositeStyle, $avgV, $avgA, $avgK, $avgR);
+    $compositeRec = generateAcademicRecommendations($compositeStyle, $avgV, $avgA, $avgK, $avgR);
 
     // Trend analysis across multiple test attempts
     $trendEn = "";
@@ -271,7 +271,7 @@ if ($action === 'submit_assessment') {
     respondError('Invalid action.', 404);
 }
 
-function generateAIRecommendations($style, $v = 0, $a = 0, $k = 0, $r = 0) {
+function generateAcademicRecommendations($style, $v = 0, $a = 0, $k = 0, $r = 0) {
     // Exact academic evaluation via Neil Fleming Standardized Tables
     $eval = VarkAcademicEngine::evaluate($a, $v, $k, $r);
     return [

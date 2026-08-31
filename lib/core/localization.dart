@@ -10,7 +10,7 @@ class AppLocalization extends ChangeNotifier {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
-      'app_title': 'AI-Powered Learning Profile System',
+      'app_title': 'Psychometric Learning Profile System',
       'minesec': 'NATIONAL EDUCATION PORTAL',
       'republic': 'REPUBLIC OF CAMEROON',
       'motto': 'Peace - Work - Fatherland',
@@ -38,9 +38,9 @@ class AppLocalization extends ChangeNotifier {
       'nav_help': 'Help',
       'back_home': 'Back to Home',
       'about_title': 'About the Platform',
-      'about_sub': 'AI-driven VARK learning style assessment & educational analytics framework',
+      'about_sub': 'Standardized VARK learning style assessment & educational analytics framework',
       'about_mission_title': 'Our Core Mission',
-      'about_mission_desc': 'Empowering learners and educators across Cameroon by utilizing AI data insights to personalize learning styles, optimize teaching methodologies, and improve academic performance.',
+      'about_mission_desc': 'Empowering learners and educators across Cameroon by utilizing psychometric diagnostic insights to personalize learning styles, optimize teaching methodologies, and improve academic performance.',
       'vark_title': 'VARK Learning Modalities',
       'vark_desc': 'The VARK model classifies learning preferences into four distinct sensory channels: Visual (V), Auditory (A), Read/Write (R), and Kinesthetic (K).',
       'vark_v_title': 'Visual Learners',

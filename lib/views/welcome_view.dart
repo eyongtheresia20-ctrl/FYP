@@ -882,7 +882,7 @@ class _WelcomeViewState extends State<WelcomeView>
             _briefItem(
                 Icons.psychology_outlined,
                 'Learning Style Assessment',
-                'Students complete an AI-guided questionnaire that identifies their dominant learning style — visual, auditory, or kinesthetic.',
+                'Students complete an Standardized VARK questionnaire that identifies their dominant learning style — visual, auditory, or kinesthetic.',
                 cardBgColor,
                 cardBorderColor),
             _briefItem(
@@ -1815,7 +1815,7 @@ class _WelcomeViewState extends State<WelcomeView>
           const SizedBox(height: 8),
           Text(
             isEn
-                ? '© 2025 AI-Learning Style Tracker System. All rights reserved.'
+                ? '© 2025 Learning Style Tracker System. All rights reserved.'
                 : '© 2025 Système de Suivi des Styles d\'Apprentissage par IA. Tous droits réservés.',
             style: TextStyle(
                 color: _isDarkMode ? Colors.white24 : const Color(0xFF94A3B8),

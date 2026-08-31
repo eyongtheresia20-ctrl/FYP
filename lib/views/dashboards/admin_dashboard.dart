@@ -2332,8 +2332,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     const SizedBox(height: 6),
                                     Text(
                                       _isEn
-                                          ? 'Expand Region ➔ Division ➔ School to view live statistics and institutional VARK AI policy.'
-                                          : 'Déroulez Région ➔ Département ➔ Établissement pour afficher les statistiques et directives IA.',
+                                          ? 'Expand Region ➔ Division ➔ School to view live statistics and institutional VARK policy & recommendations.'
+                                          : 'Déroulez Région ➔ Département ➔ Établissement pour afficher les statistiques et directives et recommandations.',
                                       style: TextStyle(color: _sub, fontSize: 13),
                                       textAlign: TextAlign.center,
                                     ),

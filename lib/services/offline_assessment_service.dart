@@ -101,7 +101,7 @@ class OfflineAssessmentService {
     }
   }
 
-  static Map<String, String> generateAIRecommendations(String style) {
+  static Map<String, String> generateRecommendations(String style) {
     final List<String> partsEn = [];
     final List<String> partsFr = [];
 
@@ -261,7 +261,7 @@ class OfflineAssessmentService {
               ),
               pw.SizedBox(height: 20),
 
-              // AI Recommendations
+              // Academic Recommendations
               pw.Text(isEn ? 'Academic Interpretation & Learning Strategy (Neil Fleming L.S.T):' : 'Directives & Stratégies d\'Apprentissage (L.S.T de Neil Fleming) :', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
               pw.SizedBox(height: 6),
               pw.Container(

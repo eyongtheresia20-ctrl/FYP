@@ -130,8 +130,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             'read_write': 15.0,
           },
           'recommendations': {
-            'en': '• Multi-Test AI Strategy: Combine auditory discussions with visual color-coded mind maps.\n• Listen to recorded lectures while creating visual diagrams and summary notes.',
-            'fr': '• Stratégie IA Multi-Tests : Combinez les discussions auditives avec des cartes mentales visuelles colorées.\n• Écoutez des cours enregistrés tout en créant des schémas visuels et fiches de synthèse.',
+            'en': '• Multi-Test Academic Strategy: Combine auditory discussions with visual color-coded mind maps.\n• Listen to recorded lectures while creating visual diagrams and summary notes.',
+            'fr': '• Stratégie Académique Multi-Tests : Combinez les discussions auditives avec des cartes mentales visuelles colorées.\n• Écoutez des cours enregistrés tout en créant des schémas visuels et fiches de synthèse.',
           },
           'trend_en': 'Across your 2 test attempts, your Auditory preference increased (+10%) while Visual preference remained strong. You benefit most from dual-modal auditory and visual learning techniques.',
           'trend_fr': 'Sur l\'ensemble de vos 2 tentatives, votre préférence auditive a augmenté (+10%) tandis que votre préférence visuelle reste forte. Vous bénéficiez d\'une approche bimodal auditive et visuelle.',
@@ -175,7 +175,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     
     String summary = _isEn ? (item['summary_en'] ?? '') : (item['summary_fr'] ?? '');
     if (summary.trim().isEmpty) {
-      final generatedRec = OfflineAssessmentService.generateAIRecommendations(style);
+      final generatedRec = OfflineAssessmentService.generateRecommendations(style);
       summary = _isEn ? generatedRec['en']! : generatedRec['fr']!;
     }
 

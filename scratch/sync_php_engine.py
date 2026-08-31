@@ -1,4 +1,4 @@
-<?php
+php_engine_code = r'''<?php
 // ============================================================
 //  MINESEC LST — VARK PSYCHOMETRIC & ACADEMIC ENGINE (PHP)
 //  Table 3 Standardized Evaluation & Multi-Modal Diagnostics
@@ -359,3 +359,9 @@ class VarkAcademicEngine {
         }
     }
 }
+'''
+
+with open(r'backend/services/vark_academic_engine.php', 'w', encoding='utf-8') as f:
+    f.write(php_engine_code)
+
+print("SUCCESS: UPDATED backend/services/vark_academic_engine.php")

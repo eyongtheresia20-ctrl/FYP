@@ -163,7 +163,7 @@ class _AboutViewState extends State<AboutView> {
                               const SizedBox(height: 18),
                               Text(
                                 isEn
-                                    ? 'We use AI to understand how each student learns best — so teachers can teach smarter and schools can perform better.'
+                                    ? 'We use standardized VARK diagnostics to understand how each student learns best — so teachers can teach smarter and schools can perform better.'
                                     : 'Nous utilisons l\'IA pour comprendre comment chaque élève apprend — afin que les enseignants enseignent mieux et que les établissements performent davantage.',
                                 style: TextStyle(fontSize: 15, color: sub, height: 1.7),
                               ),
@@ -195,7 +195,7 @@ class _AboutViewState extends State<AboutView> {
                         const SizedBox(height: 14),
                         Text(
                           isEn
-                              ? 'We use AI to understand how each student learns best — so teachers can teach smarter and schools can perform better.'
+                              ? 'We use standardized VARK diagnostics to understand how each student learns best — so teachers can teach smarter and schools can perform better.'
                               : 'Nous utilisons l\'IA pour comprendre comment chaque élève apprend — afin que les enseignants enseignent mieux.',
                           style: TextStyle(fontSize: 14, color: sub, height: 1.7),
                         ),
